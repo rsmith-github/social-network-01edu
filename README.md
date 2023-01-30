@@ -48,4 +48,4 @@ After cloning the directory and changing into the `social-network` directory
 
 ## Authors
 
-<sub>LUIS316, jasonasante, gymlad, rw.smith</sub>
+LUIS316, jasonasante, gymlad, rw.smith
