@@ -11,6 +11,7 @@ These instructions will get you a copy of the project up and running on your loc
 - Node.js
 - Go
 - Docker
+- Esbuild https://esbuild.github.io/
 
 ## Running the React Frontend ![React Logo](https://cdn4.iconfinder.com/data/icons/logos-3/600/React.js_logo-512.png)
 

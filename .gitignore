@@ -1,1 +1,3 @@
 backend/pkg/db/sqlite/sNetwork.db
+node_modules
+public/assets/App.js
