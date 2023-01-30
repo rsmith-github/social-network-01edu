@@ -13,21 +13,21 @@ These instructions will get you a copy of the project up and running on your loc
 - Docker
 - Esbuild https://esbuild.github.io/
 
-## Running the React Frontend ![React Logo](https://cdn4.iconfinder.com/data/icons/logos-3/600/React.js_logo-512.png)
+## <img src="https://cdn4.iconfinder.com/data/icons/logos-3/600/React.js_logo-512.png" width="28"> Running the React Frontend
 
 After cloning the directory and changing into the `social-network` directory
 
 - Run `npm install` to install dependencies
 - Run `npm run dev` to start the development server
 
-## Running the Golang Backend ![Golang Logo](https://go.dev/blog/go-brand/Go-Logo/PNG/Go-Logo_LightBlue.png)
+## <img src="https://go.dev/blog/go-brand/Go-Logo/PNG/Go-Logo_LightBlue.png" width="28"> Running the Golang Backend
 
 After cloning the directory and changing into the `social-network` directory
 
 - Run `go run .` to start the server
 - Alternatively, run `go build main.go && ./main` to build and run the executable file
 
-## Using Docker ![Golang Logo](https://media.tenor.com/z3Vqx6hmE5QAAAAC/whale-docker.gif)
+## <img src="https://media.tenor.com/z3Vqx6hmE5QAAAAC/whale-docker.gif" width="28"> Using Docker
 
 - Make sure you have the Docker daemon installed
   </br>
