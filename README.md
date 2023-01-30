@@ -27,7 +27,7 @@ After cloning the directory and changing into the `social-network` directory
 - Run `go run .` to start the server
 - Alternatively, run `go build main.go && ./main` to build and run the executable file
 
-## <img src="https://media.tenor.com/z3Vqx6hmE5QAAAAC/whale-docker.gif" width="28"> Using Docker
+## <img src="https://www.docker.com/wp-content/uploads/2022/03/vertical-logo-monochromatic.png" width="28"> Using Docker
 
 - Make sure you have the Docker daemon installed
   </br>
