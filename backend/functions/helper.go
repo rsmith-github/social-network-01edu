@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"text/template"
 
+	"github.com/dgrijalva/jwt-go"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -133,7 +134,7 @@ func ValidateCookie(w http.ResponseWriter, r *http.Request) {
 func JsonMessage(message string) []byte {
 
 	// Mimic json structure using map
-	var messageMap map[string]string
+	messageMap := make(map[string]string)
 	messageMap["message"] = message
 	jsonified, err := json.Marshal(messageMap) //marshal json. (returning list of bytes)
 
@@ -145,4 +146,20 @@ func JsonMessage(message string) []byte {
 	// return list of bytes
 	return jsonified
 
+}
+
+// More secure sql query. Return rows.
+func PreparedQuery(query string, claims *jwt.StandardClaims, db *sql.DB, functionName string) (*sql.Rows, error) {
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		fmt.Println(functionName, " -- ", err.Error())
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(claims.Issuer)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	return rows, err
 }

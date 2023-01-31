@@ -28,7 +28,7 @@ export default function Login(props) {
     });
 
     const validUser = await response.json();
-    console.log(validUser);
+
     props.setName(validUser.first);
     setRedirectVar(true);
   };

@@ -29,7 +29,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		// Check if user exists
 		if foundUser.Email != userToLogin.Email {
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(JsonMessage("User not found")))
+			w.Write(JsonMessage("User not found"))
 			return
 		}
 
@@ -89,9 +89,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 func GetUserWithJWT(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session")
 	if err != nil {
-		fmt.Println("GetUserWithJWT -- http: named cookie not present")
+		fmt.Println("GetUserWithJWT --  ", err.Error())
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(JsonMessage("unauthorized")))
+		w.Write(JsonMessage("unauthorized"))
 		return
 	}
 
@@ -103,7 +103,7 @@ func GetUserWithJWT(w http.ResponseWriter, r *http.Request) {
 
 	if claimsErr != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(JsonMessage("unauthorized")))
+		w.Write(JsonMessage("unauthorized"))
 		return
 	}
 
@@ -112,12 +112,16 @@ func GetUserWithJWT(w http.ResponseWriter, r *http.Request) {
 
 	// Look for user in database
 	db := OpenDB()
-	rows, er := db.Query("SELECT * FROM users WHERE id = ?", claims.Issuer)
-	user := QueryUser(rows, er)
 
-	db.Close()
+	// Secure sql query and get user based on claims
+	rows, err := PreparedQuery("SELECT * FROM users WHERE id = ?", claims, db, "GetUserWithJWT")
+	user := QueryUser(rows, err)
+	defer rows.Close()
+
+	// Marshal and return user.
 	jsn, _ := json.Marshal(user)
 	w.Write(jsn)
+	db.Close()
 
 }
 
