@@ -5,12 +5,14 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NavBar from "./components/navbar";
+import Profile from "./pages/Profile";
 
 const root = ReactDOM.createRoot(document.querySelector("#app"));
 
 function App() {
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState("");
+  const [props, setProps] = useState({});
 
   useEffect(() => {
     (async () => {
@@ -25,6 +27,16 @@ function App() {
 
       setName(content.first);
       setAvatar(content.avatar);
+
+      const user = {
+        email: content.email,
+        last: content.last,
+        dob: content.dob,
+        nickname: content.nickname,
+        aboutme: content.about,
+      };
+
+      setProps(user);
     })();
   });
 
@@ -32,9 +44,16 @@ function App() {
     <BrowserRouter>
       <NavBar name={name} setName={setName} />
       <Routes>
-        <Route index element={<Home name={name} avatar={avatar} />} />
+        <Route
+          index
+          element={<Home name={name} avatar={avatar} user={props} />}
+        />
         <Route path="/login" element={<Login setName={setName} />} />
         <Route path="/register" element={<Register />} />
+        <Route
+          path="/profile"
+          element={<Profile name={name} avatar={avatar} user={props} />}
+        />
       </Routes>
     </BrowserRouter>
   );

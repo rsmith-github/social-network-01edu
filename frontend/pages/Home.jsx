@@ -1,18 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import ProfileImgContainer from "../components/ProfileImgContainer";
 
 export default function Home(props) {
   return (
     <div>
       {props.name ? (
-        <>
-          <img
-            src={props.avatar}
-            alt=""
-            style={{ borderRadius: "50%", width: "200px" }}
-          />
-          <h1> Hi {props.name}</h1>
-        </>
+        <ProfileImgContainer
+          name={props.name}
+          user={props.user}
+          avatar={props.avatar}
+        />
       ) : (
         <>
           <p>You are not logged in</p>

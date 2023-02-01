@@ -9,7 +9,7 @@ export default function NavBar(props) {
       credentials: "include",
     });
 
-    props.setName('')
+    props.setName("");
   };
 
   return (
@@ -26,7 +26,7 @@ export default function NavBar(props) {
                   </Link>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/#">
+                  <Link className="nav-link" to="/profile">
                     My Profile
                   </Link>
                 </li>
