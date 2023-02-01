@@ -37,7 +37,7 @@ function App() {
 
       setProps(user);
     })();
-  }, []);
+  }, [name]);
   return (
     <BrowserRouter>
       <NavBar name={name} setName={setName} />
