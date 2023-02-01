@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/dgrijalva/jwt-go"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -86,7 +85,7 @@ func CreateSqlTables() {
 	CheckErr(usrTblErr, "-------Error creating table")
 
 	// Create sessions table if doesn't exist.
-	var _, sessTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `sessions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `sessionUUID` VARCHAR(255) NOT NULL UNIQUE, `userID` VARCHAR(64) NOT NULL UNIQUE, `username` VARCHAR(255) NOT NULL UNIQUE)")
+	var _, sessTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `sessions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `sessionUUID` VARCHAR(255) NOT NULL UNIQUE, `userID` VARCHAR(64) NOT NULL UNIQUE, `email` VARCHAR(255) NOT NULL UNIQUE)")
 	CheckErr(sessTblErr, "-------Error creating table")
 
 	// Create sessions table if doesn't exist.
@@ -149,17 +148,39 @@ func JsonMessage(message string) []byte {
 }
 
 // More secure sql query. Return rows.
-func PreparedQuery(query string, claims *jwt.StandardClaims, db *sql.DB, functionName string) (*sql.Rows, error) {
+func PreparedQuery(query string, input string, db *sql.DB, functionName string) (*sql.Rows, error) {
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		fmt.Println(functionName, " -- ", err.Error())
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(claims.Issuer)
+	rows, err := stmt.Query(input)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
 	return rows, err
+}
+
+func QuerySession(rows *sql.Rows, err error) Session {
+	// Variables for line after for rows.Next()
+	var id int
+	var sessionID, userID, email string
+
+	var sess Session
+	// Scan all the data from that row.
+	for rows.Next() {
+		err = rows.Scan(&id, &sessionID, &userID, &email)
+		temp := Session{
+			sessionUUID: *&sessionID,
+			userID:      *&userID,
+			email:       *&email,
+		}
+		// currentUser = &username
+		CheckErr(err, "-------LINE 146")
+		sess = temp
+	}
+	rows.Close() //good habit to close
+	return sess
 }

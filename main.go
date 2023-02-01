@@ -16,7 +16,7 @@ func main() {
 	http.HandleFunc("/login", functions.Login)
 	http.HandleFunc("/logout", functions.Logout)
 	http.HandleFunc("/register", functions.Register)
-	http.HandleFunc("/api/user", functions.GetUserWithJWT)
+	http.HandleFunc("/api/user", functions.GetUserFromSessions)
 	http.HandleFunc("/profile", functions.Profile)
 
 	// Serve files within static and public

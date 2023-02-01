@@ -3,11 +3,10 @@ package functions
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
-	"strconv"
-	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -40,26 +39,24 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Getting claims to return jwt token. Claims transfers user data.
-		claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-			Issuer:    strconv.Itoa(foundUser.Id),
-			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
-		})
-
-		token, err := claims.SignedString([]byte(SECRET_KEY))
-
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(JsonMessage("Could not log in")))
 			return
 		}
 
+		_, delErr := db.Exec("DELETE FROM sessions WHERE userID=?", foundUser.Id)
+		if delErr != nil {
+			log.Fatal(delErr.Error())
+		}
+
 		// Check if session cookie exists. If not, create one, and give the user a session.
 		cookie, cookieErr := r.Cookie("session")
 		if cookieErr != nil {
+			id := uuid.NewV4()
 			cookie = &http.Cookie{
 				Name:  "session",
-				Value: token,
+				Value: id.String(),
 
 				// Ideally these cookies should be http only and secure but verifying the user
 				// on the client side will be difficult.
@@ -69,6 +66,11 @@ func Login(w http.ResponseWriter, r *http.Request) {
 				MaxAge: 60 * 86400,
 			}
 			http.SetCookie(w, cookie)
+		}
+
+		if _, err2 := db.Exec("INSERT INTO sessions(sessionUUID, userID, email) values(?,?,?)", cookie.Value, foundUser.Id, foundUser.Email); err2 != nil {
+			fmt.Println(err2.Error() + "\033[31m")
+			db.Exec("DELETE FROM sessions WHERE userID=?", foundUser.Id)
 		}
 
 		// Marshal user to send back to front end.
@@ -85,8 +87,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	RenderTmpl(w)
 }
 
-// Get user details using jwtoken
-func GetUserWithJWT(w http.ResponseWriter, r *http.Request) {
+// Get user details from sessions table
+func GetUserFromSessions(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session")
 	if err != nil {
 		fmt.Println("GetUserWithJWT --  ", err.Error())
@@ -95,26 +97,14 @@ func GetUserWithJWT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Standard procedure.
-	// parse JWT token stored in an HTTP cookie.
-	token, claimsErr := jwt.ParseWithClaims(cookie.Value, &jwt.StandardClaims{}, func(t *jwt.Token) (interface{}, error) {
-		return []byte(SECRET_KEY), nil
-	})
-
-	if claimsErr != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(JsonMessage("unauthorized"))
-		return
-	}
-
-	// Return claims as json.
-	claims := token.Claims.(*jwt.StandardClaims)
-
-	// Look for user in database
 	db := OpenDB()
 
-	// Secure sql query and get user based on claims
-	rows, err := PreparedQuery("SELECT * FROM users WHERE id = ?", claims, db, "GetUserWithJWT")
+	// Compare session to users in database
+	sessionRows, err := PreparedQuery("SELECT * FROM sessions WHERE sessionUUID = ?", cookie.Value, db, "GetUserFromSessions")
+	session := QuerySession(sessionRows, err)
+
+	// Secure sql query and get user based on session
+	rows, err := PreparedQuery("SELECT * FROM users WHERE id = ?", session.userID, db, "GetUserFromSessions")
 	user := QueryUser(rows, err)
 	defer rows.Close()
 
@@ -165,13 +155,13 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// {
-	// 	// Open database.
-	// 	db := OpenDB()
-	// 	// delete session from sessions table.
-	// 	db.Exec("DELETE FROM sessions WHERE sessionUUID=?;", c.Value)
-	// 	defer db.Close()
-	// }
+	{
+		// Open database.
+		db := OpenDB()
+		// delete session from sessions table.
+		db.Exec("DELETE FROM sessions WHERE sessionUUID=?;", c.Value)
+		defer db.Close()
+	}
 
 	// set cookie max age to negative value to expire the cookie.
 	c.MaxAge = -1

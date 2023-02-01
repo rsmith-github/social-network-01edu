@@ -11,3 +11,9 @@ type User struct {
 	Nickname  string `json:"nickname"`
 	Aboutme   string `json:"about"`
 }
+
+type Session struct {
+	sessionUUID string
+	userID      string
+	email       string
+}
