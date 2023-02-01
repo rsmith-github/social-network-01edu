@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
@@ -16,7 +16,6 @@ function App() {
 
   useEffect(() => {
     (async () => {
-      // Send user data to golang register function.
       const response = await fetch("http://localhost:8080/api/user", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
@@ -38,8 +37,7 @@ function App() {
 
       setProps(user);
     })();
-  });
-
+  }, []);
   return (
     <BrowserRouter>
       <NavBar name={name} setName={setName} />

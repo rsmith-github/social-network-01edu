@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import ProfileImgContainer from "../components/ProfileImgContainer";
 
 export default function Profile(props) {
-  console.log("hi");
   return (
     <div>
       <ProfileImgContainer
