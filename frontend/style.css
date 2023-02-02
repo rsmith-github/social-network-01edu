@@ -1,9 +1,23 @@
 html,
 body {
-    background-color: rgb(90, 140, 189) !important;
+    background-color: rgb(238 238 238) !important;
+    align-items: center;
     height: 100%;
 }
 
+
+main {
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+}
+
+.contentContainer {
+    display: flex;
+    width: 90%;
+}
+
+/* login and register */
 .form-signin {
     max-width: 330px;
     padding: 15px; 
@@ -32,14 +46,19 @@ body {
 /* Navbar styles */
 
 
-
-/* profile page */
-
 .profileImgContainer {
+    width: 250px;
+}
+/* profile page */
+.contentContainer .profileImgContainer {
+    width: 45%;
+}
+
+.profileImgParent {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: max-content;
+    width: 100%;
     background-color: white;
 }
 
@@ -100,4 +119,54 @@ body {
     font-size: medium;
     font-weight: 600;
     color: grey;
+}
+
+
+/* Center section (Post Form) */
+
+
+.formContainer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 90%;
+    background-color: white;
+    height: 105px;
+    margin-left: 30px;
+    margin-right: 30px;
+    padding-left: 20px;
+    padding-right: 20px;;
+    border-top: 5px solid rgba(215, 57, 0, 0.874);
+}
+
+.privacyButtons {
+    display: flex;
+    width: 210px;
+    justify-content: space-between;
+}
+
+.postType {
+
+    height: 40px;
+    border: none;
+    background-color: rgba(215, 57, 0, 0.874);
+    color: white;
+    font-weight: 500;
+    border-radius: 3px;
+}
+
+
+.smallAvatar img {
+    border-radius: 50%;
+    width: 60px;
+    z-index: 1;
+}
+
+
+/* Right section (right side) */
+#rightSide {
+    background-color: white;
+    width: 45%;
+    height: 80vh;
 }

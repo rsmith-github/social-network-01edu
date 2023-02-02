@@ -91,7 +91,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 func GetUserFromSessions(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session")
 	if err != nil {
-		fmt.Println("GetUserWithJWT --  ", err.Error())
+		// fmt.Println("GetUserWithJWT --  ", err.Error())
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write(JsonMessage("unauthorized"))
 		return
