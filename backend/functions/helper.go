@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
+	"strings"
 	"text/template"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -75,10 +77,94 @@ func OpenDB() *sql.DB {
 	return db
 
 }
+func CheckIfPrivateExistsBasedOnUsers(chatFields ChatRoomFields) bool {
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT * FROM chatroom WHERE type = '%v'", chatFields.Type)
+	fmt.Println(chatFields)
+	row, err := db.Query(s)
+	sameNameGroups := []ChatRoomFields{}
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var id, name, chatType, users string
+	for row.Next() { // Iterate and fetch the records from result cursor
+		row.Scan(&id, &name, &chatType, &users)
+		groupChat := ChatRoomFields{
+			Id:    id,
+			Name:  name,
+			Type:  chatType,
+			Users: users,
+		}
+		sameNameGroups = append(sameNameGroups, groupChat)
+	}
+	row.Close()
+	var lengthOfUsers = len(strings.Split(chatFields.Users, ","))
+
+	fmt.Println(lengthOfUsers)
+	for _, group := range sameNameGroups {
+		var lengthOfGroupUsers = len(strings.Split(group.Users, ","))
+		var sameUsers = 0
+		if lengthOfGroupUsers == lengthOfUsers {
+			for _, storedUser := range strings.Split(group.Users, ",") {
+				for _, incomingUser := range strings.Split(chatFields.Users, ",") {
+					if storedUser == incomingUser {
+						sameUsers++
+					}
+				}
+			}
+
+		}
+		if sameUsers == lengthOfUsers {
+			return true
+		}
+	}
+	return false
+}
+
+func AddChat(chatFields ChatRoomFields) error {
+	sliceOfUsers := strings.Split(chatFields.Users, ",")
+	sort.Strings(sliceOfUsers)
+	chatFields.Users = strings.Join(sliceOfUsers, ",")
+
+	db := OpenDB()
+	stmt, err := db.Prepare(`INSERT INTO "chatroom" (id,name,description,type,users) values (?, ?, ?, ?, ?)`)
+	if err != nil {
+		fmt.Println("error preparing table:", err)
+		return err
+	}
+	_, errorWithTable := stmt.Exec(chatFields.Id, chatFields.Name, chatFields.Description, chatFields.Type, chatFields.Users)
+	if errorWithTable != nil {
+		fmt.Println("error adding to table:", errorWithTable)
+		return errorWithTable
+	}
+	return nil
+}
+
+func LoggedInUser(r *http.Request) User {
+	cookie, err := r.Cookie("session")
+	if err != nil {
+
+	}
+	db := OpenDB()
+	// Compare session to users in database
+	sessionRows, err := PreparedQuery("SELECT * FROM sessions WHERE sessionUUID = ?", cookie.Value, db, "GetUserFromSessions")
+	session := QuerySession(sessionRows, err)
+	// Secure sql query and get user based on session
+	rows, err := PreparedQuery("SELECT * FROM users WHERE id = ?", session.userID, db, "GetUserFromSessions")
+	user := QueryUser(rows, err)
+	defer rows.Close()
+	db.Close()
+	return user
+}
 
 func CreateSqlTables() {
 
 	db := OpenDB()
+
+	// if you need to delete a table rather than delete a whole database
+	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS chatroom`)
+	// CheckErr(deleteTblErr, "-------Error deleting table")
 
 	// Create user table if it doen't exist.
 	var _, usrTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `email` VARCHAR(64) NOT NULL UNIQUE, `password` VARCHAR(255) NOT NULL, `firstname` VARCHAR(64) NOT NULL, `lastname` VARCHAR(64) NOT NULL, `dob` VARCHAR(255) NOT NULL, `avatar` VARCHAR(255), `nickname` VARCHAR(64), `aboutme` VARCHAR(255))")
@@ -88,9 +174,13 @@ func CreateSqlTables() {
 	var _, sessTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `sessions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `sessionUUID` VARCHAR(255) NOT NULL UNIQUE, `userID` VARCHAR(64) NOT NULL UNIQUE, `email` VARCHAR(255) NOT NULL UNIQUE)")
 	CheckErr(sessTblErr, "-------Error creating table")
 
-	// Create sessions table if doesn't exist.
-	// var _, chatsTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `chats` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `user1` VARCHAR(255) NOT NULL, `user2` VARCHAR(255) NOT NULL)")
-	// CheckErr(chatsTblErr, "-------Error creating table")
+	// Create chatroom table if doesn't exist.
+	var _, chatRoomTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `chatroom` (`id` TEXT NOT NULL, `name` TEXT, `description` TEXT, `type` TEXT NOT NULL, `users` VARCHAR(255) NOT NULL)")
+	CheckErr(chatRoomTblErr, "-------Error creating table")
+
+	// Create chats table if doesn't exist.
+	var _, messagesTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `messages` ( `id` TEXT NOT NULL, `sender` VARCHAR(255) NOT NULL, `messageId` TEXT NOT NULL UNIQUE, `message` TEXT, `date` NUMBER)")
+	CheckErr(messagesTblErr, "-------Error creating table")
 
 	// Create posts table if doesn't exist.
 	// var _, postTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `posts` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_ID` VARCHAR(64) NOT NULL, `username` VARCHAR(64) NOT NULL, `content` TEXT NOT NULL, `time_posted` TEXT NOT NULL, `category` VARCHAR(64), `category_2` VARCHAR(64))")
