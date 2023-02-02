@@ -3,6 +3,7 @@ package functions
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -200,4 +201,55 @@ func CreateUser(newUser User) error {
 func getPasswordHash(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 0)
 	return string(hash), err
+}
+
+func Generate() string {
+	u2 := uuid.NewV4()
+	return fmt.Sprintf("%x", u2)
+}
+
+func CreateChat(w http.ResponseWriter, r *http.Request) {
+	var data ChatRoomFields
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		panic(err)
+	}
+
+	if data.Users != "" {
+		data.Users += "," + LoggedInUser(r).Nickname
+		if data.Type == "private" {
+			// check if private chat already exists
+			if !CheckIfPrivateExistsBasedOnUsers(data) {
+				data.Id = Generate()
+				data.Name = ""
+				AddChat(data)
+				content, _ := json.Marshal(data)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
+			} else {
+				content, _ := json.Marshal("Private Chat Already Exists")
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
+			}
+		} else if data.Type == "group" {
+			data.Id = Generate()
+			AddChat(data)
+			content, _ := json.Marshal(data)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		} else {
+			content, _ := json.Marshal("Please Select Type of Chat Created")
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		}
+	} else {
+		content, _ := json.Marshal("Please Select Users To Chat To!!!!!")
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+	}
 }

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import PostForm from "../components/PostForm";
 import ProfileImgContainer from "../components/ProfileImgContainer";
 import RightSide from "../components/RightSide";
+import { CreateChat } from "../components/chatroom";
 
 export default function Home(props) {
   return (
@@ -17,6 +18,7 @@ export default function Home(props) {
             />
             <PostForm avatar={props.avatar} />
             <RightSide />
+            <CreateChat />
           </>
         ) : (
           <>
