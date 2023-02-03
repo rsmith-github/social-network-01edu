@@ -7,7 +7,6 @@ export default function ProfileImgContainer(props) {
     <div className="profileImgContainer">
       {props.name ? (
         <div className="profileImgParent">
-          <div className="profileImgBg"></div>
           <img className="profileImg" src={props.avatar} alt="" />
           <span className="firstLast">
             {props.name} {props.user.last}
