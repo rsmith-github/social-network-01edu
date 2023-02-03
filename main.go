@@ -17,6 +17,7 @@ func main() {
 	http.HandleFunc("/logout", functions.Logout)
 	http.HandleFunc("/register", functions.Register)
 	http.HandleFunc("/api/user", functions.GetUserFromSessions)
+	http.HandleFunc("/api/users", functions.UsersApi)
 	http.HandleFunc("/profile", functions.Profile)
 	http.HandleFunc("/create-chat", functions.CreateChat)
 
