@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NavBar from "./components/navbar";
 import Profile from "./pages/Profile";
+import PublicProfiles from "./pages/PublicProfiles";
 
 const root = ReactDOM.createRoot(document.querySelector("#app"));
 
@@ -52,6 +53,8 @@ function App() {
           path="/profile"
           element={<Profile name={name} avatar={avatar} user={props} />}
         />
+
+        <Route path="/public-profiles" element={<PublicProfiles />} />
       </Routes>
     </BrowserRouter>
   );

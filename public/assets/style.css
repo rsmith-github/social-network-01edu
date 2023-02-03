@@ -320,3 +320,6 @@ main {
 .create-chat-followers::-webkit-scrollbar-thumb:hover {
   background: rgba(228, 137, 0);
 }
+#public-profiles {
+  display: grid;
+}

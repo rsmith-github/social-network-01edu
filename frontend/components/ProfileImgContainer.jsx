@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 // Component that contains image, followers etc.
 export default function ProfileImgContainer(props) {
@@ -34,7 +35,12 @@ export default function ProfileImgContainer(props) {
           </div>
           <hr className="break" />
           <div className="followerDiv">
-            <span className="redText">View Profile</span>
+            <Link
+              to="/profile"
+              style={{ textDecoration: "none", marginBottom: "15px" }}
+            >
+              <span className="redText">Open Profile</span>
+            </Link>
           </div>
         </div>
       ) : (

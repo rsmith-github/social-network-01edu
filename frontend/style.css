@@ -398,3 +398,11 @@ main {
 .create-chat-followers::-webkit-scrollbar-thumb:hover {
     background: rgba(228, 137, 0);
 }
+
+
+
+/* Public profiles page */
+
+#public-profiles {
+    display: grid;
+}
