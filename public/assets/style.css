@@ -48,6 +48,10 @@ main {
   width: 250px;
 }
 
+.aboutme {
+  text-align: center;
+}
+
 .contentContainer .profileImgContainer {
   width: 45%;
 }
@@ -110,6 +114,7 @@ main {
   margin-left: 25px;
   margin-right: 25px;
   font-weight: 600;
+  text-align: center;
 }
 
 .aboutme {
@@ -410,4 +415,8 @@ main {
 
 .create-chat-followers::-webkit-scrollbar-thumb:hover {
   background: rgba(228, 137, 0);
+}
+
+#public-profiles {
+  display: grid;
 }
