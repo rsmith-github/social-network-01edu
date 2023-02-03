@@ -253,3 +253,10 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 		w.Write(content)
 	}
 }
+
+func GetChatRooms(w http.ResponseWriter, r *http.Request) {
+	totalChats := GetUserChats(LoggedInUser(r).Nickname)
+	content, _ := json.Marshal(totalChats)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(content)
+}

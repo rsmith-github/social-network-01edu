@@ -6,45 +6,56 @@ body {
   height: 100%;
   overflow: hidden;
 }
+
 main {
   display: flex;
   justify-content: center;
   height: 100vh;
 }
+
 .contentContainer {
   display: flex;
   width: 90%;
 }
+
 .form-signin {
   max-width: 330px;
   padding: 15px;
 }
+
 .form-signin .form-floating:focus-within {
   z-index: 2;
 }
+
 .form-signin input[type=email] {
   margin-bottom: -1px;
   border-bottom-right-radius: 0;
   border-bottom-left-radius: 0;
 }
+
 #floatingPassword,
 #about {
   margin-bottom: 10px;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
+
 .reginput {
   border-radius: 0 0 0 0 !important;
 }
+
 .profileImgContainer {
   width: 250px;
 }
+
 .aboutme {
   text-align: center;
 }
+
 .contentContainer .profileImgContainer {
   width: 45%;
 }
+
 .profileImgParent {
   display: flex;
   flex-direction: column;
@@ -52,6 +63,7 @@ main {
   width: 100%;
   background-color: white;
 }
+
 .profileImg {
   margin-top: 30px;
   border-radius: 50%;
@@ -61,6 +73,7 @@ main {
   z-index: 1;
   position: absolute;
 }
+
 .profileImgBg {
   position: relative;
   z-index: 0;
@@ -69,27 +82,33 @@ main {
   margin-bottom: 60px;
   background-color: rgba(215, 57, 0, 0.874);
 }
+
 .break {
   height: 2px;
   background-color: darkgrey;
   width: 100%;
 }
+
 .followerDiv {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
+
 .followerDiv span {
   font-size: large;
   font-weight: 500;
 }
+
 .redText {
   color: red;
   margin-bottom: 15px;
 }
+
 .followerFollowing {
   color: grey;
 }
+
 .firstLast {
   font-size: 25px;
   margin-left: 25px;
@@ -97,11 +116,13 @@ main {
   font-weight: 600;
   text-align: center;
 }
+
 .aboutme {
   font-size: medium;
   font-weight: 600;
   color: grey;
 }
+
 .formContainer {
   display: flex;
   flex-direction: row;
@@ -116,11 +137,13 @@ main {
   padding-right: 20px;
   border-top: 5px solid rgba(215, 57, 0, 0.874);
 }
+
 .privacyButtons {
   display: flex;
   width: 210px;
   justify-content: space-between;
 }
+
 .postType {
   height: 40px;
   border: none;
@@ -129,32 +152,20 @@ main {
   font-weight: 500;
   border-radius: 3px;
 }
+
 .smallAvatar img {
   border-radius: 50%;
   width: 60px;
   height: 60px;
   z-index: 1;
 }
+
 #rightSide {
   background-color: white;
   width: 45%;
   height: 80vh;
 }
-#create-chat-button {
-  display: flex;
-  width: 60px;
-  height: 60px;
-  justify-content: center;
-  align-items: center;
-  border-radius: 1000px;
-  border: transparent;
-  margin-left: 10px;
-  position: absolute;
-  bottom: 4px;
-  right: 75px;
-  z-index: 999;
-  background-color: rgba(215, 57, 0, 0.874);
-}
+
 #open-chat-button {
   display: flex;
   width: 60px;
@@ -170,66 +181,139 @@ main {
   z-index: 999;
   background-color: rgba(215, 57, 0, 0.874);
 }
+
 #create-chat-button:hover,
 #open-chat-button:hover {
   transform: scale(1.15);
 }
-#create-chat-button > img,
-#open-chat-button > img {
+
+#open-chat-button>img {
   height: 40px;
 }
-.create-chat-form-container {
+
+.open-chat-container {
   position: absolute;
   bottom: 65px;
-  right: 105px;
+  right: 60px;
   display: flex;
   flex-direction: column;
   max-width: 200px;
   background-color: white;
   border-bottom: 3px solid rgba(215, 57, 0, 0.874);
-  border-top: 3px solid rgba(215, 57, 0, 0.874);
 }
-.create-chat-close-container {
+
+.create-chat-form-container {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  border-bottom: 3px solid rgba(215, 57, 0, 0.874);
+  z-index: 1;
+}
+
+.create-chat-close-container,
+.open-chat-close-container {
   background-color: rgba(215, 57, 0, 0.874);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-.create-chat-close-button {
-  width: max-content;
+
+.create-chat-close-button,
+.open-chat-close-button,
+#create-chat-button {
+  width: 40px;
+  height: 30px;
   background-color: rgba(215, 57, 0, 0.874);
   border: transparent;
 }
-.create-chat-close-container > h1 {
+
+.open-chat-close-button>span {
+  font-weight: 900;
+}
+
+#create-chat-button>img {
+  height: 30px;
+}
+
+.create-chat-close-container>h1,
+.open-chat-close-container>h1 {
   font-size: medium;
   color: white;
   position: relative;
   top: 3px;
-  margin-right: 5px;
+  margin-right: 3px;
 }
+
+.chatroom-type {
+  display: flex;
+  justify-content: space-around;
+}
+
+.chatrooms {
+  height: 200px;
+  width: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chatrooms>button {
+  height: 40px;
+  border: none;
+  width: 100%;
+  margin-bottom: 5px;
+  background-color: whitesmoke;
+  color: black;
+  font-weight: 500;
+  border-radius: 3px;
+}
+
+.chatrooms>button>h2 {
+  font-size: large;
+  text-align: start;
+  margin: 0;
+}
+
+.chatrooms>button>p {
+  font-size: small;
+  text-align: start;
+  margin: 0;
+  color: #9c9c9c;
+}
+
 .create-chat-close-button:hover {
   background-color: rgba(172, 46, 0, 0.874);
   color: white;
 }
+
 .create-chat-close-button:active {
   background-color: rgba(123, 33, 0, 0.874);
   color: white;
 }
-.create-chat-close-button > span {
+
+.create-chat-close-button>span {
   font-weight: 900;
 }
+
 #chat-name {
   width: 100%;
   font-size: small;
 }
+
 #chat-description {
   width: 100%;
   font-size: small;
 }
+
 .create-chat-type {
   display: flex;
   justify-content: space-around;
 }
+
 .create-chat-followers {
   height: 75px;
   width: 100%;
@@ -238,11 +322,13 @@ main {
   flex-direction: column;
   align-items: center;
 }
-.create-chat-followers > div {
+
+.create-chat-followers>div {
   width: 50%;
   display: flex;
   justify-content: space-between;
 }
+
 #group:after,
 #private::after {
   width: 15px;
@@ -257,6 +343,7 @@ main {
   visibility: visible;
   border: 2px solid white;
 }
+
 #group:checked:after,
 #private:checked:after {
   width: 15px;
@@ -269,14 +356,17 @@ main {
   visibility: visible;
   border: 2px solid white;
 }
+
 .friend-info {
   accent-color: #ffa500;
 }
+
 .create-chat-submit-container {
   display: flex;
   justify-content: center;
   margin-bottom: 3px;
 }
+
 .create-chat-submit-button {
   width: max-content;
   background-color: #adb5bd;
@@ -286,6 +376,7 @@ main {
   font-size: medium;
   font-weight: bold;
 }
+
 .create-chat-submit-button:hover {
   width: max-content;
   background-color: rgba(215, 57, 0, 0.874);
@@ -296,6 +387,7 @@ main {
   font-weight: bold;
   transform: scaleX(1.1);
 }
+
 .create-chat-submit-button:active {
   width: max-content;
   background-color: rgba(114, 31, 1, 0.874);
@@ -306,20 +398,25 @@ main {
   font-weight: bold;
   transform: scaleX(1.1);
 }
+
 .create-chat-followers::-webkit-scrollbar {
   width: 8px;
 }
+
 .create-chat-followers::-webkit-scrollbar-track {
   background: transparent;
   border-radius: 10px;
 }
+
 .create-chat-followers::-webkit-scrollbar-thumb {
   border-radius: 10px;
   background: rgba(228, 137, 0);
 }
+
 .create-chat-followers::-webkit-scrollbar-thumb:hover {
   background: rgba(228, 137, 0);
 }
+
 #public-profiles {
   display: grid;
   grid-template-columns: auto auto auto;
