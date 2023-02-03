@@ -50,7 +50,7 @@ export default function Register() {
 
   return (
     <div>
-      <main className="form-signin w-100 m-auto">
+      <main className="form-signin w-100 m-auto" style={{ display: "block" }}>
         <form onSubmit={submit}>
           <h1 className="h3 mb-3 fw-normal">Please register</h1>
 

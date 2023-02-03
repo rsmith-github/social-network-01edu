@@ -48,11 +48,19 @@ main {
 /* Navbar styles */
 
 
-.profileImgContainer {
-    width: 250px;
-}
 
 /* profile page */
+.profileImgContainer {
+    width: 250px;
+    
+}
+
+
+.aboutme {
+    text-align: center;
+}
+
+
 .contentContainer .profileImgContainer {
     width: 45%;
 }
@@ -117,6 +125,7 @@ main {
     margin-left: 25px;
     margin-right: 25px;
     font-weight: 600;
+    text-align: center;
 }
 
 .aboutme {
