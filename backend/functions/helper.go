@@ -87,30 +87,26 @@ func CheckIfPrivateExistsBasedOnUsers(chatFields ChatRoomFields) bool {
 		log.Fatal(err)
 	}
 
-	var id, name, chatType, users string
+	var id, name, description, chatType, users string
 	for row.Next() { // Iterate and fetch the records from result cursor
-		row.Scan(&id, &name, &chatType, &users)
+		row.Scan(&id, &name, &description, &chatType, &users)
 		groupChat := ChatRoomFields{
-			Id:    id,
-			Name:  name,
-			Type:  chatType,
-			Users: users,
+			Id:          id,
+			Name:        name,
+			Description: description,
+			Type:        chatType,
+			Users:       users,
 		}
 		sameNameGroups = append(sameNameGroups, groupChat)
 	}
 	row.Close()
 	var lengthOfUsers = len(strings.Split(chatFields.Users, ","))
-
-	fmt.Println(lengthOfUsers)
 	for _, group := range sameNameGroups {
-		var lengthOfGroupUsers = len(strings.Split(group.Users, ","))
 		var sameUsers = 0
-		if lengthOfGroupUsers == lengthOfUsers {
-			for _, storedUser := range strings.Split(group.Users, ",") {
-				for _, incomingUser := range strings.Split(chatFields.Users, ",") {
-					if storedUser == incomingUser {
-						sameUsers++
-					}
+		for _, storedUser := range strings.Split(group.Users, ",") {
+			for _, incomingUser := range strings.Split(chatFields.Users, ",") {
+				if storedUser == incomingUser {
+					sameUsers++
 				}
 			}
 
@@ -141,10 +137,48 @@ func AddChat(chatFields ChatRoomFields) error {
 	return nil
 }
 
+func GetUserChats(username string) ChatroomType {
+	db := OpenDB()
+	row, err := db.Query("SELECT * FROM chatroom")
+	var involvedChats ChatroomType
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var id, name, description, chatType, users string
+	for row.Next() { // Iterate and fetch the records from result cursor
+		row.Scan(&id, &name, &description, &chatType, &users)
+		groupChat := ChatRoomFields{
+			Id:          id,
+			Name:        name,
+			Description: description,
+			Type:        chatType,
+			Users:       users,
+		}
+		sliceOfUsers := strings.Split(groupChat.Users, ",")
+		for i, involved := range sliceOfUsers {
+			if involved == username {
+				groupChat.Users = strings.Join(removeUserFromChatButton(sliceOfUsers, i), ",")
+				if groupChat.Type == "group" {
+					involvedChats.Group = append(involvedChats.Group, groupChat)
+				} else if groupChat.Type == "private" {
+					involvedChats.Private = append(involvedChats.Private, groupChat)
+				}
+			}
+		}
+	}
+	row.Close()
+	return involvedChats
+}
+
+func removeUserFromChatButton(slice []string, s int) []string {
+	return append(slice[:s], slice[s+1:]...)
+}
+
 func LoggedInUser(r *http.Request) User {
 	cookie, err := r.Cookie("session")
 	if err != nil {
-
+		// err
 	}
 	db := OpenDB()
 	// Compare session to users in database

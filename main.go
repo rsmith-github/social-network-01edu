@@ -19,6 +19,7 @@ func main() {
 	http.HandleFunc("/api/user", functions.GetUserFromSessions)
 	http.HandleFunc("/profile", functions.Profile)
 	http.HandleFunc("/create-chat", functions.CreateChat)
+	http.HandleFunc("/get-chatrooms", functions.GetChatRooms)
 
 	// Serve files within static and public
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
