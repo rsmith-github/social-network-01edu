@@ -38,3 +38,9 @@ type ChatFields struct {
 	Message   string `json:"message"`
 	Date      int    `json:"date"`
 }
+
+type OpenChatInfo struct {
+	User             string         `json:"user"`
+	Chatroom         ChatRoomFields `json:"chatroom"`
+	PreviousMessages []ChatFields   `json:"previous-messages"`
+}

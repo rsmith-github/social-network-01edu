@@ -171,6 +171,35 @@ func GetUserChats(username string) ChatroomType {
 	return involvedChats
 }
 
+func GetChatRoom(chatroom string, user string) ChatRoomFields {
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT * FROM chatroom WHERE id = '%v'", chatroom)
+	row, err := db.Query(s)
+	if err != nil {
+		fmt.Println("Could Not Find Chatroom", err)
+	}
+
+	var groupChat ChatRoomFields
+	var id, name, description, chatType, users string
+	for row.Next() {
+		row.Scan(&id, &name, &description, &chatType, &users)
+		groupChat = ChatRoomFields{
+			Id:          id,
+			Name:        name,
+			Description: description,
+			Type:        chatType,
+			Users:       users,
+		}
+		sliceOfUsers := strings.Split(groupChat.Users, ",")
+		for i := range sliceOfUsers {
+			if sliceOfUsers[i] == user {
+				groupChat.Users = strings.Join(removeUserFromChatButton(sliceOfUsers, i), ",")
+			}
+		}
+	}
+	return groupChat
+}
+
 func removeUserFromChatButton(slice []string, s int) []string {
 	return append(slice[:s], slice[s+1:]...)
 }

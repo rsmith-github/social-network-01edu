@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import PostForm from "../components/PostForm";
 import ProfileImgContainer from "../components/ProfileImgContainer";
 import RightSide from "../components/RightSide";
-import { CreateChat, GetChat } from "../components/chatroom";
+import {GetChat } from "../components/chatrooms";
 
 export default function Home(props) {
   return (
