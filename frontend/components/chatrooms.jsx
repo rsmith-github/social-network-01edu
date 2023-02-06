@@ -6,16 +6,24 @@ export const GetChat = () => {
     const [isPrivate, setIsPrivate] = useState(false)
     const [chats, setChats] = useState([])
     const [openChatBox, setOpenChatBox] = useState(false)
+    const [closeConnection, setCloseConnection] = useState(true)
     const [chatroom, setChatroom] = useState('')
 
     const openChatRoom = (chatroomId) => {
         setChatroom(chatroomId)
         setOpenChatBox(true)
+        setCloseConnection(true)
     }
 
     const closeChatRoom = () => {
-        setOpenChatBox((prev) => !prev)
+        setCloseConnection((prev) => !prev)
+        setTimeout(()=>{
+            console.log("closeChat")
+            setOpenChatBox((prev) => !prev)
+        },500)
     }
+
+
 
     const displayPrivateChatRooms = (privateChat) => {
         if (privateChat) {
@@ -128,7 +136,7 @@ export const GetChat = () => {
                             <span>&times;</span>
                         </button>
                     </div>
-                    <ChatBox r={chatroom} />
+                    <ChatBox r={chatroom} o={closeConnection} />
                 </div>
             )}
 
