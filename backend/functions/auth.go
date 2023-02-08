@@ -6,12 +6,13 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	
+
 	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const SECRET_KEY = "DonaldTrump_Dumpling"
+
 var chatroomId = make(chan string)
 var loggedInUsername = make(chan string)
 
@@ -27,7 +28,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		db := OpenDB()
 		rows, err := db.Query("SELECT * FROM users WHERE email=?", userToLogin.Email)
 		foundUser := QueryUser(rows, err)
-
 
 		// Check if user exists
 		if foundUser.Email != userToLogin.Email {
@@ -267,7 +267,6 @@ func GetChatRooms(w http.ResponseWriter, r *http.Request) {
 	w.Write(content)
 }
 
-
 func Chat(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		body, err := ioutil.ReadAll(r.Body)
@@ -275,11 +274,10 @@ func Chat(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		groupChatId := string(body)
-		// get the session username and previous messages of that chat
 		var openedChat OpenChatInfo
-		openedChat.User=LoggedInUser(r).Nickname
-		openedChat.Chatroom=GetChatRoom(groupChatId, openedChat.User)
-		// openChat.PreviousMessage= function to get previous messages from message table
+		openedChat.User = LoggedInUser(r).Nickname
+		openedChat.Chatroom = GetChatRoom(groupChatId, openedChat.User)
+		openedChat.PreviousMessages = GetPreviousMessages(openedChat.Chatroom.Id)
 		content, _ := json.Marshal(openedChat)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)

@@ -36,7 +36,7 @@ type hub struct {
 	unregister chan subscription
 }
 
-var h = hub{
+var H = hub{
 	broadcast:  make(chan data),
 	register:   make(chan subscription),
 	unregister: make(chan subscription),
@@ -44,7 +44,7 @@ var h = hub{
 	user:       make(map[string]map[*connection]bool),
 }
 
-func (h *hub) run() {
+func (h *hub) Run() {
 	for {
 		select {
 		case s := <-h.register:
@@ -110,52 +110,28 @@ func (h *hub) run() {
 	}
 }
 
-// type statusHub struct {
-// 	// Registered clients.
-// 	onlineClients map[*onlineClients]bool
+type sqlExecute struct {
+	messages chan ChatFields
+	//notifications chan NotifcationFields
 
-// 	//write notification when a message is recieved
-// 	// notify chan map[string]*notif.NotifFields
+	//followers chan FollowersFields
 
-// 	// Register requests from the clients.
-// 	register chan *onlineClients
+	//delete&add users from groupchat.
 
-// 	// Unregister requests from clients.
-// 	unregister chan *onlineClients
+	//add  otherfields like followers, sessions
+}
 
-// 	//post data
-// 	// postArray chan posts.PostFields
-// }
+var SqlExec = sqlExecute{
+	messages: make(chan ChatFields),
+}
 
-// var statusH = &statusHub{
-// 	onlineClients: make(map[*onlineClients]bool),
-// 	// notify:        make(chan map[string]*notif.NotifFields),
-// 	register:      make(chan *onlineClients),
-// 	unregister:    make(chan *onlineClients),
-// 	// postArray:     make(chan posts.PostFields),
-// }
-
-// func (statusH *statusHub) run() {
-// 	for {
-// 		select {
-// 		case client := <-statusH.register:
-// 			statusH.onlineClients[client] = true
-// 			fmt.Println("added client to map.")
-// 		case client := <-statusH.unregister:
-// 			if _, ok := statusH.onlineClients[client]; ok {
-// 				delete(statusH.onlineClients, client)
-// 				// close(client.sendNotification)
-// 				// close(client.sendPostArray)
-// 				fmt.Println("deleted this client off the maps:", client.name)
-// 			}
-// 		// case notif := <-statusH.notify:
-// 		// 	for name := range notif {
-// 		// 		for onlineClient := range statusH.onlineClients {
-// 		// 			if name == onlineClient.name {
-// 		// 				onlineClient.sendNotification <- notif[onlineClient.name]
-// 		// 			}
-// 		// 		}
-// 		// 	}
-// 		}
-// 	}
-// }
+func (d *sqlExecute) ExecuteStatements() {
+	for messages := range SqlExec.messages {
+		AddMessage(messages)
+		fmt.Println(messages)
+		//run the addMessages function from sql here...
+	}
+	//for notifications := range SqlExec.followers{
+	//run the updateNotification from sql here...
+	//}
+}

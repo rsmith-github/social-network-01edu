@@ -204,10 +204,57 @@ func removeUserFromChatButton(slice []string, s int) []string {
 	return append(slice[:s], slice[s+1:]...)
 }
 
+func AddMessage(chatFields ChatFields) error {
+	db := OpenDB()
+	stmt, err := db.Prepare(`INSERT INTO "messages" (id,sender,messageId,message,date) values (?, ?, ?, ?, ?)`)
+	if err != nil {
+		fmt.Println("error preparing table:", err)
+		return err
+	}
+	mutex.Lock()
+	_, errorWithTable := stmt.Exec(chatFields.Id, chatFields.Sender, chatFields.MessageId, chatFields.Message, chatFields.Date)
+	if errorWithTable != nil {
+		fmt.Println("error adding to table:", errorWithTable)
+		mutex.Unlock()
+		return errorWithTable
+	}
+	return nil
+}
+func GetPreviousMessages(chatroomId string) []ChatFields {
+	fmt.Println(chatroomId)
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT * FROM messages WHERE id = '%v'", chatroomId)
+	row, err := db.Query(s)
+	if err != nil {
+		fmt.Println("Could Not Find Chatroom", err)
+	}
+
+	var messages []ChatFields
+	var id, sender, messageId, message string
+	var date int
+	for row.Next() {
+		fmt.Println(1)
+		row.Scan(&id, &sender, &messageId, &message, &date)
+		fmt.Println(2)
+		m := ChatFields{
+			Id:        id,
+			Sender:    sender,
+			MessageId: messageId,
+			Message:   message,
+			Date:      date,
+		}
+		fmt.Println(m)
+		messages = append(messages, m)
+	}
+	row.Close()
+	return messages
+}
+
 func LoggedInUser(r *http.Request) User {
 	cookie, err := r.Cookie("session")
 	if err != nil {
-		// err
+		fmt.Println("no session in place")
+		return User{}
 	}
 	db := OpenDB()
 	// Compare session to users in database
@@ -226,7 +273,7 @@ func CreateSqlTables() {
 	db := OpenDB()
 
 	// if you need to delete a table rather than delete a whole database
-	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS chatroom`)
+	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS messages`)
 	// CheckErr(deleteTblErr, "-------Error deleting table")
 
 	// Create user table if it doen't exist.
@@ -238,11 +285,12 @@ func CreateSqlTables() {
 	CheckErr(sessTblErr, "-------Error creating table")
 
 	// Create chatroom table if doesn't exist.
+	// add addmin and avatar
 	var _, chatRoomTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `chatroom` (`id` TEXT NOT NULL, `name` TEXT, `description` TEXT, `type` TEXT NOT NULL, `users` VARCHAR(255) NOT NULL)")
 	CheckErr(chatRoomTblErr, "-------Error creating table")
 
 	// Create chats table if doesn't exist.
-	var _, messagesTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `messages` ( `id` TEXT NOT NULL, `sender` VARCHAR(255) NOT NULL, `messageId` TEXT NOT NULL UNIQUE, `message` TEXT, `date` NUMBER)")
+	var _, messagesTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `messages` ( `id` TEXT NOT NULL, `sender` VARCHAR(255) NOT NULL, `messageId` TEXT NOT NULL UNIQUE, `message` TEXT COLLATE NOCASE, `date` NUMBER)")
 	CheckErr(messagesTblErr, "-------Error creating table")
 
 	// Create posts table if doesn't exist.
@@ -326,9 +374,9 @@ func QuerySession(rows *sql.Rows, err error) Session {
 	for rows.Next() {
 		err = rows.Scan(&id, &sessionID, &userID, &email)
 		temp := Session{
-			sessionUUID: *&sessionID,
-			userID:      *&userID,
-			email:       *&email,
+			sessionUUID: sessionID,
+			userID:      userID,
+			email:       email,
 		}
 		// currentUser = &username
 		CheckErr(err, "-------LINE 146")

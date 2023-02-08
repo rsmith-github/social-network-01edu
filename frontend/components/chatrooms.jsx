@@ -1,28 +1,11 @@
-import React, { useState, useEffect } from "react"
+import React, { useState } from "react"
 import { CreateChat } from "./chatroomForm"
 import { ChatBox } from "./chatbox"
 
 export const GetChat = () => {
     const [isPrivate, setIsPrivate] = useState(false)
     const [chats, setChats] = useState([])
-    const [openChatBox, setOpenChatBox] = useState(false)
-    const [closeConnection, setCloseConnection] = useState(true)
-    const [chatroom, setChatroom] = useState('')
-
-    const openChatRoom = (chatroomId) => {
-        setChatroom(chatroomId)
-        setOpenChatBox(true)
-        setCloseConnection(true)
-    }
-
-    const closeChatRoom = () => {
-        setCloseConnection((prev) => !prev)
-        setTimeout(()=>{
-            console.log("closeChat")
-            setOpenChatBox((prev) => !prev)
-        },500)
-    }
-
+    const [visible, setVisible] = useState(false)
 
 
     const displayPrivateChatRooms = (privateChat) => {
@@ -33,6 +16,7 @@ export const GetChat = () => {
                     setChats(data)
                 })
             setIsPrivate(true);
+            console.log("private rooms", isPrivate, chats)
         } else {
             fetch('http://localhost:8080/get-chatrooms')
                 .then(response => response.json())
@@ -40,14 +24,15 @@ export const GetChat = () => {
                     setChats(data)
                 })
             setIsPrivate(false);
+            console.log("group rooms", isPrivate, chats)
         }
     }
 
-    const [visible, setVisible] = useState(false)
     const closeChatRooms = () => {
         setIsPrivate(false)
         setVisible((prev) => !prev)
     }
+
     const openChatRooms = () => {
         fetch('http://localhost:8080/get-chatrooms')
             .then(response => response.json())
@@ -85,36 +70,20 @@ export const GetChat = () => {
                                 {chats["private-chatrooms"] ? (
                                     <>
                                         {chats["private-chatrooms"].map(chat =>
-                                            <button onClick={() => openChatRoom(chat["chatroom-id"])}>
-                                                <h2>{chat["users"]}</h2>
-                                            </button>
-
+                                            <ChatBox r={chat["chatroom-id"]} n={""} u={chat["users"]} t={isPrivate} />
                                         )}
                                     </>
                                 ) : (
                                     <h1>No Private Chats Yet?</h1>
                                 )
                                 }
-
                             </>
                         ) : (
                             <>
                                 {chats["group-chatrooms"] ? (
                                     <>
                                         {chats["group-chatrooms"].map(chat =>
-                                            <button onClick={() => openChatRoom(chat["chatroom-id"])}>
-                                                {chat["chat-name"] ? (
-                                                    <h2>{chat["chat-name"]}</h2>
-                                                ) : (
-                                                    <p>{chat["users"]}</p>
-                                                )}
-                                                {/* {chat["chat-description"] ? (
-                                                    <p>{chat["chat-description"]}</p>
-                                                ) : (
-                                                    <p>{chat["users"]}</p>
-                                                )} */}
-                                                <p>{chat["users"]}</p>
-                                            </button>
+                                            <ChatBox r={chat["chatroom-id"]} n={chat["chat-name"]} u={chat["users"]} t={isPrivate} />
                                         )}
                                     </>
                                 ) : (
@@ -126,19 +95,8 @@ export const GetChat = () => {
                             </>
                         )}
                     </div>
-
                 </div>
             }
-            {openChatBox && (
-                <div className="chatbox-container">
-                    <div className="chatbox-close-container">
-                        <button className="chatbox-close-button" type="button" onClick={closeChatRoom}>
-                            <span>&times;</span>
-                        </button>
-                    </div>
-                    <ChatBox r={chatroom} o={closeConnection} />
-                </div>
-            )}
 
             <button id="open-chat-button">
                 <img src="../../public/assets/img/chats-icon.png" onClick={openChatRooms} alt="" />

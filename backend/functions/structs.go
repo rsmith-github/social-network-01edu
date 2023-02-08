@@ -31,6 +31,7 @@ type ChatroomType struct {
 	Group   []ChatRoomFields `json:"group-chatrooms"`
 }
 
+// add admin
 type ChatFields struct {
 	Id        string `json:"id"`
 	Sender    string `json:"sender"`

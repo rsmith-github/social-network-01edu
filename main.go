@@ -23,6 +23,8 @@ func main() {
 	http.HandleFunc("/get-chatrooms", functions.GetChatRooms)
 	http.HandleFunc("/get-chat", functions.Chat)
 	http.HandleFunc("/ws/chat", functions.ServeWs)
+	go functions.H.Run()
+	go functions.SqlExec.ExecuteStatements()
 
 	// Serve files within static and public
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
