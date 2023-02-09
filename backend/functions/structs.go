@@ -31,10 +31,17 @@ type ChatroomType struct {
 	Group   []ChatRoomFields `json:"group-chatrooms"`
 }
 
+// add admin
 type ChatFields struct {
 	Id        string `json:"id"`
 	Sender    string `json:"sender"`
 	MessageId string `json:"message-id"`
 	Message   string `json:"message"`
 	Date      int    `json:"date"`
+}
+
+type OpenChatInfo struct {
+	User             string         `json:"user"`
+	Chatroom         ChatRoomFields `json:"chatroom"`
+	PreviousMessages []ChatFields   `json:"previous-messages"`
 }

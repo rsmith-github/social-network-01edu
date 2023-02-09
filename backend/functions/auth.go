@@ -13,6 +13,9 @@ import (
 
 const SECRET_KEY = "DonaldTrump_Dumpling"
 
+var chatroomId = make(chan string)
+var loggedInUsername = make(chan string)
+
 func Login(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
@@ -81,7 +84,10 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		} else {
 			w.Write(jsn) // Write user data
 		}
-
+		go func() {
+			chatroomId <- ""
+			loggedInUsername <- foundUser.Nickname
+		}()
 		return
 	}
 	// Remder template on reload
@@ -259,4 +265,28 @@ func GetChatRooms(w http.ResponseWriter, r *http.Request) {
 	content, _ := json.Marshal(totalChats)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(content)
+}
+
+func Chat(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+		groupChatId := string(body)
+		var openedChat OpenChatInfo
+		openedChat.User = LoggedInUser(r).Nickname
+		openedChat.Chatroom = GetChatRoom(groupChatId, openedChat.User)
+		openedChat.PreviousMessages = GetPreviousMessages(openedChat.Chatroom.Id)
+		content, _ := json.Marshal(openedChat)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+		go func() {
+			chatroomId <- groupChatId
+			loggedInUsername <- openedChat.User
+		}()
+	} else {
+		// error
+		fmt.Println("you tried it")
+	}
 }
