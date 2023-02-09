@@ -39,6 +39,9 @@ main {
 .profileImgContainer {
   width: 250px;
 }
+.aboutme {
+  text-align: center;
+}
 .contentContainer .profileImgContainer {
   width: 45%;
 }
@@ -92,6 +95,7 @@ main {
   margin-left: 25px;
   margin-right: 25px;
   font-weight: 600;
+  text-align: center;
 }
 .aboutme {
   font-size: medium;
@@ -352,4 +356,18 @@ main {
 }
 .create-chat-followers::-webkit-scrollbar-thumb:hover {
   background: rgba(228, 137, 0);
+}
+#public-profiles {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  background-color: rgb(238 238 238);
+  padding: 10px;
+}
+.grid-item {
+  background-color: rgba(255, 255, 255, 0.8);
+  border-top: 5px solid rgba(215, 57, 0, 0.874);
+  padding: 20px;
+  margin: 20px;
+  font-size: 30px;
+  text-align: center;
 }

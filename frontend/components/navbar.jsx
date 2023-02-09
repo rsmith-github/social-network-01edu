@@ -26,8 +26,8 @@ export default function NavBar(props) {
                   </Link>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/profile">
-                    My Profile
+                  <Link className="nav-link" to="/public-profiles">
+                    Public Profiles
                   </Link>
                 </li>
                 <li className="nav-item">
@@ -41,6 +41,11 @@ export default function NavBar(props) {
                 <li className="nav-item">
                   <Link className="nav-link" to="/login">
                     Login
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/register">
+                    Register
                   </Link>
                 </li>
                 <li className="nav-item">
