@@ -67,10 +67,9 @@ function App() {
         <Route path="/login" element={<Login setName={setName} />} />
         <Route path="/register" element={<Register />} />
         <Route
-          path="/profile"
+          path="/profile/"
           element={<Profile name={name} avatar={avatar} user={props} />}
         />
-
         <Route
           path="/public-profiles"
           element={<PublicProfiles users={users} />}

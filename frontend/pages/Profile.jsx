@@ -15,6 +15,7 @@ export default function Profile(props) {
       <p>{props.user.last}</p>
       <p>{props.user.dob}</p>
       <p>{props.user.nickname}</p>
+      {props.users}
     </div>
   );
 }
