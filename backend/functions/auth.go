@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 
 	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -227,13 +228,14 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if data.Users != "" {
-		data.Users += "," + LoggedInUser(r).Nickname
+		user := LoggedInUser(r).Nickname
+		data.Users += "," + user
 		if data.Type == "private" {
 			// check if private chat already exists
 			if !CheckIfPrivateExistsBasedOnUsers(data) {
 				data.Id = Generate()
 				data.Name = ""
-				AddChat(data)
+				AddChat(data, "")
 				content, _ := json.Marshal(data)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
@@ -244,7 +246,9 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 			}
 		} else if data.Type == "group" {
 			data.Id = Generate()
-			AddChat(data)
+			data.Admin = user
+			// add admin and addmin should be the loggedInUser.Nickname
+			AddChat(data, user)
 			content, _ := json.Marshal(data)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(content)
@@ -288,5 +292,96 @@ func Chat(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// error
 		fmt.Println("you tried it")
+	}
+}
+
+func EditChatroom(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		var data ChatRoomFields
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+
+		err = json.Unmarshal(body, &data)
+		if err != nil {
+			panic(err)
+		}
+		loggedInUser := LoggedInUser(r).Nickname
+		currentChatroom := GetChatRoom(data.Id, loggedInUser)
+		currentUsers := strings.Split(currentChatroom.Users, ",")
+		check := UpdateChatroom(data, "", loggedInUser)
+		users := strings.Split(check.Users, ",")
+		var removed []string
+		var added []string
+		for _, kicked := range currentUsers {
+			if !Contains(users, kicked) {
+				removed = append(removed, kicked)
+			}
+		}
+		fmt.Println("remove user", removed)
+		for _, new := range users {
+			if !Contains(currentUsers, new) {
+				added = append(added, new)
+			}
+		}
+		fmt.Println("added user", added)
+
+		if len(removed) != 0 {
+			for _, member := range removed {
+				for id, mapOfSub := range H.rooms {
+					if id == check.Id {
+						for s := range mapOfSub {
+							fmt.Println("subscription", s)
+							if s.name == member {
+								s := s
+								go func() {
+									s.unregister <- true
+									// and stop writepump routine too.
+								}()
+							}
+						}
+					}
+				}
+			}
+
+		}
+		if len(added) != 0 {
+			// create new subscription in H[rooms] and go routine
+		}
+		content, _ := json.Marshal(check)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+	}
+}
+
+func LeaveChatroom(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+		groupChatId := string(body)
+		user := LoggedInUser(r).Nickname
+		data := GetChatRoom(groupChatId, user)
+		check := UpdateChatroom(data, "leave", user)
+		for id, mapOfSub := range H.rooms {
+			if id == check.Id {
+				for s := range mapOfSub {
+					fmt.Println("subscription", s)
+					if s.name == user {
+						s := s
+						go func() {
+							s.unregister <- true
+						}()
+					}
+				}
+			}
+		}
+
+		content, _ := json.Marshal(check)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+		// send
 	}
 }

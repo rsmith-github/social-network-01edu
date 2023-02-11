@@ -20,6 +20,8 @@ func main() {
 	http.HandleFunc("/api/users", functions.UsersApi)
 	http.HandleFunc("/profile", functions.Profile)
 	http.HandleFunc("/create-chat", functions.CreateChat)
+	http.HandleFunc("/edit-chatroom", functions.EditChatroom)
+	http.HandleFunc("/leave-chatroom", functions.LeaveChatroom)
 	http.HandleFunc("/get-chatrooms", functions.GetChatRooms)
 	http.HandleFunc("/get-chat", functions.Chat)
 	http.HandleFunc("/ws/chat", functions.ServeWs)

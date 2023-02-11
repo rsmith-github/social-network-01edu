@@ -42,9 +42,24 @@ export const GetChat = () => {
         setVisible((prev) => !prev)
     }
 
+    const newChatCreated = (chatInfo) => {
+        console.log(chatInfo)
+        if (chatInfo["chat-type"] === "private") {
+            setChats(chatrooms => {
+                let privateChats = chatrooms["private-chatrooms"] || [];
+                return { ...chatrooms, "private-chatrooms": [...privateChats, chatInfo] };
+            });
+        } else {
+            setChats(chatrooms => {
+                let groupChats = chatrooms["group-chatrooms"] || [];
+                return { ...chatrooms, "group-chatrooms": [...groupChats, chatInfo] };
+            });
+        }
+    }
+
 
     return (
-        <div className="open-chat">
+        <>
             {visible &&
                 <div className="open-chat-container">
                     <div className="open-chat-close-container">
@@ -52,7 +67,7 @@ export const GetChat = () => {
                             <span>&times;</span>
                         </button>
                         <h1>Chat Rooms</h1>
-                        <CreateChat />
+                        <CreateChat onSubmit={newChatCreated} />
                     </div>
                     <div className="chatroom-type">
                         <div>
@@ -88,7 +103,7 @@ export const GetChat = () => {
                                     </>
                                 ) : (
                                     <>
-                                        <h1>No Group Chats</h1>
+                                        <h1>No Group Chats Yet!</h1>
                                     </>
                                 )
                                 }
@@ -101,6 +116,6 @@ export const GetChat = () => {
             <button id="open-chat-button">
                 <img src="../../public/assets/img/chats-icon.png" onClick={openChatRooms} alt="" />
             </button>
-        </div>
+        </>
     )
 }

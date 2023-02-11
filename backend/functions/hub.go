@@ -11,20 +11,21 @@ type data struct {
 }
 
 type subscription struct {
-	conn      *connection
-	room      string
-	name      string
-	sessionId string
+	conn       *connection
+	room       string
+	name       string
+	sessionId  string
+	unregister chan bool
 }
 
 // hub maintains the set of active connections and broadcasts messages to the
 // connections.
 type hub struct {
 	// Registered connections.
-	rooms map[string]map[*connection]bool
+	rooms map[string]map[*subscription]bool
 
 	// all the active users online
-	user map[string]map[*connection]bool
+	user map[string]map[*subscription]bool
 
 	// Inbound messages from the connections.
 	broadcast chan data
@@ -40,8 +41,8 @@ var H = hub{
 	broadcast:  make(chan data),
 	register:   make(chan subscription),
 	unregister: make(chan subscription),
-	rooms:      make(map[string]map[*connection]bool),
-	user:       make(map[string]map[*connection]bool),
+	rooms:      make(map[string]map[*subscription]bool),
+	user:       make(map[string]map[*subscription]bool),
 }
 
 func (h *hub) Run() {
@@ -51,25 +52,25 @@ func (h *hub) Run() {
 			if s.room != "" {
 				roomConnections := h.rooms[s.room]
 				if roomConnections == nil {
-					roomConnections = make(map[*connection]bool)
+					roomConnections = make(map[*subscription]bool)
 					h.rooms[s.room] = roomConnections
 				}
-				h.rooms[s.room][s.conn] = true
+				h.rooms[s.room][&s] = true
 			} else {
 				userConnections := h.user[s.name]
 				if userConnections == nil {
-					userConnections = make(map[*connection]bool)
+					userConnections = make(map[*subscription]bool)
 					h.user[s.name] = userConnections
 				}
-				h.user[s.name][s.conn] = true
+				h.user[s.name][&s] = true
 			}
 		case s := <-h.unregister:
 			if s.room != "" {
 				roomConnections := h.rooms[s.room]
 				if roomConnections != nil {
-					if _, ok := roomConnections[s.conn]; ok {
+					if _, ok := roomConnections[&s]; ok {
 						fmt.Println(s.name, "this user closed the ws connection for chat.")
-						delete(roomConnections, s.conn)
+						delete(roomConnections, &s)
 						close(s.conn.send)
 						if len(roomConnections) == 0 {
 							delete(h.rooms, s.room)
@@ -79,9 +80,9 @@ func (h *hub) Run() {
 			} else {
 				userConnections := h.user[s.name]
 				if userConnections != nil {
-					if _, ok := userConnections[s.conn]; ok {
+					if _, ok := userConnections[&s]; ok {
 						fmt.Println(s.name, "this user closed browser.")
-						delete(userConnections, s.conn)
+						delete(userConnections, &s)
 						close(s.conn.send)
 						if len(userConnections) == 0 {
 							delete(h.user, s.name)
@@ -91,14 +92,14 @@ func (h *hub) Run() {
 			}
 		case m := <-h.broadcast:
 			if m.message.MessageId != "" {
-				connections := h.rooms[m.message.Id]
-				for c := range connections {
+				subscriptions := h.rooms[m.message.Id]
+				for c := range subscriptions {
 					select {
-					case c.send <- m.message:
+					case c.conn.send <- m.message:
 					default:
-						close(c.send)
-						delete(connections, c)
-						if len(connections) == 0 {
+						close(c.conn.send)
+						delete(subscriptions, c)
+						if len(subscriptions) == 0 {
 							delete(h.rooms, m.message.Id)
 						}
 					}
@@ -126,10 +127,12 @@ var SqlExec = sqlExecute{
 }
 
 func (d *sqlExecute) ExecuteStatements() {
-	for messages := range SqlExec.messages {
-		AddMessage(messages)
-		fmt.Println(messages)
-		//run the addMessages function from sql here...
+	for {
+		select {
+		case messages := <-SqlExec.messages:
+			fmt.Println(messages)
+			AddMessage(messages)
+		}
 	}
 	//for notifications := range SqlExec.followers{
 	//run the updateNotification from sql here...

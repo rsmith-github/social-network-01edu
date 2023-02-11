@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef } from "react"
+import { EditChat } from "./chatroomForm"
 
 export const ChatBox = (response) => {
     const [visible, setVisible] = useState(false)
     const [user, setUser] = useState('')
+    const [admin, setAdmin] = useState('')
     const [privateChat, setPrivateChat] = useState(false)
     const [chatName, setChatName] = useState('')
     const [chatDescription, setChatDescription] = useState('')
     const [descriptionBox, setDescriptionBox] = useState(false)
     const [chatUsers, setChatUsers] = useState('')
     const [emoji, setEmoji] = useState("");
-    const [messages, setMessages] = useState([])
+    const [messages, setMessages] = useState(null)
     const conn = useRef(null)
     const chatroomId = response.r
 
@@ -25,6 +27,7 @@ export const ChatBox = (response) => {
             const response = await receivedResponse.json()
             console.log(response)
             setUser(response["user"])
+            setAdmin(response["chatroom"]["admin"])
             setMessages(response["previous-messages"])
             setChatName(response["chatroom"]["chat-name"])
             setChatDescription(response["chatroom"]["chat-description"])
@@ -45,7 +48,14 @@ export const ChatBox = (response) => {
                 conn.current.onmessage = (evt) => {
                     evt.preventDefault()
                     let incomingMessage = JSON.parse(evt.data)
-                    setMessages(messages => [...messages, incomingMessage])
+                    console.log({ incomingMessage })
+                    setMessages(messages => {
+                        if (messages !== null) {
+                            return [...messages, incomingMessage]
+                        } else {
+                            return [incomingMessage]
+                        }
+                    })
                 }
 
             })
@@ -59,7 +69,7 @@ export const ChatBox = (response) => {
 
 
     const closeChatRoom = () => {
-        setVisible((prev) => !prev)
+        setVisible(false)
         setDescriptionBox(false)
 
     }
@@ -69,7 +79,6 @@ export const ChatBox = (response) => {
 
     const showDescriptionBox = () => {
         setDescriptionBox((prev) => !prev)
-
     }
 
 
@@ -77,18 +86,27 @@ export const ChatBox = (response) => {
         evt.preventDefault()
         const data = new FormData(evt.target);
         let values = Object.fromEntries(data.entries())
+        console.log(chatroomId)
         let msgSend = {
             "sender": user,
             "date": new Date().getTime(),
             "message": values["message"],
             "id": chatroomId
         }
+        setEmoji('')
         if (conn.current != undefined) {
+            console.log(msgSend)
             conn.current.send(JSON.stringify(msgSend))
+
         } else {
             console.log("no connection")
         }
     }
+
+    const handleChildDestroy = (name, description) => {
+        setChatName(name)
+        setChatDescription(description)
+    };
 
     return (
         <>
@@ -98,6 +116,27 @@ export const ChatBox = (response) => {
                         <button className="chatbox-close-button" type="button" onClick={closeChatRoom}>
                             <span>&lt;</span>
                         </button>
+                        <div className="chat-buttons">
+                            {privateChat ? (
+                                <>
+                                    <button className="leave-group-button">Leave</button>
+                                </>
+                            ) : (
+                                (admin === user) ? (
+                                    <>
+                                        <EditChat n={chatName} d={chatDescription} u={chatUsers} i={chatroomId} l={user} onDestroy={handleChildDestroy} />
+                                        <button className="leave-group-button">Leave</button>
+                                    </>
+                                )
+                                    : (
+                                        <>
+                                            <button className="leave-group-button">Leave</button>
+                                        </>
+                                    )
+
+                            )}
+
+                        </div>
                     </div>
                     <div className="chatbox-header-container">
                         {/* for chat images */}
@@ -109,12 +148,7 @@ export const ChatBox = (response) => {
                             </div>
                         ) : (
                             <>
-                                <div className="change-group-members">
-                                    {/* add plus icon and onclick function */}
-                                    <button className="add-user">+</button>
-                                    {/* add minus icon and onclick function */}
-                                    <button className="remove-user">-</button>
-                                </div>
+
                                 <div className="chat-info-group">
                                     {/* Add image of chat */}
                                     <h1>{chatName}</h1>
@@ -124,11 +158,13 @@ export const ChatBox = (response) => {
                                 {descriptionBox && (
                                     <div className="chat-info-description" >
                                         {chatDescription ? (
-                                            { chatDescription }
+                                            <>
+                                                {chatDescription}
+                                            </>
+
                                         ) : (
                                             <>No Description Given</>
                                         )}
-                                        <button className="edit-description-button">Edit</button>
                                     </div>
                                 )}
                             </>
@@ -139,7 +175,6 @@ export const ChatBox = (response) => {
                         {messages ? (
                             <>
                                 {messages.map(message => {
-                                    console.log(message, "here")
                                     if (message["sender"] == user) {
                                         return (
                                             <div className="chat-message-sender" >
@@ -169,9 +204,8 @@ export const ChatBox = (response) => {
                         )}
                     </div>
                     <form method="post" className="message-form" onSubmit={handleMessageSubmit}>
-                        <div className="message-textarea" contentEditable={true} onInput={(e) => setEmoji(e.target.innerText)}>
-                            <textarea name="message" className="message-text-input" placeholder="For Emojis Press: 'Windows + ;' or 'Ctrl + Cmd + Space'" />
-                            {emoji}
+                        <div className="message-textarea" contentEditable={true}>
+                            <textarea name="message" className="message-text-input" value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="For Emojis Press: 'Windows + ;' or 'Ctrl + Cmd + Space'" />
                         </div>
                         <input type="submit" value="Send" className="message-send-button" />
                     </form>

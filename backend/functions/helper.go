@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"sort"
 	"strings"
@@ -118,18 +119,18 @@ func CheckIfPrivateExistsBasedOnUsers(chatFields ChatRoomFields) bool {
 	return false
 }
 
-func AddChat(chatFields ChatRoomFields) error {
+func AddChat(chatFields ChatRoomFields, creator string) error {
 	sliceOfUsers := strings.Split(chatFields.Users, ",")
 	sort.Strings(sliceOfUsers)
 	chatFields.Users = strings.Join(sliceOfUsers, ",")
-
+	chatFields.Admin = creator
 	db := OpenDB()
-	stmt, err := db.Prepare(`INSERT INTO "chatroom" (id,name,description,type,users) values (?, ?, ?, ?, ?)`)
+	stmt, err := db.Prepare(`INSERT INTO "chatroom" (id,name,description,type,users,admin) values (?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		fmt.Println("error preparing table:", err)
 		return err
 	}
-	_, errorWithTable := stmt.Exec(chatFields.Id, chatFields.Name, chatFields.Description, chatFields.Type, chatFields.Users)
+	_, errorWithTable := stmt.Exec(chatFields.Id, chatFields.Name, chatFields.Description, chatFields.Type, chatFields.Users, chatFields.Admin)
 	if errorWithTable != nil {
 		fmt.Println("error adding to table:", errorWithTable)
 		return errorWithTable
@@ -145,15 +146,16 @@ func GetUserChats(username string) ChatroomType {
 		log.Fatal(err)
 	}
 
-	var id, name, description, chatType, users string
+	var id, name, description, chatType, users, admin string
 	for row.Next() { // Iterate and fetch the records from result cursor
-		row.Scan(&id, &name, &description, &chatType, &users)
+		row.Scan(&id, &name, &description, &chatType, &users, &admin)
 		groupChat := ChatRoomFields{
 			Id:          id,
 			Name:        name,
 			Description: description,
 			Type:        chatType,
 			Users:       users,
+			Admin:       admin,
 		}
 		sliceOfUsers := strings.Split(groupChat.Users, ",")
 		for i, involved := range sliceOfUsers {
@@ -180,15 +182,16 @@ func GetChatRoom(chatroom string, user string) ChatRoomFields {
 	}
 
 	var groupChat ChatRoomFields
-	var id, name, description, chatType, users string
+	var id, name, description, chatType, users, admin string
 	for row.Next() {
-		row.Scan(&id, &name, &description, &chatType, &users)
+		row.Scan(&id, &name, &description, &chatType, &users, &admin)
 		groupChat = ChatRoomFields{
 			Id:          id,
 			Name:        name,
 			Description: description,
 			Type:        chatType,
 			Users:       users,
+			Admin:       admin,
 		}
 		sliceOfUsers := strings.Split(groupChat.Users, ",")
 		for i := range sliceOfUsers {
@@ -204,6 +207,39 @@ func removeUserFromChatButton(slice []string, s int) []string {
 	return append(slice[:s], slice[s+1:]...)
 }
 
+func Contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
+func UpdateChatroom(chatroom ChatRoomFields, action string, user string) ChatRoomFields {
+	fmt.Println("inside update function", action, user, chatroom)
+	db := OpenDB()
+	users := strings.Split(chatroom.Users, ",")
+	if action == "leave" {
+		if user == chatroom.Admin {
+			randomIndex := rand.Intn(len(users))
+			chatroom.Admin = users[randomIndex]
+		}
+		// else{
+
+		// }
+	} else {
+		chatroom.Admin = user
+		chatroom.Users += "," + user
+	}
+	stmt, err := db.Prepare("UPDATE chatroom SET name = ?, description = ?, users=? , admin =? WHERE id = ?")
+	if err != nil {
+		fmt.Println("error updating chatroom", err)
+	}
+	stmt.Exec(chatroom.Name, chatroom.Description, chatroom.Users, chatroom.Admin, chatroom.Id)
+	return chatroom
+}
+
 func AddMessage(chatFields ChatFields) error {
 	db := OpenDB()
 	stmt, err := db.Prepare(`INSERT INTO "messages" (id,sender,messageId,message,date) values (?, ?, ?, ?, ?)`)
@@ -211,17 +247,14 @@ func AddMessage(chatFields ChatFields) error {
 		fmt.Println("error preparing table:", err)
 		return err
 	}
-	mutex.Lock()
 	_, errorWithTable := stmt.Exec(chatFields.Id, chatFields.Sender, chatFields.MessageId, chatFields.Message, chatFields.Date)
 	if errorWithTable != nil {
 		fmt.Println("error adding to table:", errorWithTable)
-		mutex.Unlock()
 		return errorWithTable
 	}
 	return nil
 }
 func GetPreviousMessages(chatroomId string) []ChatFields {
-	fmt.Println(chatroomId)
 	db := OpenDB()
 	s := fmt.Sprintf("SELECT * FROM messages WHERE id = '%v'", chatroomId)
 	row, err := db.Query(s)
@@ -233,9 +266,7 @@ func GetPreviousMessages(chatroomId string) []ChatFields {
 	var id, sender, messageId, message string
 	var date int
 	for row.Next() {
-		fmt.Println(1)
 		row.Scan(&id, &sender, &messageId, &message, &date)
-		fmt.Println(2)
 		m := ChatFields{
 			Id:        id,
 			Sender:    sender,
@@ -273,7 +304,7 @@ func CreateSqlTables() {
 	db := OpenDB()
 
 	// if you need to delete a table rather than delete a whole database
-	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS messages`)
+	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS chatroom`)
 	// CheckErr(deleteTblErr, "-------Error deleting table")
 
 	// Create user table if it doen't exist.
@@ -285,8 +316,8 @@ func CreateSqlTables() {
 	CheckErr(sessTblErr, "-------Error creating table")
 
 	// Create chatroom table if doesn't exist.
-	// add addmin and avatar
-	var _, chatRoomTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `chatroom` (`id` TEXT NOT NULL, `name` TEXT, `description` TEXT, `type` TEXT NOT NULL, `users` VARCHAR(255) NOT NULL)")
+	// add and avatar
+	var _, chatRoomTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `chatroom` (`id` TEXT NOT NULL, `name` TEXT, `description` TEXT, `type` TEXT NOT NULL, `users` VARCHAR(255) NOT NULL,`admin` TEXT NOT NULL)")
 	CheckErr(chatRoomTblErr, "-------Error creating table")
 
 	// Create chats table if doesn't exist.
