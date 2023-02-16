@@ -16,7 +16,7 @@ export default function PostForm(props) {
         .then(data => {
           console.log(data)
           setPosts(data)
-          // setLoaded(true)
+          setLoaded(true)
         })
     }
   }, [loaded])
@@ -96,6 +96,16 @@ export default function PostForm(props) {
         <div className="smallAvatar">
           <img src={props.avatar} alt="profile photo" />
         </div>
+
+    
+        
+          
+    
+
+        
+    
+    @@ -74,84 +102,69 @@ export default function PostForm(props) {
+  
         <div className="privacyButtons">
           <button className="postType">Public Post</button>
           <button className="postType">Private Post</button>
@@ -167,4 +177,3 @@ export default function PostForm(props) {
     </>
   );
 }
-
