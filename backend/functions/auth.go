@@ -85,11 +85,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		} else {
 			w.Write(jsn) // Write user data
 		}
-		go func() {
-			chatroomId <- ""
-			loggedInUsername <- foundUser.Nickname
-		}()
-		return
+
 	}
 	// Remder template on reload
 	RenderTmpl(w)

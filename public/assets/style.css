@@ -693,13 +693,17 @@ main {
   overflow: auto;
 }
 .create-post-close-button {
-  width: 8.5%;
+  width: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border-radius: 100px;
   background-color: rgb(250, 124, 124);
   margin-top: 13px;
   margin-left: 10px;
-  font-size: 30px;
   font-weight: bold;
+  font-size: 30px;
+  padding: 0;
   color: white;
   border-color: transparent;
   align-self: baseline;
@@ -790,6 +794,15 @@ main {
   padding: 10px;
   object-fit: contain;
 }
+.smooth-image {
+  transition: opacity 1s;
+}
+.image-visible {
+  opacity: 1;
+}
+.image-hidden {
+  opacity: 0;
+}
 .post-text-container,
 .post-thread-container {
   display: flex;
@@ -870,4 +883,30 @@ main {
   width: 25px;
   height: 25px;
   cursor: pointer;
+}
+.edit-post-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+.reset-edit-post-button {
+  width: max-content;
+  background-color: #adb5bd;
+  border: transparent;
+  border-radius: 24px;
+  color: white;
+  font-size: medium;
+  font-weight: bold;
+  height: 70%;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+.reset-edit-post-button:hover {
+  background-color: #858c93;
+}
+.reset-edit-post-button:active {
+  background-color: #5b6065;
 }
