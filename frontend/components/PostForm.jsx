@@ -13,7 +13,7 @@ export default function PostForm(props) {
         .then(data => {
           console.log(data)
           setPosts(data)
-          setLoaded(true)
+          // setLoaded(true)
         })
     }
   }, [loaded])
@@ -38,8 +38,16 @@ export default function PostForm(props) {
     let hh = date.getHours()
     let min = date.getMinutes()
     date = dd + "/" + mm + "/" + yyyy + " " + hh + ":" + min;
-
     return date.toString();
+  }
+
+  const handleBrokenImage = (source) => {
+    console.log({ source })
+    if (source != "") {
+      return source
+    } else {
+      return "https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png"
+    }
   }
 
   const handleEditPost = (edited) => {
@@ -51,6 +59,9 @@ export default function PostForm(props) {
     });
     setPosts(updatedPosts);
   }
+
+
+
   return (
     <>
       <div className="formContainer">
@@ -68,11 +79,13 @@ export default function PostForm(props) {
       <div className="post-container">
 
 
-      { loaded && posts.reverse().map((post, index) => (
+        {loaded && posts.reverse().map((post, index) => (
           <div key={index} className="post">
             <div className="post-header">
               <div className="post-author-container">
-                <img src={post["author-img"]} />
+
+                <img src={handleBrokenImage(post["author-img"])} />
+
                 <p>{post["author"]}</p>
               </div>
               <div className="post-time-container">
@@ -132,8 +145,11 @@ export default function PostForm(props) {
 
           </div>
         ))}
-        {!loaded && <img src="http://superstorefinder.net/support/wp-content/uploads/2018/01/orange_circles.gif" style={{width: "100px"}} />}
-        
+        {!loaded &&
+          <div className="post-loader-container">
+            <img src="http://superstorefinder.net/support/wp-content/uploads/2018/01/orange_circles.gif" className="post-loader" />
+          </div>
+        }
       </div>
       <CreatePost onSubmit={getAllPost} />
     </>

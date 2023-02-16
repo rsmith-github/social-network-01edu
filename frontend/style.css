@@ -71,12 +71,8 @@ main {
 }
 
 
-/* .contentContainer .profileImgContainer {
-    width: 45%;
-} */
-
 .profileImgParent {
-    background: linear-gradient(to bottom, rgba(215, 57, 0, 0.874) 17%,white 0%);
+    background: linear-gradient(to bottom, rgba(215, 57, 0, 0.874) 17%, white 0%);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -91,6 +87,7 @@ main {
     height: 100px;
     border: 5px solid white;
     z-index: 1;
+    background-color: white;
 }
 
 .break {
@@ -756,33 +753,33 @@ main {
     border-top: 5px solid rgba(215, 57, 0, 0.874);
     font-size: 30px;
     text-align: center;
-cursor: pointer;
-padding: 20px 20px 0 20px;
-box-shadow: rgba(99, 99, 99, 0.264) 0px 7px 29px 0px;
-height: 100%
+    cursor: pointer;
+    padding: 20px 20px 0 20px;
+    box-shadow: rgba(99, 99, 99, 0.264) 0px 7px 29px 0px;
+    height: 100%
 }
 
 .grid-link {
-text-decoration: none;
-color: initial;
-margin: 5px;
+    text-decoration: none;
+    color: initial;
+    margin: 5px;
 
-/* Animate */
-transform: scale3d(0.9, 0.9, 1.2);
-transition: transform 0.5s ease-in-out;
+    /* Animate */
+    transform: scale3d(0.9, 0.9, 1.2);
+    transition: transform 0.5s ease-in-out;
 }
 
 .grid-link:hover {
-transform: scale3d(1, 1, 1);
-box-shadow: rgba(215, 57, 0, 0.264) 0px 7px 29px 0px;
-transition: transform 0.5s ease-in-out;
+    transform: scale3d(1, 1, 1);
+    box-shadow: rgba(215, 57, 0, 0.264) 0px 7px 29px 0px;
+    transition: transform 0.5s ease-in-out;
 }
 
 
-.grid-item > div {
-display: flex;
-justify-content: space-evenly;
-align-items: center;
+.grid-item>div {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
 }
 
 /* Post Components */
@@ -889,6 +886,19 @@ align-items: center;
     overflow-y: auto;
 }
 
+.post-loader-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.post-loader {
+    height: 70%;
+}
+
 .post {
     background-color: white;
     /* padding: 10px; */
@@ -916,6 +926,7 @@ align-items: center;
     height: 35px;
     border-radius: 50px;
     border: 3px solid white;
+    background-color: white;
     margin: 0;
 }
 
