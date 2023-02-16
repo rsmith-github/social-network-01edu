@@ -13,10 +13,11 @@ export default function ProfileImgContainer(props) {
 
   // const [followerCount, setFollowerCount] = useState(props.user.followers);
 
-  const followerCount = props.followerCounts[props.user.email] || props.user.followers;
+  const followerCount =
+    props.followerCounts[props.user.email] || props.user.followers;
 
   // Redundant code.
-  
+
   //  useEffect(() => {
   //    if (props.socket) {
   //      const handleMessage = (event) => {
@@ -45,7 +46,6 @@ export default function ProfileImgContainer(props) {
   //      };
   //    }
   //  }, []);
-  
 
   // Send a request on refresh to check if the current user is already following user rendered on this component.
 
@@ -98,6 +98,8 @@ export default function ProfileImgContainer(props) {
       })
     );
   };
+
+  // Comment for gitea
 
   return (
     <div className="profileImgContainer">
