@@ -17,22 +17,22 @@ function App() {
   const [valid, setValid] = useState(false);
 
   // can probably merge with existing wSocket handler
-  const websocket = useRef(null)
+  const websocket = useRef(null);
 
   const openConnection = (ws) => {
     if (websocket.current === null) {
-      console.log('open connection...')
-      websocket.current = ws
+      console.log("open connection...");
+      websocket.current = ws;
     }
-  }
+  };
 
   const closeConnection = () => {
     if (websocket.current !== null) {
-      websocket.current.close(1000, "user refreshed or logged out.")
-      websocket.current = null
-      setValid(false)
+      websocket.current.close(1000, "user refreshed or logged out.");
+      websocket.current = null;
+      setValid(false);
     }
-  }
+  };
 
   // store current user
   const [user, setUser] = useState({});
@@ -64,7 +64,6 @@ function App() {
       });
       const content = await response.json(); //getting current user.
 
-
       // Set user details
       setName(content.first);
       setAvatar(content.avatar);
@@ -84,22 +83,24 @@ function App() {
       setUser(user);
       // try to connect to websocket.
       handleWSocket(user);
-      
+
       if (user.nickname !== undefined) {
         setValid(true);
       }
     };
     fetchData().then(() => {
-      if (valid && websocket.current === null) {
-        console.log('inside useEffect to open connection...')
-        websocket.current = new WebSocket("ws://" + document.location.host + "/ws/user")
-        console.log(websocket)
-        websocket.current.onopen = () => { console.log("Chat box connection open") }
-      }
-    })
-
-
-  }, [followerCounts]);
+      // if (valid && websocket.current === null) {
+      //   console.log("inside useEffect to open connection...");
+      //   websocket.current = new WebSocket(
+      //     "ws://" + document.location.host + "/ws/user"
+      //   );
+      //   console.log(websocket);
+      //   websocket.current.onopen = () => {
+      //     console.log("Chat box connection open");
+      //   };
+      // }
+    });
+  }, [followerCounts, name]);
 
   const handleWSocket = (usr) => {
     if (wSocket === null) {
@@ -158,6 +159,7 @@ function App() {
   }, []);
 
   return (
+    // <StrictMode>
     <BrowserRouter>
       <NavBar name={name} setName={setName} closeConn={closeConnection} />
       <Routes>
@@ -173,7 +175,10 @@ function App() {
             />
           }
         />
-        <Route path="/login" element={<Login setName={setName} openConn={openConnection} />} />
+        <Route
+          path="/login"
+          element={<Login setName={setName} openConn={openConnection} />}
+        />
         <Route path="/register" element={<Register />} />
         <Route
           path="/profile/"
@@ -201,6 +206,7 @@ function App() {
         />
       </Routes>
     </BrowserRouter>
+    // </StrictMode>
   );
 }
 
