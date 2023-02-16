@@ -13,40 +13,39 @@ export default function ProfileImgContainer(props) {
 
   // const [followerCount, setFollowerCount] = useState(props.user.followers);
 
-  const followerCount =
-    props.followerCounts[props.user.email] || props.user.followers;
+  const followerCount = props.followerCounts[props.user.email] || props.user.followers;
 
   // Redundant code.
-  {
-    // useEffect(() => {
-    //   if (props.socket) {
-    //     const handleMessage = (event) => {
-    //       const msg = JSON.parse(event.data);
-    //       // Probably redundant code.
-    //       // console.log(msg);
-    //       // if (msg.follower !== undefined) {
-    //       //   // setFollowerCount(msg.followers);
-    //       // }
-    //       // if (
-    //       //   msg.updateUser === props.currentUser.email &&
-    //       //   msg.followRequest !== undefined
-    //       // ) {
-    //       //   console.log("BBRRRUHUHHHHHHHHHHh");
-    //       //   if (isFollowing) {
-    //       //     alert(msg.followRequest + " started following you, legend!");
-    //       //   } else {
-    //       //     alert(msg.followRequest + " unfollowed you, loser.");
-    //       //   }
-    //       //   // setFollowerCount(msg.followers);
-    //       // }
-    //     };
-    //     props.socket.addEventListener("message", handleMessage);
-    //     return () => {
-    //       props.socket.removeEventListener("message", handleMessage);
-    //     };
-    //   }
-    // }, []);
-  }
+  
+  //  useEffect(() => {
+  //    if (props.socket) {
+  //      const handleMessage = (event) => {
+  //        const msg = JSON.parse(event.data);
+  //        // Probably redundant code.
+  //        // console.log(msg);
+  //         if (msg.follower !== undefined) {
+  //           // setFollowerCount(msg.followers);
+  //         }
+  //         if (
+  //           msg.updateUser === props.currentUser.email &&
+  //           msg.followRequest !== undefined
+  //         ) {
+  //           console.log("BBRRRUHUHHHHHHHHHHh");
+  //           if (isFollowing) {
+  //             alert(msg.followRequest + " started following you, legend!");
+  //           } else {
+  //             alert(msg.followRequest + " unfollowed you, loser.");
+  //           }
+  //           // setFollowerCount(msg.followers);
+  //         }
+  //      };
+  //      props.socket.addEventListener("message", handleMessage);
+  //      return () => {
+  //        props.socket.removeEventListener("message", handleMessage);
+  //      };
+  //    }
+  //  }, []);
+  
 
   // Send a request on refresh to check if the current user is already following user rendered on this component.
 
@@ -58,7 +57,7 @@ export default function ProfileImgContainer(props) {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          follower: props.currentUser.email ? props.currentUser.email : null,
+          follower: props.currentUser ? props.currentUser.email : null,
           followee: props.user.email,
         }),
       });

@@ -33,7 +33,14 @@ func main() {
 	http.HandleFunc("/profile", functions.Profile)
 	// http.HandleFunc("/public-profiles", functions.DynamicPath)
 	http.HandleFunc("/create-chat", functions.CreateChat)
-	http.HandleFunc("/get-chatrooms", functions.GetChatRooms)
+	http.HandleFunc("/edit-chatroom", functions.EditChatroom)
+	http.HandleFunc("/get-chat", functions.Chat)
+	http.HandleFunc("/ws/chat", functions.ServeWs)
+	http.HandleFunc("/ws/user", functions.ServeWs)
+
+	http.HandleFunc("/create-post", functions.CreatePost)
+	go functions.H.Run()
+	go functions.SqlExec.ExecuteStatements()
 
 	fmt.Printf("SOCIAL-NETWORK serving at http://localhost:8080\n")
 	if err := http.ListenAndServe(":8080", nil); err != nil {

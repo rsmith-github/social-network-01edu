@@ -1,10 +1,10 @@
-import React, { useState, useEffect, StrictMode } from "react";
+import React, { useState, useEffect, StrictMode, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, json } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import NavBar from "./components/navbar";
+import NavBar from "./components/Navbar";
 import Profile from "./pages/Profile";
 import PublicProfiles from "./pages/PublicProfiles";
 
@@ -14,6 +14,27 @@ function App() {
   // Current user state vars.
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState("");
+  const [valid, setValid] = useState(false);
+
+  // can probably merge with existing wSocket handler
+  const websocket = useRef(null)
+
+  const openConnection = (ws) => {
+    if (websocket.current === null) {
+      console.log('open connection...')
+      websocket.current = ws
+    }
+  }
+
+  const closeConnection = () => {
+    if (websocket.current !== null) {
+      websocket.current.close(1000, "user refreshed or logged out.")
+      websocket.current = null
+      setValid(false)
+    }
+  }
+
+  // store current user
   const [user, setUser] = useState({});
 
   // Variable to handle incoming WebSocket messages with the new follower count and update the UI.
@@ -27,7 +48,14 @@ function App() {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    (async () => {
+    window.addEventListener("beforeunload", closeConnection);
+    return () => {
+      window.removeEventListener("beforeunload", closeConnection);
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
       // validate user based on session.
       const response = await fetch("http://localhost:8080/api/user", {
         method: "GET",
@@ -35,6 +63,7 @@ function App() {
         credentials: "include",
       });
       const content = await response.json(); //getting current user.
+
 
       // Set user details
       setName(content.first);
@@ -51,11 +80,25 @@ function App() {
           : content.followers,
         following: content.following,
       };
-      setUser(user);
 
+      setUser(user);
       // try to connect to websocket.
       handleWSocket(user);
-    })();
+      
+      if (user.nickname !== undefined) {
+        setValid(true);
+      }
+    };
+    fetchData().then(() => {
+      if (valid && websocket.current === null) {
+        console.log('inside useEffect to open connection...')
+        websocket.current = new WebSocket("ws://" + document.location.host + "/ws/user")
+        console.log(websocket)
+        websocket.current.onopen = () => { console.log("Chat box connection open") }
+      }
+    })
+
+
   }, [followerCounts]);
 
   const handleWSocket = (usr) => {
@@ -116,7 +159,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <NavBar name={name} setName={setName} />
+      <NavBar name={name} setName={setName} closeConn={closeConnection} />
       <Routes>
         <Route
           index
@@ -130,7 +173,7 @@ function App() {
             />
           }
         />
-        <Route path="/login" element={<Login setName={setName} />} />
+        <Route path="/login" element={<Login setName={setName} openConn={openConnection} />} />
         <Route path="/register" element={<Register />} />
         <Route
           path="/profile/"

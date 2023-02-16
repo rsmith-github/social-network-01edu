@@ -47,7 +47,7 @@ export default function PublicProfiles(props) {
       {props.users ? (
         props.users.map((user) => {
           // Skip current user.
-          if (user.email == props.user.email) {
+          if (user.email === props.user.email) {
             return;
           }
           return (
