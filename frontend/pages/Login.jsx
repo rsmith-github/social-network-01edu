@@ -28,9 +28,11 @@ export default function Login(props) {
     });
 
     const validUser = await response.json();
-
-    props.setName(validUser.first);
     setRedirectVar(true);
+    props.setName(validUser.first);
+    let websocket= new WebSocket("ws://" + document.location.host + "/ws/user")
+    websocket.onopen = () => {console.log("Chat box connection open")}
+    props["openConn"](websocket)
   };
 
   if (redirectVar) {

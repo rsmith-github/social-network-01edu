@@ -8,7 +8,8 @@ export default function NavBar(props) {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
     });
-
+    console.log(props)
+    props["closeConn"]();
     props.setName("");
   };
 

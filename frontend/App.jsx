@@ -1,4 +1,4 @@
-import React, { useState, useEffect, StrictMode } from "react";
+import React, { useState, useEffect, StrictMode, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
@@ -15,12 +15,36 @@ function App() {
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState("");
   const [props, setProps] = useState({});
+  const [valid, setValid] = useState(false);
+  const websocket = useRef(null)
+
+  const openConnection = (ws) => {
+    if (websocket.current === null) {
+      console.log('open connection...')
+      websocket.current = ws
+    }
+  }
+
+  const closeConnection = () => {
+    if (websocket.current !== null) {
+      websocket.current.close(1000, "user refreshed or logged out.")
+      websocket.current = null
+      setValid(false)
+    }
+  }
 
   // All users state vars
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    (async () => {
+    window.addEventListener("beforeunload", closeConnection);
+    return () => {
+      window.removeEventListener("beforeunload", closeConnection);
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
       // validate user based on session.
       const response = await fetch("http://localhost:8080/api/user", {
         method: "GET",
@@ -28,6 +52,7 @@ function App() {
         credentials: "include",
       });
       const content = await response.json(); //getting current user.
+
 
       // Set user details
       setName(content.first);
@@ -41,7 +66,19 @@ function App() {
         aboutme: content.about,
       };
       setProps(user);
-    })();
+      if (user.nickname !== undefined){
+        setValid(true);
+      }
+    };
+    fetchData().then(() => {
+      console.log(valid, 'balid user')
+      if(valid && websocket.current === null){
+        console.log('inside useEffect to open connection...')
+        websocket.current = new WebSocket("ws://" + document.location.host + "/ws/user")
+        console.log(websocket)
+        websocket.current.onopen = () => { console.log("Chat box connection open") }
+      }
+    })
   }, [name]);
 
   useEffect(() => {
@@ -58,13 +95,13 @@ function App() {
 
   return (
     <BrowserRouter>
-      <NavBar name={name} setName={setName} />
+      <NavBar name={name} setName={setName} closeConn={closeConnection} />
       <Routes>
         <Route
           index
           element={<Home name={name} avatar={avatar} user={props} />}
         />
-        <Route path="/login" element={<Login setName={setName} />} />
+        <Route path="/login" element={<Login setName={setName} openConn={openConnection} />} />
         <Route path="/register" element={<Register />} />
         <Route
           path="/profile"
