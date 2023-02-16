@@ -1,4 +1,4 @@
-import react, { useState } from "react"
+import React, { useState } from "react"
 export const CreatePost = (newPost) => {
     const [urlImage, setUrlImage] = useState("")
     const [selectedImage, setSelectedImage] = useState(null)

@@ -99,7 +99,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 func GetUserFromSessions(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session")
 	if err != nil {
-		// fmt.Println("GetUserWithJWT --  ", err.Error())
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write(JsonMessage("unauthorized"))
 		return
@@ -409,7 +408,6 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 		}
 		// get all posts and return
 		allPosts := GetUserPosts(LoggedInUser(r).Nickname)
-		fmt.Println(allPosts)
 		content, _ := json.Marshal(allPosts)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)

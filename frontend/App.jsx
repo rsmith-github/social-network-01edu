@@ -1,6 +1,6 @@
 import React, { useState, useEffect, StrictMode, useRef } from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, json } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -14,8 +14,9 @@ function App() {
   // Current user state vars.
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState("");
-  const [props, setProps] = useState({});
   const [valid, setValid] = useState(false);
+
+  // can probably merge with existing wSocket handler
   const websocket = useRef(null)
 
   const openConnection = (ws) => {
@@ -32,6 +33,16 @@ function App() {
       setValid(false)
     }
   }
+
+  // store current user
+  const [user, setUser] = useState({});
+
+  // Variable to handle incoming WebSocket messages with the new follower count and update the UI.
+  // ("global" follower count.)
+  const [followerCounts, setFollowerCounts] = useState({});
+
+  // Websocket
+  const [wSocket, setWSocket] = useState(null);
 
   // All users state vars
   const [users, setUsers] = useState([]);
@@ -64,14 +75,21 @@ function App() {
         dob: content.dob,
         nickname: content.nickname,
         aboutme: content.about,
+        followers: followerCounts[content.email]
+          ? followerCounts[content.email]
+          : content.followers,
+        following: content.following,
       };
-      setProps(user);
+
+      setUser(user);
+      // try to connect to websocket.
+      handleWSocket(user);
+      
       if (user.nickname !== undefined) {
         setValid(true);
       }
     };
     fetchData().then(() => {
-      console.log(valid, 'balid user')
       if (valid && websocket.current === null) {
         console.log('inside useEffect to open connection...')
         websocket.current = new WebSocket("ws://" + document.location.host + "/ws/user")
@@ -79,7 +97,53 @@ function App() {
         websocket.current.onopen = () => { console.log("Chat box connection open") }
       }
     })
-  }, [name]);
+
+
+  }, [followerCounts]);
+
+  const handleWSocket = (usr) => {
+    if (wSocket === null) {
+      // Connect websocket after logging in.
+      const newSocket = new WebSocket("ws://" + document.location.host + "/ws");
+      newSocket.onopen = () => {
+        console.log("WebSocket connection opened");
+      };
+
+      newSocket.onmessage = (event) => {
+        let msg = JSON.parse(event.data);
+
+        if (msg.toFollow === usr.email) {
+          // Send message to relevant user according to isFollowing true or false.
+
+          /*
+          // send notification sounds.
+          try {
+            const notifSound = new Audio(
+              "public/assets/sounds/notification.mp3"
+              );
+              notifSound.play();
+            } catch (error) {}
+            */
+
+          if (msg.isFollowing) {
+            setFollowerCounts({
+              ...followerCounts,
+              [usr.email]: msg.followers + 1,
+            });
+            alert(msg.followRequest + " started following you, legend!");
+          } else {
+            setFollowerCounts({
+              ...followerCounts,
+              [usr.email]: msg.followers,
+            });
+            alert(msg.followRequest + " unfollowed you, loser.");
+          }
+        }
+      };
+
+      setWSocket(newSocket);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -99,18 +163,41 @@ function App() {
       <Routes>
         <Route
           index
-          element={<Home name={name} avatar={avatar} user={props} />}
+          element={
+            <Home
+              name={name}
+              avatar={avatar}
+              user={user}
+              followerCounts={followerCounts}
+              setFollowerCounts={setFollowerCounts}
+            />
+          }
         />
         <Route path="/login" element={<Login setName={setName} openConn={openConnection} />} />
         <Route path="/register" element={<Register />} />
         <Route
-          path="/profile"
-          element={<Profile name={name} avatar={avatar} user={props} />}
+          path="/profile/"
+          element={
+            <Profile
+              name={name}
+              avatar={avatar}
+              user={user}
+              followerCounts={followerCounts}
+              setFollowerCounts={setFollowerCounts}
+            />
+          }
         />
-
         <Route
           path="/public-profiles"
-          element={<PublicProfiles users={users} />}
+          element={
+            <PublicProfiles
+              users={users}
+              socket={wSocket}
+              user={user}
+              followerCounts={followerCounts}
+              setFollowerCounts={setFollowerCounts}
+            />
+          }
         />
       </Routes>
     </BrowserRouter>

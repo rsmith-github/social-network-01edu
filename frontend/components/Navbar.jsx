@@ -15,8 +15,19 @@ export default function NavBar(props) {
 
   return (
     <nav className="navbar navbar-expand-md navbar-dark bg-dark mb-4">
+      <button
+        className="navbar-toggler"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#navbarCollapse"
+        style={{ marginLeft: "10px" }}
+      >
+        <span className="navbar-toggler-icon"></span>
+      </button>
+      <span className="navbar-brand" style={{ marginLeft: "10px" }}>
+        Social Network
+      </span>
       <div className="container-fluid">
-        <span className="navbar-brand">Social Network</span>
         <div className="collapse navbar-collapse" id="navbarCollapse">
           <ul className="navbar-nav me-auto mb-2 mb-md-0">
             {props.name ? (
@@ -42,11 +53,6 @@ export default function NavBar(props) {
                 <li className="nav-item">
                   <Link className="nav-link" to="/login">
                     Login
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/register">
-                    Register
                   </Link>
                 </li>
                 <li className="nav-item">

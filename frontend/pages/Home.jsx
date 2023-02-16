@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import PostForm, { CreatePost } from "../components/PostForm";
+import PostForm from "../components/PostForm";
 import ProfileImgContainer from "../components/ProfileImgContainer";
 import RightSide from "../components/RightSide";
 import { GetChat } from "../components/Chatrooms";
 
 export default function Home(props) {
   return (
-    <main >
+    <main>
       <div className="contentContainer">
         {props.name ? (
           <>
@@ -15,6 +15,8 @@ export default function Home(props) {
               name={props.name}
               user={props.user}
               avatar={props.avatar}
+              followerCounts={props.followerCounts}
+              setFollowerCounts={props.setFollowerCounts}
             />
             <PostForm avatar={props.avatar} />
             <RightSide />

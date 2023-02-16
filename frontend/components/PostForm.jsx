@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { CreatePost } from "./CreatePostForm"
+import { EditButton } from "./EditPostButton"
 
 // Post form in the center
 export default function PostForm(props) {
@@ -16,6 +17,8 @@ export default function PostForm(props) {
         })
     }
   }, [loaded])
+
+
   const getAllPost = (response) => {
     console.log(response)
     setPosts(response)
@@ -63,7 +66,9 @@ export default function PostForm(props) {
         </div>
       </div>
       <div className="post-container">
-        {posts.reverse().map((post, index) => (
+
+
+      { loaded && posts.reverse().map((post, index) => (
           <div key={index} className="post">
             <div className="post-header">
               <div className="post-author-container">
@@ -74,10 +79,12 @@ export default function PostForm(props) {
                 <p>{dateFormat(post["post-time"])}</p>
               </div>
             </div>
+
             {post["post-image"] &&
               <div className="post-image-container">
                 <img src={post["post-image"]} />
               </div>}
+
             {post["post-text-content"] &&
               <div className="post-text-container">
                 <p>{post["post-text-content"]}</p>
@@ -97,6 +104,8 @@ export default function PostForm(props) {
                 })}
               </div>
             }
+
+
             <div className="post-interactions">
               <div className="like-post-container">
                 <p>{post["post-likes"]}</p>
@@ -123,8 +132,77 @@ export default function PostForm(props) {
 
           </div>
         ))}
+        {!loaded && <img src="http://superstorefinder.net/support/wp-content/uploads/2018/01/orange_circles.gif" style={{width: "100px"}} />}
+        
       </div>
       <CreatePost onSubmit={getAllPost} />
     </>
   );
 }
+
+
+// { loaded && posts.reverse().map((post, index) => (
+//   <div key={index} className="post">
+//     <div className="post-header">
+//       <div className="post-author-container">
+//         <img src={post["author-img"]} />
+//         <p>{post["author"]}</p>
+//       </div>
+//       <div className="post-time-container">
+//         <p>{dateFormat(post["post-time"])}</p>
+//       </div>
+//     </div>
+
+//     {post["post-image"] &&
+//       <div className="post-image-container">
+//         <img src={post["post-image"]} />
+//       </div>}
+
+//     {post["post-text-content"] &&
+//       <div className="post-text-container">
+//         <p>{post["post-text-content"]}</p>
+//       </div>
+//     }
+//     {post["post-threads"] &&
+//       <div className="post-thread-container">
+//         {post["post-threads"].split("#").map((thread, i) => {
+//           if (thread != "") {
+//             if (i < post["post-threads"].split("#").length - 1) {
+//               return <p>#{thread.slice(0, - 1)}</p>
+//             } else {
+//               return <p>#{thread}</p>
+//             }
+//           }
+
+//         })}
+//       </div>
+//     }
+
+
+//     <div className="post-interactions">
+//       <div className="like-post-container">
+//         <p>{post["post-likes"]}</p>
+//         <button type="button" value={post["post-id"]}>
+//           <img src="../../public/assets/img/like.png" />
+//         </button>
+//       </div>
+//       <div className="dislike-post-container">
+//         <p>{post["post-dislikes"]}</p>
+//         <button type="button" value={post["post-id"]}>
+//           <img src="../../public/assets/img/dislike.png" />
+//         </button>
+//       </div>
+//       {/* Create an edit button function with post-id as in input which returns a button and  */}
+//       <button type="button" value={post["post-id"]}><img src="../../public/assets/img/comment.png" /></button>
+//       {post["post-author"] &&
+//         <>
+//           <EditButton post={post} func={handleEditPost} />
+//           {/* Create an edit button function with post-id as in input which returns a button and  */}
+//           <button type="button" value={post["post-id"]}><img src="../../public/assets/img/delete.png" /></button>
+//         </>
+//       }
+//     </div>
+
+//   </div>
+// ))}
+// {!loaded && <img src="http://superstorefinder.net/support/wp-content/uploads/2018/01/orange_circles.gif" />}

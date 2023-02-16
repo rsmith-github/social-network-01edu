@@ -51,6 +51,7 @@ main {
   text-align: center;
 }
 .profileImgParent {
+  background: linear-gradient(to bottom, rgba(215, 57, 0, 0.874) 17%, white 0%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -64,15 +65,6 @@ main {
   height: 100px;
   border: 5px solid white;
   z-index: 1;
-  position: absolute;
-}
-.profileImgBg {
-  position: relative;
-  z-index: 0;
-  width: 100%;
-  height: 80px;
-  margin-bottom: 60px;
-  background-color: rgba(215, 57, 0, 0.874);
 }
 .break {
   height: 2px;
@@ -91,6 +83,8 @@ main {
 .redText {
   color: red;
   margin-bottom: 15px;
+  font-size: large;
+  font-weight: 500;
 }
 .followerFollowing {
   color: grey;
@@ -106,6 +100,10 @@ main {
   font-size: medium;
   font-weight: 600;
   color: grey;
+  text-align: center;
+}
+.profileContainer {
+  display: flex;
 }
 .formContainer {
   grid-area: post-buttons;
@@ -617,10 +615,29 @@ main {
 .grid-item {
   background-color: rgba(255, 255, 255, 0.8);
   border-top: 5px solid rgba(215, 57, 0, 0.874);
-  padding: 20px;
-  margin: 20px;
   font-size: 30px;
   text-align: center;
+  cursor: pointer;
+  padding: 20px 20px 0 20px;
+  box-shadow: rgba(99, 99, 99, 0.264) 0px 7px 29px 0px;
+  height: 100%;
+}
+.grid-link {
+  text-decoration: none;
+  color: initial;
+  margin: 5px;
+  transform: scale3d(0.9, 0.9, 1.2);
+  transition: transform 0.5s ease-in-out;
+}
+.grid-link:hover {
+  transform: scale3d(1, 1, 1);
+  box-shadow: rgba(215, 57, 0, 0.264) 0px 7px 29px 0px;
+  transition: transform 0.5s ease-in-out;
+}
+.grid-item > div {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
 }
 .create-post-button {
   display: flex;
@@ -839,4 +856,5 @@ main {
 .dislike-post-container > button > img {
   width: 25px;
   height: 25px;
+  cursor: pointer;
 }

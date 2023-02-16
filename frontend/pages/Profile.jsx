@@ -2,19 +2,27 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import ProfileImgContainer from "../components/ProfileImgContainer";
+import RightSide from "../components/RightSide";
 
 export default function Profile(props) {
   return (
-    <div>
+    <div className="profileContainer">
       <ProfileImgContainer
         name={props.name}
         user={props.user}
         avatar={props.avatar}
+        socket={props.socket}
+        currentUser={props.currentUser}
+        followerCounts={props.followerCounts}
+        setFollowerCounts={props.setFollowerCounts}
       />
-      <p>{props.user.email}</p>
-      <p>{props.user.last}</p>
-      <p>{props.user.dob}</p>
-      <p>{props.user.nickname}</p>
+
+      <div>
+        <p>{props.user.email}</p>
+        <p>{props.user.nickname}</p>
+        <p>{props.user.last}</p>
+        <p>{props.user.dob}</p>
+      </div>
     </div>
   );
 }
