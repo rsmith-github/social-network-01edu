@@ -119,13 +119,6 @@ func GetUserFromSessions(w http.ResponseWriter, r *http.Request) {
 	jsn, _ := json.Marshal(user)
 	w.Write(jsn)
 	db.Close()
-	go func() {
-		if user.Nickname != "" {
-			chatroomId <- ""
-			loggedInUsername <- user.Nickname
-		}
-	}()
-
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
@@ -249,7 +242,7 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 				}
 				chatroom := data
 				chatroom.Users = strings.Join(returnedUserDisplay, ",")
-				content, _ := json.Marshal(data)
+				content, _ := json.Marshal(chatroom)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
 			} else {
