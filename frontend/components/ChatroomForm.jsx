@@ -9,8 +9,8 @@ export const CreateChat = (newChat) => {
     // const [chatAvatar, setChatAvatar] = useState('')
     const [isPrivate, setIsPrivate] = useState(false)
     const friendsArr = [
-        { name: "j", selected: false },
-        { name: "a", selected: false },
+        { name: "AJ", selected: false },
+        { name: "Jay", selected: false },
         { name: "m", selected: false },
         { name: "k", selected: false },
         { name: "jas", selected: false },

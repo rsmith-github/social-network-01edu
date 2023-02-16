@@ -73,17 +73,25 @@ func (s *subscription) writePump() {
 }
 
 // serveWs handles websocket requests from the peer.
+// serveWs handles websocket requests from the peer.
 func ServeWs(w http.ResponseWriter, r *http.Request) {
+	var id string
+	var user string
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err.Error())
 		return
 	}
-	id := <-chatroomId
-	user := <-loggedInUsername
+	cookie, _ := r.Cookie("session")
+	if r.URL.Path == "/ws/chat" {
+		id = <-chatroomId
+		user = <-loggedInUsername
+	} else {
+		id = ""
+		user = LoggedInUser(r).Nickname
+	}
 	fmt.Println("ws id", id)
 	fmt.Println("ws opened", user)
-	cookie, _ := r.Cookie("session")
 	c := &connection{send: make(chan ChatFields, 1), ws: ws}
 	s := subscription{c, id, user, cookie.Value}
 	H.register <- s

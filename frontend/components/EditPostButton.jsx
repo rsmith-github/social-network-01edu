@@ -23,7 +23,6 @@ export const EditButton = (editedPost) => {
     };
 
     const handleLocalChange = (location) => {
-        console.log({ location })
         if (location) {
             setLocal(true)
         } else {
@@ -50,10 +49,10 @@ export const EditButton = (editedPost) => {
                                 <label htmlFor="local">Local</label>
                             </div>
                         </div>
-                        {editPost["post-image"]&&
-                        <div className="create-post-image-container">
-                             <img src={editPost["post-image"]}/>
-                        </div>
+                        {editPost["post-image"] &&
+                            <div className="create-post-image-container">
+                                <img src={editPost["post-image"]} />
+                            </div>
                         }
                         <p>File Must Not Exceed 20MB</p>
                         <div className="create-post-textarea" contentEditable={true}>
