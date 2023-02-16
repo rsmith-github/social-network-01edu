@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import NavBar from "./components/navbar";
+import NavBar from "./components/Navbar";
 import Profile from "./pages/Profile";
 import PublicProfiles from "./pages/PublicProfiles";
 
@@ -66,13 +66,13 @@ function App() {
         aboutme: content.about,
       };
       setProps(user);
-      if (user.nickname !== undefined){
+      if (user.nickname !== undefined) {
         setValid(true);
       }
     };
     fetchData().then(() => {
       console.log(valid, 'balid user')
-      if(valid && websocket.current === null){
+      if (valid && websocket.current === null) {
         console.log('inside useEffect to open connection...')
         websocket.current = new WebSocket("ws://" + document.location.host + "/ws/user")
         console.log(websocket)

@@ -120,6 +120,12 @@ func GetUserFromSessions(w http.ResponseWriter, r *http.Request) {
 	jsn, _ := json.Marshal(user)
 	w.Write(jsn)
 	db.Close()
+	go func() {
+		if user.Nickname != "" {
+			chatroomId <- ""
+			loggedInUsername <- user.Nickname
+		}
+	}()
 
 }
 
@@ -236,6 +242,14 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 				data.Id = Generate()
 				data.Name = ""
 				AddChat(data, "")
+				var returnedUserDisplay []string
+				for _, u := range strings.Split(data.Users, ",") {
+					if u != user {
+						returnedUserDisplay = append(returnedUserDisplay, u)
+					}
+				}
+				chatroom := data
+				chatroom.Users = strings.Join(returnedUserDisplay, ",")
 				content, _ := json.Marshal(data)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
@@ -247,9 +261,17 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 		} else if data.Type == "group" {
 			data.Id = Generate()
 			data.Admin = user
-			// add admin and addmin should be the loggedInUser.Nickname
+			// add admin and addmin should be the LoggedInUser.Nickname
 			AddChat(data, user)
-			content, _ := json.Marshal(data)
+			var returnedUserDisplay []string
+			for _, u := range strings.Split(data.Users, ",") {
+				if u != user {
+					returnedUserDisplay = append(returnedUserDisplay, u)
+				}
+			}
+			chatroom := data
+			chatroom.Users = strings.Join(returnedUserDisplay, ",")
+			content, _ := json.Marshal(chatroom)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(content)
 		} else {
@@ -264,12 +286,12 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetChatRooms(w http.ResponseWriter, r *http.Request) {
-	totalChats := GetUserChats(LoggedInUser(r).Nickname)
-	content, _ := json.Marshal(totalChats)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(content)
-}
+// func GetChatRooms(w http.ResponseWriter, r *http.Request) {
+// 	totalChats := GetUserChats(LoggedInUser(r).Nickname)
+// 	content, _ := json.Marshal(totalChats)
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.Write(content)
+// }
 
 func Chat(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
@@ -278,6 +300,7 @@ func Chat(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		groupChatId := string(body)
+		fmt.Println(groupChatId)
 		var openedChat OpenChatInfo
 		openedChat.User = LoggedInUser(r).Nickname
 		openedChat.Chatroom = GetChatRoom(groupChatId, openedChat.User)
@@ -290,8 +313,10 @@ func Chat(w http.ResponseWriter, r *http.Request) {
 			loggedInUsername <- openedChat.User
 		}()
 	} else {
-		// error
-		fmt.Println("you tried it")
+		totalChats := GetUserChats(LoggedInUser(r).Nickname)
+		content, _ := json.Marshal(totalChats)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
 	}
 }
 
@@ -309,24 +334,26 @@ func EditChatroom(w http.ResponseWriter, r *http.Request) {
 		}
 		loggedInUser := LoggedInUser(r).Nickname
 		currentChatroom := GetChatRoom(data.Id, loggedInUser)
+		fmt.Println("from sql", currentChatroom)
 		currentUsers := strings.Split(currentChatroom.Users, ",")
-		check := UpdateChatroom(data, "", loggedInUser)
+		var check ChatRoomFields
+		if data.Action == "leave" {
+
+			check = UpdateChatroom(currentChatroom, data.Action, loggedInUser)
+
+		} else {
+			check = UpdateChatroom(data, "", loggedInUser)
+		}
+
 		users := strings.Split(check.Users, ",")
+		fmt.Println("current users", currentUsers)
 		var removed []string
-		var added []string
 		for _, kicked := range currentUsers {
 			if !Contains(users, kicked) {
 				removed = append(removed, kicked)
 			}
 		}
 		fmt.Println("remove user", removed)
-		for _, new := range users {
-			if !Contains(currentUsers, new) {
-				added = append(added, new)
-			}
-		}
-		fmt.Println("added user", added)
-
 		if len(removed) != 0 {
 			for _, member := range removed {
 				for id, mapOfSub := range H.rooms {
@@ -334,11 +361,10 @@ func EditChatroom(w http.ResponseWriter, r *http.Request) {
 						for s := range mapOfSub {
 							fmt.Println("subscription", s)
 							if s.name == member {
-								s := s
-								go func() {
-									s.unregister <- true
-									// and stop writepump routine too.
-								}()
+								fmt.Println("subscription", s)
+								// s.conn.ws.WriteJSON()
+								// write a message saying this person leave the chat
+								s.conn.ws.Close()
 							}
 						}
 					}
@@ -346,42 +372,46 @@ func EditChatroom(w http.ResponseWriter, r *http.Request) {
 			}
 
 		}
-		if len(added) != 0 {
-			// create new subscription in H[rooms] and go routine
-		}
 		content, _ := json.Marshal(check)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)
 	}
 }
 
-func LeaveChatroom(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
+func CreatePost(w http.ResponseWriter, r *http.Request) {
+	var postData PostFields
+	if r.Method != "POST" {
+		allPosts := GetUserPosts(LoggedInUser(r).Nickname)
+		content, _ := json.Marshal(allPosts)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+	} else {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			panic(err)
 		}
-		groupChatId := string(body)
-		user := LoggedInUser(r).Nickname
-		data := GetChatRoom(groupChatId, user)
-		check := UpdateChatroom(data, "leave", user)
-		for id, mapOfSub := range H.rooms {
-			if id == check.Id {
-				for s := range mapOfSub {
-					fmt.Println("subscription", s)
-					if s.name == user {
-						s := s
-						go func() {
-							s.unregister <- true
-						}()
-					}
-				}
-			}
-		}
 
-		content, _ := json.Marshal(check)
+		err = json.Unmarshal(body, &postData)
+		if err != nil {
+			panic(err)
+		}
+		user := LoggedInUser(r).Nickname
+		if user == "" {
+			postData.Error = "Cannot Add Post, please Sign Up or Log In"
+
+		} else if (len(postData.Thread) == 0) && (postData.Image == "") && (postData.Text == "") {
+			postData.Error = "please add content or close"
+		} else {
+			postData.Id = Generate()
+			postData.Author = user
+			fmt.Println("post", postData)
+			AddPost(postData)
+		}
+		// get all posts and return
+		allPosts := GetUserPosts(LoggedInUser(r).Nickname)
+		fmt.Println(allPosts)
+		content, _ := json.Marshal(allPosts)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)
-		// send
 	}
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react"
-import { EditChat } from "./chatroomForm"
+import { EditChat } from "./EditChatRoomForm"
 
 export const ChatBox = (response) => {
     const [visible, setVisible] = useState(false)
@@ -69,8 +69,12 @@ export const ChatBox = (response) => {
 
 
     const closeChatRoom = () => {
-        setVisible(false)
+        if (!privateChat) {
+            response["onClose"]()
+        }
         setDescriptionBox(false)
+        setVisible(false)
+
 
     }
     const openChatRoom = () => {
@@ -103,10 +107,28 @@ export const ChatBox = (response) => {
         }
     }
 
-    const handleChildDestroy = (name, description) => {
+    const handleChatroomChange = (name, description, users) => {
         setChatName(name)
         setChatDescription(description)
+        setChatUsers(users)
     };
+
+    const leaveChat = () => {
+        console.log(user, "left the chat")
+        const values = { "action": "leave", "chatroom-id": chatroomId }
+        fetch("http://localhost:8080/edit-chatroom", {
+            method: "POST",
+            headers: {
+                'Content-Type': "application/json"
+            },
+            body: JSON.stringify(values),
+        }).then(response => response.json())
+            .then((response) => {
+                console.log(response)
+                closeChatRoom()
+            })
+
+    }
 
     return (
         <>
@@ -119,18 +141,18 @@ export const ChatBox = (response) => {
                         <div className="chat-buttons">
                             {privateChat ? (
                                 <>
-                                    <button className="leave-group-button">Leave</button>
+                                    <button className="leave-group-button" type="button" onClick={leaveChat}>Leave</button>
                                 </>
                             ) : (
                                 (admin === user) ? (
                                     <>
-                                        <EditChat n={chatName} d={chatDescription} u={chatUsers} i={chatroomId} l={user} onDestroy={handleChildDestroy} />
-                                        <button className="leave-group-button">Leave</button>
+                                        <EditChat n={chatName} d={chatDescription} u={chatUsers} i={chatroomId} l={user} change={handleChatroomChange} />
+                                        <button className="leave-group-button" onClick={leaveChat}>Leave</button>
                                     </>
                                 )
                                     : (
                                         <>
-                                            <button className="leave-group-button">Leave</button>
+                                            <button className="leave-group-button" type="button" onClick={leaveChat}>Leave</button>
                                         </>
                                     )
 

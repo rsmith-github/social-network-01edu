@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import PostForm from "../components/PostForm";
+import PostForm, { CreatePost } from "../components/PostForm";
 import ProfileImgContainer from "../components/ProfileImgContainer";
 import RightSide from "../components/RightSide";
-import {GetChat } from "../components/chatrooms";
+import { GetChat } from "../components/Chatrooms";
 
 export default function Home(props) {
   return (

@@ -1,6 +1,6 @@
 import React, { useState } from "react"
-import { CreateChat } from "./chatroomForm"
-import { ChatBox } from "./chatbox"
+import { CreateChat } from "./ChatroomForm"
+import { ChatBox } from "./Chatbox"
 
 export const GetChat = () => {
     const [isPrivate, setIsPrivate] = useState(false)
@@ -10,7 +10,7 @@ export const GetChat = () => {
 
     const displayPrivateChatRooms = (privateChat) => {
         if (privateChat) {
-            fetch('http://localhost:8080/get-chatrooms')
+            fetch('http://localhost:8080/get-chat')
                 .then(response => response.json())
                 .then(data => {
                     setChats(data)
@@ -18,7 +18,7 @@ export const GetChat = () => {
             setIsPrivate(true);
             console.log("private rooms", isPrivate, chats)
         } else {
-            fetch('http://localhost:8080/get-chatrooms')
+            fetch('http://localhost:8080/get-chat')
                 .then(response => response.json())
                 .then(data => {
                     setChats(data)
@@ -34,7 +34,7 @@ export const GetChat = () => {
     }
 
     const openChatRooms = () => {
-        fetch('http://localhost:8080/get-chatrooms')
+        fetch('http://localhost:8080/get-chat')
             .then(response => response.json())
             .then(data => {
                 setChats(data)
@@ -55,6 +55,14 @@ export const GetChat = () => {
                 return { ...chatrooms, "group-chatrooms": [...groupChats, chatInfo] };
             });
         }
+    }
+
+    const checkGroupDisplay = () => {
+        fetch('http://localhost:8080/get-chat')
+            .then(response => response.json())
+            .then(data => {
+                setChats(data)
+            })
     }
 
 
@@ -85,7 +93,7 @@ export const GetChat = () => {
                                 {chats["private-chatrooms"] ? (
                                     <>
                                         {chats["private-chatrooms"].map(chat =>
-                                            <ChatBox r={chat["chatroom-id"]} n={""} u={chat["users"]} t={isPrivate} />
+                                            <ChatBox r={chat["chatroom-id"]} n={""} u={chat["users"]} t={isPrivate} onClose={checkGroupDisplay} />
                                         )}
                                     </>
                                 ) : (
@@ -98,7 +106,7 @@ export const GetChat = () => {
                                 {chats["group-chatrooms"] ? (
                                     <>
                                         {chats["group-chatrooms"].map(chat =>
-                                            <ChatBox r={chat["chatroom-id"]} n={chat["chat-name"]} u={chat["users"]} t={isPrivate} />
+                                            <ChatBox r={chat["chatroom-id"]} n={chat["chat-name"]} u={chat["users"]} t={isPrivate} onClose={checkGroupDisplay} />
                                         )}
                                     </>
                                 ) : (

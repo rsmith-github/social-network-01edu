@@ -217,20 +217,29 @@ func Contains(s []string, e string) bool {
 }
 
 func UpdateChatroom(chatroom ChatRoomFields, action string, user string) ChatRoomFields {
-	fmt.Println("inside update function", action, user, chatroom)
 	db := OpenDB()
 	users := strings.Split(chatroom.Users, ",")
+	sort.Strings(users)
 	if action == "leave" {
 		if user == chatroom.Admin {
 			randomIndex := rand.Intn(len(users))
 			chatroom.Admin = users[randomIndex]
 		}
+		var returnedUserDisplay []string
+		for _, u := range users {
+			if u != user {
+				returnedUserDisplay = append(returnedUserDisplay, u)
+			}
+		}
+		fmt.Println(users)
+		chatroom.Users = strings.Join(returnedUserDisplay, ",")
 		// else{
 
 		// }
 	} else {
 		chatroom.Admin = user
-		chatroom.Users += "," + user
+
+		chatroom.Users += strings.Join(users, ",") + "," + user
 	}
 	stmt, err := db.Prepare("UPDATE chatroom SET name = ?, description = ?, users=? , admin =? WHERE id = ?")
 	if err != nil {
@@ -281,6 +290,53 @@ func GetPreviousMessages(chatroomId string) []ChatFields {
 	return messages
 }
 
+func AddPost(postFields PostFields) {
+	fmt.Println("inside add post", postFields)
+	db := OpenDB()
+	stmt, err := db.Prepare(`INSERT into "posts"(id,author,image,text,thread,time) VALUES (?,?,?,?,?,?)`)
+	if err != nil {
+		fmt.Println("error add post to table", err)
+	}
+	stmt.Exec(postFields.Id, postFields.Author, postFields.Image, postFields.Text, postFields.Thread, postFields.Time)
+}
+
+func GetUserPosts(user string) []PostFields {
+	fmt.Println("inside get user  post", user)
+	db := OpenDB()
+	sliceOfPostTableRows := []PostFields{}
+	rows, _ := db.Query(`SELECT * FROM "posts"`)
+	var id string
+	var author string
+	var image string
+	var text string
+	var thread string
+	var time int
+
+	for rows.Next() {
+		rows.Scan(&id, &author, &image, &text, &thread, &time)
+		postTableRows := PostFields{
+			Id:         id,
+			Author:     author,
+			Image:      image,
+			Text:       text,
+			Thread:     thread,
+			Time:       time,
+			PostAuthor: false,
+			// Likes:    len(LD.Get(id, "l")),
+			// Dislikes: len(LD.Get(id, "d")),
+		}
+		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", postTableRows.Author, db, "GetUserFromPosts")
+		postTableRows.AuthorImg = QueryUser(row, err).Avatar
+		if postTableRows.Author == user {
+			postTableRows.PostAuthor = true
+		}
+
+		sliceOfPostTableRows = append(sliceOfPostTableRows, postTableRows)
+	}
+	rows.Close()
+	return sliceOfPostTableRows
+}
+
 func LoggedInUser(r *http.Request) User {
 	cookie, err := r.Cookie("session")
 	if err != nil {
@@ -325,8 +381,8 @@ func CreateSqlTables() {
 	CheckErr(messagesTblErr, "-------Error creating table")
 
 	// Create posts table if doesn't exist.
-	// var _, postTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `posts` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_ID` VARCHAR(64) NOT NULL, `username` VARCHAR(64) NOT NULL, `content` TEXT NOT NULL, `time_posted` TEXT NOT NULL, `category` VARCHAR(64), `category_2` VARCHAR(64))")
-	// CheckErr(postTblErr, "-------Error creating table")
+	var _, postTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `posts` ( `id` TEXT NOT NULL UNIQUE,`author`	TEXT NOT NULL, `image` TEXT,`text` TEXT,`thread` TEXT, `time` NUMBER)")
+	CheckErr(postTblErr, "-------Error creating table")
 
 	// Create comments table if not exists
 	// var _, commentError = db.Exec("CREATE TABLE IF NOT EXISTS `comments` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `username` VARCHAR(64), `comment` TEXT NOT NULL, `post_ID` INTEGER NOT NULL )")

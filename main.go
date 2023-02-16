@@ -21,11 +21,11 @@ func main() {
 	http.HandleFunc("/profile", functions.Profile)
 	http.HandleFunc("/create-chat", functions.CreateChat)
 	http.HandleFunc("/edit-chatroom", functions.EditChatroom)
-	http.HandleFunc("/leave-chatroom", functions.LeaveChatroom)
-	http.HandleFunc("/get-chatrooms", functions.GetChatRooms)
 	http.HandleFunc("/get-chat", functions.Chat)
 	http.HandleFunc("/ws/chat", functions.ServeWs)
 	http.HandleFunc("/ws/user", functions.ServeWs)
+
+	http.HandleFunc("/create-post", functions.CreatePost)
 	go functions.H.Run()
 	go functions.SqlExec.ExecuteStatements()
 

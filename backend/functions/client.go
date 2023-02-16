@@ -31,28 +31,22 @@ func (s subscription) readPump() {
 	}()
 
 	for {
-		select {
-		case <-s.unregister:
-			fmt.Println("stop go routine here")
-			return
-		default:
-			var chatFields ChatFields
-			err := c.ws.ReadJSON(&chatFields)
-			chatFields.Id = s.room
-			chatFields.MessageId = Generate()
 
-			if err != nil {
-				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
-					log.Printf("error: %v", err)
-				}
-				return
+		var chatFields ChatFields
+		err := c.ws.ReadJSON(&chatFields)
+		chatFields.Id = s.room
+		chatFields.MessageId = Generate()
+
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
+				log.Printf("error: %v", err)
 			}
-			m := data{chatFields}
-			H.broadcast <- m
-			SqlExec.messages <- chatFields
+			return
 		}
+		m := data{chatFields}
+		H.broadcast <- m
+		SqlExec.messages <- chatFields
 	}
-
 }
 
 // writePump pumps messages from the hub to the websocket connection.
@@ -91,7 +85,7 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("ws opened", user)
 	cookie, _ := r.Cookie("session")
 	c := &connection{send: make(chan ChatFields, 1), ws: ws}
-	s := subscription{c, id, user, cookie.Value, make(chan bool)}
+	s := subscription{c, id, user, cookie.Value}
 	H.register <- s
 	go s.writePump()
 	go s.readPump()

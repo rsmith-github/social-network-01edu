@@ -26,6 +26,7 @@ type ChatRoomFields struct {
 	Type        string `json:"chat-type"`
 	Users       string `json:"users"`
 	Admin       string `json:"admin"`
+	Action      string `json:"action"`
 }
 
 type ChatroomType struct {
@@ -45,4 +46,18 @@ type OpenChatInfo struct {
 	User             string         `json:"user"`
 	Chatroom         ChatRoomFields `json:"chatroom"`
 	PreviousMessages []ChatFields   `json:"previous-messages"`
+}
+
+type PostFields struct {
+	Id         string `json:"post-id"`
+	Author     string `json:"author"`
+	AuthorImg  string `json:"author-img"`
+	Image      string `json:"post-image"`
+	Text       string `json:"post-text-content"`
+	Thread     string `json:"post-threads"`
+	Likes      int    `json:"post-likes"`
+	Dislikes   int    `json:"post-dislikes"`
+	PostAuthor bool   `json:"post-author"`
+	Time       int    `json:"post-time"`
+	Error      string `json:"error"`
 }

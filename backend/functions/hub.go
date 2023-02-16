@@ -11,11 +11,10 @@ type data struct {
 }
 
 type subscription struct {
-	conn       *connection
-	room       string
-	name       string
-	sessionId  string
-	unregister chan bool
+	conn      *connection
+	room      string
+	name      string
+	sessionId string
 }
 
 // hub maintains the set of active connections and broadcasts messages to the

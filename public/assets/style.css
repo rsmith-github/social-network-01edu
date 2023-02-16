@@ -12,8 +12,13 @@ main {
   height: 100vh;
 }
 .contentContainer {
-  display: flex;
-  width: 90%;
+  display: grid;
+  width: 100%;
+  height: 90vh;
+  grid-template-columns: 1fr 2fr 1fr;
+  grid-template-rows: 80px 1fr 1fr 15px;
+  grid-gap: 1rem;
+  grid-template-areas: "profile post-buttons right-side" "profile posts right-side" "profile posts right-side";
 }
 .form-signin {
   max-width: 330px;
@@ -37,19 +42,19 @@ main {
   border-radius: 0 0 0 0 !important;
 }
 .profileImgContainer {
-  width: 250px;
+  grid-area: profile;
+  display: flex;
+  height: max-content;
+  justify-content: center;
 }
 .aboutme {
   text-align: center;
-}
-.contentContainer .profileImgContainer {
-  width: 45%;
 }
 .profileImgParent {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%;
+  width: 70%;
   background-color: white;
 }
 .profileImg {
@@ -103,17 +108,15 @@ main {
   color: grey;
 }
 .formContainer {
+  grid-area: post-buttons;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  width: 90%;
+  width: 100%;
   background-color: white;
-  height: 105px;
-  margin-left: 30px;
-  margin-right: 30px;
-  padding-left: 20px;
-  padding-right: 20px;
+  padding-left: 10px;
+  padding-right: 10px;
   border-top: 5px solid rgba(215, 57, 0, 0.874);
 }
 .privacyButtons {
@@ -136,9 +139,11 @@ main {
   z-index: 1;
 }
 #rightSide {
+  grid-area: right-side;
+  display: flex;
+  justify-content: center;
   background-color: white;
-  width: 45%;
-  height: 80vh;
+  height: 100%;
 }
 #open-chat-button {
   display: flex;
@@ -616,4 +621,222 @@ main {
   margin: 20px;
   font-size: 30px;
   text-align: center;
+}
+.create-post-button {
+  display: flex;
+  width: 60px;
+  height: 60px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 1000px;
+  border: transparent;
+  margin-left: 10px;
+  position: absolute;
+  bottom: 4px;
+  right: 70px;
+  z-index: 999;
+  background-color: rgba(215, 57, 0, 0.874);
+}
+.create-post-button:hover {
+  transform: scale(1.15);
+}
+.create-post-button > img {
+  height: 40px;
+}
+.create-post-button:active > img {
+  filter: brightness(0) invert(1);
+}
+.create-post-container,
+.edit-post-container {
+  position: fixed;
+  z-index: 3;
+  padding-top: 100px;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  overflow: auto;
+}
+.create-post-form,
+.edit-post-form {
+  display: flex;
+  width: 60%;
+  height: 80%;
+  margin: auto;
+  margin-bottom: 10%;
+  flex-direction: column;
+  align-items: center;
+  background-color: whitesmoke;
+  box-shadow: 4px 15px 50px rgb(6, 187, 45);
+  border-radius: 50px;
+  margin-bottom: 30px;
+  margin-top: 30px;
+  overflow: auto;
+}
+.create-post-close-button {
+  width: 8.5%;
+  border-radius: 100px;
+  background-color: rgb(250, 124, 124);
+  margin-top: 13px;
+  margin-left: 10px;
+  font-size: 30px;
+  font-weight: bold;
+  color: white;
+  border-color: transparent;
+  align-self: baseline;
+}
+.create-post-close-button:hover,
+.create-post-close-button:focus {
+  background-color: darkred;
+  color: black;
+}
+.create-post-image-container {
+  width: 100%;
+  max-height: 200px;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 5px;
+  margin-top: 5px;
+}
+.create-post-image-container > img {
+  max-width: 50%;
+  object-fit: contain;
+}
+.post-container {
+  grid-area: posts;
+  overflow-y: auto;
+}
+.post {
+  background-color: white;
+  margin-bottom: 10px;
+  width: 100%;
+}
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  background-color: rgba(215, 57, 0, 0.874);
+  padding: 5px;
+  align-items: center;
+  margin-bottom: 5px;
+}
+.post-author-container {
+  display: flex;
+  height: max-content;
+  align-items: center;
+}
+.post-author-container > img {
+  width: 35px;
+  height: 35px;
+  border-radius: 50px;
+  border: 3px solid white;
+  margin: 0;
+}
+.post-author-container > p {
+  margin: 0;
+  margin-left: 5px;
+  font-size: large;
+  font-weight: 500;
+  color: white;
+}
+.post-time-container {
+  display: flex;
+  align-items: center;
+}
+.post-time-container > p {
+  margin: 0;
+  color: #ffffff59;
+  font-size: small;
+}
+.post-image-container {
+  width: 100%;
+  max-height: 50%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 5px;
+}
+.post-image-container > img {
+  max-width: 75%;
+  padding: 10px;
+  object-fit: contain;
+}
+.post-text-container,
+.post-thread-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 10px;
+  padding-bottom: 0;
+}
+.post-text-container > p,
+.post-thread-container > p {
+  width: 90%;
+  max-height: 5%;
+  overflow-y: auto;
+  text-align: center;
+  font-size: larger;
+  font-weight: 400;
+  margin: 0;
+}
+.post-thread-container > p {
+  width: auto;
+  font-weight: 500;
+  color: #ffa500;
+  margin-left: 5px;
+  padding-bottom: 5px;
+}
+.post-interactions {
+  display: flex;
+  justify-content: space-around;
+  padding-bottom: 10px;
+}
+.like-post-container,
+.dislike-post-container {
+  display: flex;
+  align-items: center;
+}
+.post-interactions > button,
+.like-post-container > button,
+.dislike-post-container > button {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 5px;
+  border: none;
+  background-color: rgba(215, 57, 0, 0.874);
+  color: white;
+  font-weight: 500;
+  border-radius: 3px;
+}
+.post-interactions > button:hover,
+.like-post-container > button:hover,
+.dislike-post-container > button:hover {
+  background-color: rgba(186, 50, 1, 0.874);
+}
+.post-interactions > button:active,
+.like-post-container > button:active,
+.dislike-post-container > button:active {
+  background-color: rgba(135, 38, 2, 0.874);
+}
+.post-interactions > button > p,
+.like-post-container > p,
+.dislike-post-container > p {
+  margin: 0;
+  margin-right: 5px;
+}
+.like-post-container > p {
+  color: green;
+  font-weight: 600;
+  font-size: large;
+}
+.dislike-post-container > p {
+  color: red;
+  font-weight: 600;
+  font-size: large;
+}
+.post-interactions > button > img,
+.like-post-container > button > img,
+.dislike-post-container > button > img {
+  width: 25px;
+  height: 25px;
 }
