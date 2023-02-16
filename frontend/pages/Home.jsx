@@ -7,7 +7,7 @@ import { CreateChat, GetChat } from "../components/chatroom";
 
 export default function Home(props) {
   return (
-    <main >
+    <main>
       <div className="contentContainer">
         {props.name ? (
           <>
@@ -15,6 +15,8 @@ export default function Home(props) {
               name={props.name}
               user={props.user}
               avatar={props.avatar}
+              followerCounts={props.followerCounts}
+              setFollowerCounts={props.setFollowerCounts}
             />
             <PostForm avatar={props.avatar} />
             <RightSide />

@@ -99,6 +99,8 @@ main {
 .redText {
     color: red;
     margin-bottom: 15px;
+    font-size: large;
+    font-weight: 500;
 }
 
 .followerFollowing {
@@ -119,6 +121,11 @@ main {
     color: grey;
     text-align: center;
 
+}
+
+
+.profileContainer {
+    display: flex;
 }
 
 

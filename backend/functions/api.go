@@ -2,6 +2,7 @@ package functions
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 )
@@ -17,12 +18,32 @@ func UsersApi(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// This api helper function checks whether the current user is following the followee.
+func FollowersApi(w http.ResponseWriter, r *http.Request) {
+
+	// Get user from front end.
+	var follow Follow
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&follow)
+	if err != nil {
+		fmt.Println("Error in FollowersApi function:  ", err)
+	}
+	// Try to find row where follower=currentUser and followee=toFollow
+	bytes := ExecuteSQL(`SELECT * FROM followers WHERE follower="` + follow.Follower + `" AND followee="` + follow.Followee + `";`)
+
+	// Make sure content type is json not plain text.
+	w.Header().Set("Content-Type", "application/json")
+	// Write json as from bytes.
+	w.Write(bytes)
+
+}
+
 func createApi(table string, w http.ResponseWriter, r *http.Request) {
 
 	var str string
 	// Build query string
 	if table == "users" {
-		str = "SELECT email, firstname, lastname, dob, avatar, aboutme FROM " + table + ";"
+		str = "SELECT email, firstname, lastname, dob, avatar, nickname, aboutme, followers, following FROM " + table + ";"
 	} else {
 		str = "SELECT * FROM " + table + ";"
 	}

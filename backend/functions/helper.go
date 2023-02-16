@@ -38,11 +38,13 @@ func QueryUser(rows *sql.Rows, err error) User {
 	var avatar string
 	var nickname string
 	var aboutme string
+	var followers int
+	var following int
 
 	var usr User
 	// Scan all the data from that row.
 	for rows.Next() {
-		err = rows.Scan(&id, &email, &password, &firstname, &lastname, &dob, &avatar, &nickname, &aboutme)
+		err = rows.Scan(&id, &email, &password, &firstname, &lastname, &dob, &avatar, &nickname, &aboutme, &followers, &following)
 		temp := User{
 			Id:        id,
 			Email:     email,
@@ -53,6 +55,8 @@ func QueryUser(rows *sql.Rows, err error) User {
 			Avatar:    avatar,
 			Nickname:  nickname,
 			Aboutme:   aboutme,
+			Followers: followers,
+			Following: following,
 		}
 		// currentUser = &username
 		CheckErr(err, "-------LINE 56")
@@ -201,7 +205,7 @@ func CreateSqlTables() {
 	// CheckErr(deleteTblErr, "-------Error deleting table")
 
 	// Create user table if it doen't exist.
-	var _, usrTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `email` VARCHAR(64) NOT NULL UNIQUE, `password` VARCHAR(255) NOT NULL, `firstname` VARCHAR(64) NOT NULL, `lastname` VARCHAR(64) NOT NULL, `dob` VARCHAR(255) NOT NULL, `avatar` VARCHAR(255), `nickname` VARCHAR(64), `aboutme` VARCHAR(255))")
+	var _, usrTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `email` VARCHAR(64) NOT NULL UNIQUE, `password` VARCHAR(255) NOT NULL, `firstname` VARCHAR(64) NOT NULL, `lastname` VARCHAR(64) NOT NULL, `dob` VARCHAR(255) NOT NULL, `avatar` VARCHAR(255), `nickname` VARCHAR(64), `aboutme` VARCHAR(255), `followers` INTEGER DEFAULT 0, `following` INTEGER DEFAULT 0)")
 	CheckErr(usrTblErr, "-------Error creating table")
 
 	// Create sessions table if doesn't exist.
@@ -227,6 +231,9 @@ func CreateSqlTables() {
 	// Create messages table if not exists
 	// var _, msgErr = db.Exec("CREATE TABLE IF NOT EXISTS `messages` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `sender` VARCHAR(64), `receiver` VARCHAR(64), `message` TEXT, `time` TEXT NOT NULL, `status` VARCHAR(64))")
 	// CheckErr(msgErr, "-------Error creating table")
+	// Create followers table if not exists
+	var _, followErr = db.Exec("CREATE TABLE IF NOT EXISTS `followers` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `follower` VARCHAR(64), `followee` VARCHAR(64))")
+	CheckErr(followErr, "-------Error creating table")
 
 	db.Close()
 
@@ -285,6 +292,25 @@ func PreparedQuery(query string, input string, db *sql.DB, functionName string) 
 	}
 
 	return rows, err
+}
+
+// More secure sql execute. Insert etc. pass data in through m which is a map and query via first arg.
+func PreparedExec(query string, m map[string]string, db *sql.DB, functionName string) {
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		fmt.Println(functionName, " -- ", err.Error())
+	}
+	defer stmt.Close()
+
+	if functionName == "updateFollowerCount" {
+		stmt.Exec(m["follower"], m["followee"])
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	}
+
+	return
+
 }
 
 func QuerySession(rows *sql.Rows, err error) Session {

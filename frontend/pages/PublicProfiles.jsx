@@ -3,8 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 import Profile from "./Profile";
 
 export default function PublicProfiles(props) {
-  console.log(props.users);
   const location = useLocation();
+  // Get user from url
   const query = new URLSearchParams(location.search);
   const userFromUrl = query.get("user");
 
@@ -17,7 +17,7 @@ export default function PublicProfiles(props) {
 
   const queriedUserData = getQueriedUser(props.users, userFromUrl);
 
-  //   If user found, show their profile.
+  //   If user found in url, show their profile.
   if (queriedUserData.length == 1) {
     const usr = queriedUserData[0];
     return (
@@ -30,7 +30,13 @@ export default function PublicProfiles(props) {
           dob: usr.dob,
           nickname: usr.nickname,
           aboutme: usr.aboutme,
+          following: usr.following,
+          followers: usr.followers,
         }}
+        socket={props.socket} // socket passed down from App.jsx
+        currentUser={props.user} // user that's interacting with the dom.
+        followerCounts={props.followerCounts}
+        setFollowerCounts={props.setFollowerCounts}
       />
     );
   }
@@ -40,6 +46,10 @@ export default function PublicProfiles(props) {
     <div id="public-profiles">
       {props.users ? (
         props.users.map((user) => {
+          // Skip current user.
+          if (user.email == props.user.email) {
+            return;
+          }
           return (
             <Link
               to={

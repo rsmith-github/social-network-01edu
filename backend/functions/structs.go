@@ -10,6 +10,8 @@ type User struct {
 	Avatar    string `json:"avatar"`
 	Nickname  string `json:"nickname"`
 	Aboutme   string `json:"about"`
+	Followers int    `json:"followers"`
+	Following int    `json:"following"`
 }
 
 type Session struct {
@@ -37,4 +39,9 @@ type ChatFields struct {
 	MessageId string `json:"message-id"`
 	Message   string `json:"message"`
 	Date      int    `json:"date"`
+}
+
+type Follow struct {
+	Follower string `json:"follower"`
+	Followee string `json:"followee"`
 }
