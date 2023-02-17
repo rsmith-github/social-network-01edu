@@ -665,7 +665,8 @@ main {
   filter: brightness(0) invert(1);
 }
 .create-post-container,
-.edit-post-container {
+.edit-post-container,
+.delete-post-container {
   position: fixed;
   z-index: 3;
   padding-top: 100px;
@@ -677,7 +678,8 @@ main {
   overflow: auto;
 }
 .create-post-form,
-.edit-post-form {
+.edit-post-form,
+.delete-post-form {
   display: flex;
   width: 60%;
   height: 80%;
@@ -909,4 +911,39 @@ main {
 }
 .reset-edit-post-button:active {
   background-color: #5b6065;
+}
+.delete-post-form {
+  flex-direction: row;
+  padding: 20px;
+}
+.delete-confirmation-container {
+  display: flex;
+  width: 90%;
+  justify-content: space-evenly;
+}
+.delete-post-confirmed {
+  font-size: x-large;
+  font-weight: 600;
+  width: 150px;
+  border-color: transparent;
+  border-radius: 23px;
+  background-color: #ff2e2e;
+  color: white;
+}
+.delete-post-confirmed:hover,
+.delete-post-confirmed:active {
+  background-color: #c42525;
+}
+.delete-post-unconfirmed {
+  font-size: x-large;
+  font-weight: 600;
+  width: 150px;
+  border-color: transparent;
+  border-radius: 23px;
+  background-color: #0ae981;
+  color: white;
+}
+.delete-post-unconfirmed:hover,
+.delete-post-unconfirmed:active {
+  background-color: #07a75c;
 }

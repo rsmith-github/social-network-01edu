@@ -3,7 +3,6 @@ export const EditButton = (editedPost) => {
     let editPost = editedPost
 
     let editedPostThreads = editPost["post"]["post-threads"].split("#").map((thread, i) => {
-        console.log({ thread })
         if (thread != "") {
             if (i < editPost["post"]["post-threads"].split("#").length - 1) {
                 return thread.slice(0, - 1)
@@ -14,6 +13,7 @@ export const EditButton = (editedPost) => {
             return ""
         }
     }).filter(e => e !== "")
+    console.log(editedPostThreads)
     const [urlImage, setUrlImage] = useState("")
     const [selectedImage, setSelectedImage] = useState(null)
     const [localImage, setLocalImage] = useState("")
@@ -22,6 +22,7 @@ export const EditButton = (editedPost) => {
     const [threadArr, setThreadArr] = useState(editedPostThreads)
     const [visible, setVisible] = useState(false)
     const [local, setLocal] = useState(false)
+    const [errorMes, setErrorMes] = useState("")
 
 
     const [displayImg, setDisplayImg] = useState(true)
@@ -88,22 +89,30 @@ export const EditButton = (editedPost) => {
         }
 
 
-        // fetch("http://localhost:8080/edit-post", {
-        //     method: "POST",
-        //     headers: {
-        //         'Content-Type': "multipart/form-data"
-        //     },
-        //     body: JSON.stringify(values),
-        // })
-        //     .then(response => response.json())
-        //     // return array of posts and send to the top.
-        //     .then(response => {
-        //         console.log(response)
-        // return full post, not array
-        //         editedPost["func"](response)
-        //         closeEditPostForm()
-        //     })
+        fetch("http://localhost:8080/edit-post", {
+            method: "POST",
+            headers: {
+                'Content-Type': "multipart/form-data"
+            },
+            body: JSON.stringify(values),
+        })
+            .then(response => response.json())
+            // return array of posts and send to the top.
+            .then(response => {
+                console.log(response)
+                if (response["error"] != "") {
+                    setErrorMes(response["error"])
+                } else {
+                    editedPost["func"](response)
+                    closeEditPostForm()
+                }
+            })
+    }
 
+    const handleKeyPress = (evt) => {
+        if (evt.key === "#") {
+            evt.preventDefault()
+        }
     }
 
     return (
@@ -120,27 +129,27 @@ export const EditButton = (editedPost) => {
                             <button type="button" className="reset-edit-post-button" onClick={resetForm}> Reset</button>
                         </div>
 
-
-                        <div className="image-location">
-                            <div>
-                                <input type="radio" id="Url" name="img-location" value="Url" onChange={() => handleLocalChange(false)} checked={!local} defaultChecked />
-                                <label htmlFor="Url">Online</label>
-                            </div>
-                            <div>
-                                <input type="radio" id="local" name="img-location" value="local" onChange={() => handleLocalChange(true)} checked={local} />
-                                <label htmlFor="local">Local</label>
-                            </div>
-                        </div>
-
-
                         {displayImg ? (
                             <div className="create-post-image-container">
-                                {editPost["post"]["post-image"] &&
+                                {editPost["post"]["post-image"] ? (
                                     <img src={editPost["post"]["post-image"]} onClick={() => setDisplayImg(false)} />
+                                ) : (
+                                    setDisplayImg(false)
+                                )
                                 }
                             </div>
                         ) : (
                             <>
+                                <div className="image-location">
+                                    <div>
+                                        <input type="radio" id="Url" name="img-location" value="Url" onChange={() => handleLocalChange(false)} checked={!local} defaultChecked />
+                                        <label htmlFor="Url">Online</label>
+                                    </div>
+                                    <div>
+                                        <input type="radio" id="local" name="img-location" value="local" onChange={() => handleLocalChange(true)} checked={local} />
+                                        <label htmlFor="local">Local</label>
+                                    </div>
+                                </div>
                                 {local ? (
                                     <>
                                         <div className="create-post-image-container">
@@ -193,14 +202,19 @@ export const EditButton = (editedPost) => {
                             <textarea name="post-text-content" className="post-text-content" value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="For Emojis Press: 'Windows + ;' or 'Ctrl + Cmd + Space'" />
                         </div>
                         <div className="create-post-threads">
-                            <input type="text" className="add-thread-input" placeholder="Add Thread" value={thread} onChange={(e) => setThread(e.target.value)} />
+                            <input type="text" className="add-thread-input" placeholder="Add Thread" value={thread} onChange={(e) => setThread(e.target.value)} onKeyPress={handleKeyPress} />
                             <button className="add-thread-button" type="button" onClick={addThread}>+</button>
                             {threadArr &&
                                 <>
                                     <p>Click the # to remove</p>
                                     <div className="thread-container">
-                                        {threadArr.map((t, index) =>
-                                            <p key={index} className="added-thread" onClick={() => removeThread(index)}>{t}</p>
+                                        {threadArr.map((t, index) => {
+                                            if (index === 0) {
+                                                return <p key={index} className="added-thread" onClick={() => removeThread(index)}>#{t}</p>
+                                            } else {
+                                                return <p key={index} className="added-thread" onClick={() => removeThread(index)}>{t}</p>
+                                            }
+                                        }
                                         )
                                         }
                                     </div>
@@ -208,7 +222,9 @@ export const EditButton = (editedPost) => {
                             }
 
                         </div>
-
+                        {errorMes &&
+                            <p className="edit-error-message">{errorMes}</p>
+                        }
                         <input type="submit" className="create-post-submit-button" value="Create" />
                     </form>
                 </div >

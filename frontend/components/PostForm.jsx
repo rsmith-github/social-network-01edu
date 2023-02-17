@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { CreatePost } from "./CreatePostForm";
-import { EditButton } from "./EditPostButton";
+import React, { useState, useEffect } from "react"
+import { CreatePost } from "./CreatePostForm"
+import { DeleteButton } from "./DeletePostButton"
+import { EditButton } from "./EditPostButton"
 
 // Post form in the center
 export default function PostForm(props) {
@@ -17,45 +18,55 @@ export default function PostForm(props) {
           setLoaded(true)
         })
     }
-  }, [loaded]);
+  }, [loaded])
+
 
   const getAllPost = (response) => {
     setPosts(response)
   }
 
   const dateFormat = (strDate) => {
-    let date = new Date(strDate);
+    let date = new Date(strDate)
     let dd = date.getDate();
-    let mm = date.getMonth() + 1; //January is 0!
+    let mm = date.getMonth() + 1;
     let yyyy = date.getFullYear().toString().substr(-2);
     if (dd < 10) {
-      dd = "0" + dd;
+      dd = '0' + dd;
     }
     if (mm < 10) {
-      mm = "0" + mm;
+      mm = '0' + mm;
     }
-    let hh = date.getHours();
-    let min = date.getMinutes();
+    let hh = date.getHours()
+    let min = date.getMinutes()
     date = dd + "/" + mm + "/" + yyyy + " " + hh + ":" + min;
     return date.toString();
-  };
+  }
 
   const handleBrokenAuthImage = (source) => {
     if (source != "") {
-      return source;
+      return source
     } else {
-      return "https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png";
+      return "https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png"
     }
-  };
+  }
 
   const handleEditPost = (edited) => {
-    const updatedPosts = posts.map((post) => {
-      if (post["post-id"] === post["post-id"]) {
-        return { ...post, edited };
+    console.log("edited post", { edited })
+    setPosts(prevPosts => {
+      const index = prevPosts.findIndex(post => post["post-id"] === edited["post-id"])
+      console.log({ index })
+      if (index === -1) {
+        return prevPosts
       }
-      return post;
-    });
-    setPosts(updatedPosts);
+      const newPost = [...prevPosts]
+      newPost[index] = edited
+      return newPost.reverse()
+    })
+  }
+
+  const handleDeletePost = (deletePost) => {
+    const updatedPosts = posts.filter((post) => post["post-id"] !== deletePost);
+    setPosts(updatedPosts.reverse());
   }
 
   return (
@@ -84,79 +95,66 @@ export default function PostForm(props) {
               </div>
             </div>
 
-  {
-    post["post-image"] && (
-      <div className="post-image-container">
-        <img src={post["post-image"]} />
-      </div>
-    )
-  }
-
-  {
-    post["post-text-content"] && (
-      <div className="post-text-container">
-        <p>{post["post-text-content"]}</p>
-      </div>
-    )
-  }
-  {
-    post["post-threads"] && (
-      <div className="post-thread-container">
-        {post["post-threads"].split("#").map((thread, i) => {
-          if (thread != "") {
-            if (i < post["post-threads"].split("#").length - 1) {
-              return <p>#{thread.slice(0, -1)}</p>;
-            } else {
-              return <p>#{thread}</p>;
+            {post["post-image"] &&
+              <div className="post-image-container">
+                <img src={post["post-image"]} />
+              </div>
             }
-          }
-        })}
-      </div>
-    )
-  }
 
-  <div className="post-interactions">
-    <div className="like-post-container">
-      <p>{post["post-likes"]}</p>
-      <button type="button" value={post["post-id"]}>
-        <img src="../../public/assets/img/like.png" />
-      </button>
-    </div>
-    <div className="dislike-post-container">
-      <p>{post["post-dislikes"]}</p>
-      <button type="button" value={post["post-id"]}>
-        <img src="../../public/assets/img/dislike.png" />
-      </button>
-    </div>
-    {/* Create an edit button function with post-id as in input which returns a button and  */}
-    <button type="button" value={post["post-id"]}>
-      <img src="../../public/assets/img/comment.png" />
-    </button>
-    {post["post-author"] && (
-      <>
-        <EditButton post={post} func={handleEditPost} />
-        {/* Create an edit button function with post-id as in input which returns a button and  */}
-        <button type="button" value={post["post-id"]}>
-          <img src="../../public/assets/img/delete.png" />
-        </button>
-      </>
-    )}
-  </div>
-            </div >
-          ))
-}
-{
-  !loaded && (
-    <div className="post-loader-container">
-      <img
-        src="http://superstorefinder.net/support/wp-content/uploads/2018/01/orange_circles.gif"
-        className="post-loader"
-      />
-    </div>
-  )
-}
-      </div >
-  <CreatePost onSubmit={getAllPost} />
+            {post["post-text-content"] &&
+              <div className="post-text-container">
+                <p>{post["post-text-content"]}</p>
+              </div>
+            }
+            {post["post-threads"] &&
+              <div className="post-thread-container">
+                {post["post-threads"].split("#").map((thread, i) => {
+                  if (thread != "") {
+                    if (i < post["post-threads"].split("#").length - 1) {
+                      return <p>#{thread.slice(0, - 1)}</p>
+                    } else {
+                      return <p>#{thread}</p>
+                    }
+                  }
+
+                })}
+              </div>
+            }
+
+
+            <div className="post-interactions">
+              <div className="like-post-container">
+                <p>{post["post-likes"]}</p>
+                <button type="button" value={post["post-id"]}>
+                  <img src="../../public/assets/img/like.png" />
+                </button>
+              </div>
+              <div className="dislike-post-container">
+                <p>{post["post-dislikes"]}</p>
+                <button type="button" value={post["post-id"]}>
+                  <img src="../../public/assets/img/dislike.png" />
+                </button>
+              </div>
+              {/* Create an edit button function with post-id as in input which returns a button and  */}
+              <button type="button" value={post["post-id"]}><img src="../../public/assets/img/comment.png" /></button>
+              {post["post-author"] &&
+                <>
+                  <EditButton post={post} func={handleEditPost} />
+                  <DeleteButton id={post["post-id"]} func={handleDeletePost} />
+                </>
+              }
+            </div>
+
+          </div>
+        ))}
+        {!loaded &&
+          <div className="post-loader-container">
+            <img src="http://superstorefinder.net/support/wp-content/uploads/2018/01/orange_circles.gif" className="post-loader" />
+          </div>
+        }
+      </div>
+      <CreatePost onSubmit={getAllPost} />
     </>
   );
 }
+
