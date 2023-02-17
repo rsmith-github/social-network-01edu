@@ -15,7 +15,6 @@ export const CreatePost = (newPost) => {
     }
 
     const openPostForm = () => {
-
         setVisible((prev) => !prev)
     }
 

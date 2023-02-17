@@ -295,7 +295,6 @@ func GetPreviousMessages(chatroomId string) []ChatFields {
 }
 
 func AddPost(postFields PostFields) {
-	fmt.Println("inside add post", postFields)
 	db := OpenDB()
 	stmt, err := db.Prepare(`INSERT into "posts"(id,author,image,text,thread,time) VALUES (?,?,?,?,?,?)`)
 	if err != nil {
@@ -304,6 +303,25 @@ func AddPost(postFields PostFields) {
 	stmt.Exec(postFields.Id, postFields.Author, postFields.Image, postFields.Text, postFields.Thread, postFields.Time)
 }
 
+func UpdatePost(postFields PostFields) error {
+	db := OpenDB()
+	stmt, err := db.Prepare(`UPDATE "posts" SET "text" = ?, "thread" = ?, "image" = ? WHERE "id" = ?`)
+	if err != nil {
+		fmt.Println("Cannot update post")
+	}
+	stmt.Exec(postFields.Text, postFields.Thread, postFields.Image, postFields.Id)
+	return err
+}
+
+func RemovePost(id string) error {
+	db := OpenDB()
+	stmt, err := db.Prepare("DELETE FROM posts WHERE id = ?")
+	if err != nil {
+		fmt.Println("error removing post from posts table", err)
+	}
+	stmt.Exec(id)
+	return err
+}
 func GetUserPosts(user string) []PostFields {
 	fmt.Println("inside get user  post", user)
 	db := OpenDB()
@@ -339,6 +357,42 @@ func GetUserPosts(user string) []PostFields {
 	}
 	rows.Close()
 	return sliceOfPostTableRows
+}
+
+func GetPost(postId string, user string) PostFields {
+	// fmt.Println("inside get user  post", postId)
+	db := OpenDB()
+	s := fmt.Sprintf(`SELECT * FROM "posts" WHERE id ='%v'`, postId)
+	var post PostFields
+	rows, _ := db.Query(s)
+	var id string
+	var author string
+	var image string
+	var text string
+	var thread string
+	var time int
+
+	for rows.Next() {
+		rows.Scan(&id, &author, &image, &text, &thread, &time)
+		post = PostFields{
+			Id:         id,
+			Author:     author,
+			Image:      image,
+			Text:       text,
+			Thread:     thread,
+			Time:       time,
+			PostAuthor: false,
+			// Likes:    len(LD.Get(id, "l")),
+			// Dislikes: len(LD.Get(id, "d")),
+		}
+		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", post.Author, db, "GetUserFromPosts")
+		post.AuthorImg = QueryUser(row, err).Avatar
+		if post.Author == user {
+			post.PostAuthor = true
+		}
+	}
+	rows.Close()
+	return post
 }
 
 func LoggedInUser(r *http.Request) User {

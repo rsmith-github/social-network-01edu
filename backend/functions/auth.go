@@ -85,11 +85,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		} else {
 			w.Write(jsn) // Write user data
 		}
-		go func() {
-			chatroomId <- ""
-			loggedInUsername <- foundUser.Nickname
-		}()
-		return
+
 	}
 	// Remder template on reload
 	RenderTmpl(w)
@@ -278,13 +274,6 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// func GetChatRooms(w http.ResponseWriter, r *http.Request) {
-// 	totalChats := GetUserChats(LoggedInUser(r).Nickname)
-// 	content, _ := json.Marshal(totalChats)
-// 	w.Header().Set("Content-Type", "application/json")
-// 	w.Write(content)
-// }
-
 func Chat(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		body, err := ioutil.ReadAll(r.Body)
@@ -400,9 +389,91 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 			AddPost(postData)
 		}
 		// get all posts and return
-		allPosts := GetUserPosts(LoggedInUser(r).Nickname)
+		allPosts := GetUserPosts(user)
 		content, _ := json.Marshal(allPosts)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)
+	}
+}
+
+func EditPost(w http.ResponseWriter, r *http.Request) {
+	var postData PostFields
+
+	if r.Method != "POST" {
+		// error
+	} else {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+
+		err = json.Unmarshal(body, &postData)
+		if err != nil {
+			panic(err)
+		}
+		user := LoggedInUser(r).Nickname
+		currentPost := GetPost(postData.Id, user)
+		if user == "" {
+			postData.Error = "Cannot Edit Post, please Sign Up or Log In"
+
+		} else if (len(postData.Thread) == 0) && (postData.Image == "") && (postData.Text == "") {
+			postData.Error = "Cannot submit empty edit"
+		} else if user != currentPost.Author {
+			postData.Error = "you are NOT the author"
+		} else {
+			fmt.Println("post", postData)
+			if postData.Image == "" {
+				postData.Image = currentPost.Image
+			}
+			err = UpdatePost(postData)
+			if err != nil {
+				postData.Error = "Error Editing Post please try again later"
+			}
+
+		}
+		// get that specific post and return
+		post := GetPost(postData.Id, user)
+		fmt.Println(post)
+		content, _ := json.Marshal(post)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+	}
+}
+
+func DeletePost(w http.ResponseWriter, r *http.Request) {
+	var postData PostFields
+	if r.Method != "POST" {
+		// error
+	} else {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+		err = json.Unmarshal(body, &postData)
+		if err != nil {
+			panic(err)
+		}
+		user := LoggedInUser(r).Nickname
+		postData = GetPost(postData.Id, user)
+		if user != postData.Author {
+			postData.Error = "you are NOT the author"
+			content, _ := json.Marshal(postData)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		} else {
+			fmt.Println("post", postData)
+			err = RemovePost(postData.Id)
+			if err != nil {
+				postData.Error = "Error Editing Post please try again later"
+				content, _ := json.Marshal(postData)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
+			} else {
+				content, _ := json.Marshal(postData)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
+			}
+		}
+
 	}
 }
