@@ -68,3 +68,17 @@ type PostFields struct {
 	Time       int    `json:"post-time"`
 	Error      string `json:"error"`
 }
+
+type LikesFields struct {
+	PostId   string `json:"post-id"`
+	Username string `json:"username"`
+	Like     string `json:"like"`
+	Type     string `json:"type"`
+}
+
+type ReturnLikesFields struct {
+	PostId  string `json:"post-id"`
+	Like    int    `json:"post-likes"`
+	Dislike int    `json:"post-dislikes"`
+	Error   string `json:"error"`
+}

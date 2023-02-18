@@ -13,7 +13,6 @@ export const EditButton = (editedPost) => {
             return ""
         }
     }).filter(e => e !== "")
-    console.log(editedPostThreads)
     const [urlImage, setUrlImage] = useState("")
     const [selectedImage, setSelectedImage] = useState(null)
     const [localImage, setLocalImage] = useState("")
@@ -23,8 +22,6 @@ export const EditButton = (editedPost) => {
     const [visible, setVisible] = useState(false)
     const [local, setLocal] = useState(false)
     const [errorMes, setErrorMes] = useState("")
-
-
     const [displayImg, setDisplayImg] = useState(true)
 
     const openEditPostForm = () => {

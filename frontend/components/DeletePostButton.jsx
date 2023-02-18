@@ -1,7 +1,6 @@
 import React, { useState } from "react"
 export const DeleteButton = (deletedPost) => {
     const [visible, setVisible] = useState(false)
-    const [deleted, setDeleted] = useState(false)
     const [errorMes, setErrorMes] = useState("")
     const postId = deletedPost.id
 
@@ -15,9 +14,9 @@ export const DeleteButton = (deletedPost) => {
 
     const handleDeletePostSubmit = (evt) => {
         evt.preventDefault()
-        const values = { "post-id": postId }
+        const values = { "post-id": postId, "type": "delete" }
         console.log(values)
-        fetch("http://localhost:8080/delete-post", {
+        fetch("http://localhost:8080/post-interactions", {
             method: "POST",
             headers: {
                 'Content-Type': "multipart/form-data"

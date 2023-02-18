@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react"
 import { CreatePost } from "./CreatePostForm"
 import { DeleteButton } from "./DeletePostButton"
 import { EditButton } from "./EditPostButton"
+import { DisLikeButton, LikeButton } from "./LikesDislikesButton"
 
 // Post form in the center
 export default function PostForm(props) {
@@ -50,6 +51,24 @@ export default function PostForm(props) {
     }
   }
 
+  var ranges = [
+    { divider: 1e18, suffix: 'E' },
+    { divider: 1e15, suffix: 'P' },
+    { divider: 1e12, suffix: 'T' },
+    { divider: 1e9, suffix: 'G' },
+    { divider: 1e6, suffix: 'M' },
+    { divider: 1e3, suffix: 'k' }
+  ];
+
+  function formatNumber(n) {
+    for (var i = 0; i < ranges.length; i++) {
+      if (n >= ranges[i].divider) {
+        return (Math.round((n / ranges[i].divider) * 10) / 10).toString() + ranges[i].suffix;
+      }
+    }
+    return n.toString();
+  }
+
   const handleEditPost = (edited) => {
     console.log("edited post", { edited })
     setPosts(prevPosts => {
@@ -59,6 +78,8 @@ export default function PostForm(props) {
         return prevPosts
       }
       const newPost = [...prevPosts]
+      edited["post-likes"] = formatNumber(edited["post-likes"])
+      edited["post-dislikes"] = formatNumber(edited["post-dislikes"])
       newPost[index] = edited
       return newPost.reverse()
     })
@@ -123,19 +144,8 @@ export default function PostForm(props) {
 
 
             <div className="post-interactions">
-              <div className="like-post-container">
-                <p>{post["post-likes"]}</p>
-                <button type="button" value={post["post-id"]}>
-                  <img src="../../public/assets/img/like.png" />
-                </button>
-              </div>
-              <div className="dislike-post-container">
-                <p>{post["post-dislikes"]}</p>
-                <button type="button" value={post["post-id"]}>
-                  <img src="../../public/assets/img/dislike.png" />
-                </button>
-              </div>
-              {/* Create an edit button function with post-id as in input which returns a button and  */}
+              <LikeButton id={post["post-id"]} num={formatNumber(post["post-likes"])} func={handleEditPost} />
+              <DisLikeButton id={post["post-id"]} num={formatNumber(post["post-dislikes"])} func={handleEditPost} />
               <button type="button" value={post["post-id"]}><img src="../../public/assets/img/comment.png" /></button>
               {post["post-author"] &&
                 <>

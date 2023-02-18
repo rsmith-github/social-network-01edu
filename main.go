@@ -40,7 +40,7 @@ func main() {
 
 	http.HandleFunc("/create-post", functions.CreatePost)
 	http.HandleFunc("/edit-post", functions.EditPost)
-	http.HandleFunc("/delete-post", functions.DeletePost)
+	http.HandleFunc("/post-interactions", functions.PostInteractions)
 	go functions.H.Run()
 	go functions.SqlExec.ExecuteStatements()
 

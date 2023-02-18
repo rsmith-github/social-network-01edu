@@ -79,6 +79,11 @@ export const CreatePost = (newPost) => {
         setThreadArr(newThreads);
     }
 
+    const handleKeyPress = (evt) => {
+        if (evt.key === "#") {
+            evt.preventDefault()
+        }
+    }
 
     return (
         <>
@@ -145,7 +150,7 @@ export const CreatePost = (newPost) => {
                             <textarea name="post-text-content" className="post-text-content" onChange={(e) => setEmoji(e.target.value)} placeholder="For Emojis Press: 'Windows + ;' or 'Ctrl + Cmd + Space'" />
                         </div>
                         <div className="create-post-threads">
-                            <input type="text" className="add-thread-input" placeholder="Add Thread" value={thread} onChange={(e) => setThread(e.target.value)} />
+                            <input type="text" className="add-thread-input" placeholder="Add Thread" value={thread} onChange={(e) => setThread(e.target.value)} onKeyPress={handleKeyPress} />
                             <button className="add-thread-button" type="button" onClick={addThread}>+</button>
                             {threadArr &&
                                 <>
