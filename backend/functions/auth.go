@@ -85,11 +85,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		} else {
 			w.Write(jsn) // Write user data
 		}
-		go func() {
-			chatroomId <- ""
-			loggedInUsername <- foundUser.Nickname
-		}()
-		return
+
 	}
 	// Remder template on reload
 	RenderTmpl(w)
@@ -278,13 +274,6 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// func GetChatRooms(w http.ResponseWriter, r *http.Request) {
-// 	totalChats := GetUserChats(LoggedInUser(r).Nickname)
-// 	content, _ := json.Marshal(totalChats)
-// 	w.Header().Set("Content-Type", "application/json")
-// 	w.Write(content)
-// }
-
 func Chat(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		body, err := ioutil.ReadAll(r.Body)
@@ -400,9 +389,171 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 			AddPost(postData)
 		}
 		// get all posts and return
-		allPosts := GetUserPosts(LoggedInUser(r).Nickname)
+		allPosts := GetUserPosts(user)
 		content, _ := json.Marshal(allPosts)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)
 	}
 }
+
+func PostInteractions(w http.ResponseWriter, r *http.Request) {
+	var likeData LikesFields
+
+	if r.Method != "POST" {
+		//bad request
+	} else {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+		err = json.Unmarshal(body, &likeData)
+		if err != nil {
+			panic(err)
+		}
+		user := LoggedInUser(r).Nickname
+		if likeData.Type == "like/dislike" {
+			likeData.Username = user
+			err := AddPostLikes(likeData)
+			if err != nil {
+				postLikes := GetPost(likeData.PostId, user)
+				postLikes.Error = "Please Try Again Later"
+				// ReturnLikesFields{
+				// 	PostId:  likeData.PostId,
+				// 	Like:    len(GetPostLikes(likeData.PostId, "l")),
+				// 	Dislike: len(GetPostLikes(likeData.PostId, "d")),
+				// 	Error:   "Please Try Again Later",
+				// }
+				content, _ := json.Marshal(postLikes)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
+			} else {
+				postLikes := GetPost(likeData.PostId, user)
+				content, _ := json.Marshal(postLikes)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
+			}
+
+			// for connections := range statusH.onlineClients {
+			// 	connections.sendLikes <- likes.ReturnLikesFields{
+			// 		PostId:  likeData.PostId,
+			// 		Like:    len(LikesDislikesTable.Get(likeData.PostId, "l")),
+			// 		Dislike: len(LikesDislikesTable.Get(likeData.PostId, "d")),
+			// 	}
+			// }
+
+		} else if likeData.Type == "delete" {
+			// for connections := range statusH.onlineClients {
+			// 	connections.deletePost <- posts.DeletePost{PostId: likeData.PostId}
+			// }
+			// PostTable.Delete(CommentTable, CommentsAndLikesTable, LikesDislikesTable, likeData.PostId)
+			postData := GetPost(likeData.PostId, user)
+			if user != postData.Author {
+				postData.Error = "you are NOT the author"
+				content, _ := json.Marshal(postData)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
+			} else {
+				fmt.Println("post", postData)
+				err = RemovePost(postData.Id)
+				if err != nil {
+					postData.Error = "Error Editing Post please try again later"
+					content, _ := json.Marshal(postData)
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(content)
+				} else {
+					content, _ := json.Marshal(postData)
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(content)
+				}
+			}
+		}
+		// else if likeData.Type == "comment" {
+		// commentData := CommentTable.Get(CommentsAndLikesTable, likeData.PostId)
+		// content, _ := json.Marshal(commentData)
+		// w.Header().Set("Content-Type", "application/json")
+		// w.Write(content)
+		// }
+	}
+}
+
+func EditPost(w http.ResponseWriter, r *http.Request) {
+	var postData PostFields
+
+	if r.Method != "POST" {
+		// error
+	} else {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+
+		err = json.Unmarshal(body, &postData)
+		if err != nil {
+			panic(err)
+		}
+		user := LoggedInUser(r).Nickname
+		currentPost := GetPost(postData.Id, user)
+		if user == "" {
+			postData.Error = "Cannot Edit Post, please Sign Up or Log In"
+
+		} else if (len(postData.Thread) == 0) && (postData.Image == "") && (postData.Text == "") {
+			postData.Error = "Cannot submit empty edit"
+		} else if user != currentPost.Author {
+			postData.Error = "you are NOT the author"
+		} else {
+			fmt.Println("post", postData)
+			if postData.Image == "" {
+				postData.Image = currentPost.Image
+			}
+			err = UpdatePost(postData)
+			if err != nil {
+				postData.Error = "Error Editing Post please try again later"
+			}
+
+		}
+		// get that specific post and return
+		post := GetPost(postData.Id, user)
+		fmt.Println(post)
+		content, _ := json.Marshal(post)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+	}
+}
+
+// func DeletePost(w http.ResponseWriter, r *http.Request) {
+// 	var postData PostFields
+// 	if r.Method != "POST" {
+// 		// error
+// 	} else {
+// 		body, err := ioutil.ReadAll(r.Body)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		err = json.Unmarshal(body, &postData)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		user := LoggedInUser(r).Nickname
+// 		postData = GetPost(postData.Id, user)
+// 		if user != postData.Author {
+// 			postData.Error = "you are NOT the author"
+// 			content, _ := json.Marshal(postData)
+// 			w.Header().Set("Content-Type", "application/json")
+// 			w.Write(content)
+// 		} else {
+// 			fmt.Println("post", postData)
+// 			err = RemovePost(postData.Id)
+// 			if err != nil {
+// 				postData.Error = "Error Editing Post please try again later"
+// 				content, _ := json.Marshal(postData)
+// 				w.Header().Set("Content-Type", "application/json")
+// 				w.Write(content)
+// 			} else {
+// 				content, _ := json.Marshal(postData)
+// 				w.Header().Set("Content-Type", "application/json")
+// 				w.Write(content)
+// 			}
+// 		}
+
+// 	}
+// }

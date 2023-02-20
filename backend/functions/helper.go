@@ -74,14 +74,10 @@ func CheckErr(err error, line string) {
 	}
 }
 
-func OpenDB() *sql.DB {
-	db, err := sql.Open("sqlite3", "backend/pkg/db/sqlite/sNetwork.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	return db
+//
+// Chats
+//
 
-}
 func CheckIfPrivateExistsBasedOnUsers(chatFields ChatRoomFields) bool {
 	db := OpenDB()
 	s := fmt.Sprintf("SELECT * FROM chatroom WHERE type = '%v'", chatFields.Type)
@@ -294,8 +290,11 @@ func GetPreviousMessages(chatroomId string) []ChatFields {
 	return messages
 }
 
+//
+// Posts
+//
+
 func AddPost(postFields PostFields) {
-	fmt.Println("inside add post", postFields)
 	db := OpenDB()
 	stmt, err := db.Prepare(`INSERT into "posts"(id,author,image,text,thread,time) VALUES (?,?,?,?,?,?)`)
 	if err != nil {
@@ -304,8 +303,27 @@ func AddPost(postFields PostFields) {
 	stmt.Exec(postFields.Id, postFields.Author, postFields.Image, postFields.Text, postFields.Thread, postFields.Time)
 }
 
+func UpdatePost(postFields PostFields) error {
+	db := OpenDB()
+	stmt, err := db.Prepare(`UPDATE "posts" SET "text" = ?, "thread" = ?, "image" = ? WHERE "id" = ?`)
+	if err != nil {
+		fmt.Println("Cannot update post")
+	}
+	stmt.Exec(postFields.Text, postFields.Thread, postFields.Image, postFields.Id)
+	return err
+}
+
+func RemovePost(id string) error {
+	db := OpenDB()
+	stmt, err := db.Prepare("DELETE FROM posts WHERE id = ?")
+	if err != nil {
+		fmt.Println("error removing post from posts table", err)
+	}
+	stmt.Exec(id)
+	return err
+}
 func GetUserPosts(user string) []PostFields {
-	fmt.Println("inside get user  post", user)
+	fmt.Println(user, "retreiving posts")
 	db := OpenDB()
 	sliceOfPostTableRows := []PostFields{}
 	rows, _ := db.Query(`SELECT * FROM "posts"`)
@@ -326,19 +344,128 @@ func GetUserPosts(user string) []PostFields {
 			Thread:     thread,
 			Time:       time,
 			PostAuthor: false,
-			// Likes:    len(LD.Get(id, "l")),
-			// Dislikes: len(LD.Get(id, "d")),
 		}
 		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", postTableRows.Author, db, "GetUserFromPosts")
 		postTableRows.AuthorImg = QueryUser(row, err).Avatar
 		if postTableRows.Author == user {
 			postTableRows.PostAuthor = true
 		}
+		postTableRows.Likes = len(GetPostLikes(postTableRows.Id, "l"))
+		postTableRows.Dislikes = len(GetPostLikes(postTableRows.Id, "d"))
 
 		sliceOfPostTableRows = append(sliceOfPostTableRows, postTableRows)
 	}
 	rows.Close()
 	return sliceOfPostTableRows
+}
+
+func GetPost(postId string, user string) PostFields {
+	fmt.Println(user, "get post", postId)
+	db := OpenDB()
+	s := fmt.Sprintf(`SELECT * FROM "posts" WHERE id ='%v'`, postId)
+	var post PostFields
+	rows, _ := db.Query(s)
+	var id string
+	var author string
+	var image string
+	var text string
+	var thread string
+	var time int
+
+	for rows.Next() {
+		rows.Scan(&id, &author, &image, &text, &thread, &time)
+		post = PostFields{
+			Id:         id,
+			Author:     author,
+			Image:      image,
+			Text:       text,
+			Thread:     thread,
+			Time:       time,
+			PostAuthor: false,
+			Likes:      len(GetPostLikes(postId, "l")),
+			Dislikes:   len(GetPostLikes(postId, "d")),
+		}
+		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", post.Author, db, "GetUserFromPosts")
+		post.AuthorImg = QueryUser(row, err).Avatar
+		if post.Author == user {
+			post.PostAuthor = true
+		}
+	}
+	rows.Close()
+	return post
+}
+
+//
+// Likes
+//
+
+func GetPostLike(id, user string) LikesFields {
+	sliceOfLikeRows := LikesFields{}
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT * FROM likes WHERE id = '%v' AND username = '%v'", id, user)
+	rows, _ := db.Query(s)
+	var postid string
+	var author string
+	var like string
+	if rows.Next() {
+		rows.Scan(&postid, &author, &like)
+		sliceOfLikeRows = LikesFields{
+			PostId:   postid,
+			Username: author,
+			Like:     like,
+		}
+	}
+	rows.Close()
+	return sliceOfLikeRows
+}
+
+func AddPostLikes(postLiked LikesFields) error {
+	LikedPost := GetPostLike(postLiked.PostId, postLiked.Username)
+	fmt.Println("liked post", LikedPost)
+	db := OpenDB()
+	var s string
+	if LikedPost.Like == "" {
+		s = "INSERT INTO likes (like, id, username) values (?, ?, ?)"
+	} else if postLiked.Like != LikedPost.Like {
+		s = "UPDATE likes SET like = ? WHERE id = ? AND username = ?"
+	} else {
+		s = "DELETE FROM likes WHERE like = ? AND id = ? AND username = ?"
+	}
+	stmt, _ := db.Prepare(s)
+	_, err := stmt.Exec(postLiked.Like, postLiked.PostId, postLiked.Username)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+func GetPostLikes(id, l string) []LikesFields {
+	sliceOfLikedRows := []LikesFields{}
+	db := OpenDB()
+	var s string
+	if l == "all" {
+		s = fmt.Sprintf("SELECT * FROM likes WHERE username = '%v' AND like = '%v'", id, "l")
+
+	} else {
+		s = fmt.Sprintf("SELECT * FROM likes WHERE id = '%v' AND like = '%v'", id, l)
+
+	}
+
+	rows, _ := db.Query(s)
+	var postid string
+	var author string
+	var like string
+	for rows.Next() {
+		rows.Scan(&postid, &author, &like)
+		likedRows := LikesFields{
+			PostId:   postid,
+			Username: author,
+			Like:     like,
+		}
+		sliceOfLikedRows = append(sliceOfLikedRows, likedRows)
+	}
+	rows.Close()
+	return sliceOfLikedRows
 }
 
 func LoggedInUser(r *http.Request) User {
@@ -359,13 +486,26 @@ func LoggedInUser(r *http.Request) User {
 	return user
 }
 
+//
+// DB
+//
+
+func OpenDB() *sql.DB {
+	db, err := sql.Open("sqlite3", "backend/pkg/db/sqlite/sNetwork.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return db
+
+}
+
 func CreateSqlTables() {
 
 	db := OpenDB()
 
 	// if you need to delete a table rather than delete a whole database
-	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS chatroom`)
-	// CheckErr(deleteTblErr, "-------Error deleting table")
+	_, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS likes`)
+	CheckErr(deleteTblErr, "-------Error deleting table")
 
 	// Create user table if it doen't exist.
 	var _, usrTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `email` VARCHAR(64) NOT NULL UNIQUE, `password` VARCHAR(255) NOT NULL, `firstname` VARCHAR(64) NOT NULL, `lastname` VARCHAR(64) NOT NULL, `dob` VARCHAR(255) NOT NULL, `avatar` VARCHAR(255), `nickname` VARCHAR(64), `aboutme` VARCHAR(255), `followers` INTEGER DEFAULT 0, `following` INTEGER DEFAULT 0)")
@@ -385,8 +525,12 @@ func CreateSqlTables() {
 	CheckErr(messagesTblErr, "-------Error creating table")
 
 	// Create posts table if doesn't exist.
-	var _, postTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `posts` ( `id` TEXT NOT NULL UNIQUE,`author`	TEXT NOT NULL, `image` TEXT,`text` TEXT,`thread` TEXT, `time` NUMBER)")
+	var _, postTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `posts` ( `id` TEXT NOT NULL UNIQUE, `author` TEXT NOT NULL, `image` TEXT,`text` TEXT,`thread` TEXT, `time` NUMBER)")
 	CheckErr(postTblErr, "-------Error creating table")
+
+	// Create Likes table if not exists
+	var _, likesTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `likes` (`id` TEXT NOT NULL, `username` TEXT NOT NULL, `like` TEXT);")
+	CheckErr(likesTblErr, "-------Error creating table")
 
 	// Create comments table if not exists
 	// var _, commentError = db.Exec("CREATE TABLE IF NOT EXISTS `comments` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `username` VARCHAR(64), `comment` TEXT NOT NULL, `post_ID` INTEGER NOT NULL )")
@@ -402,6 +546,10 @@ func CreateSqlTables() {
 	db.Close()
 
 }
+
+//
+// Misc
+//
 
 func RenderTmpl(w http.ResponseWriter) {
 	t, err := template.ParseFiles("static/index.html")

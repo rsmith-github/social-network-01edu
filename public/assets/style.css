@@ -665,7 +665,8 @@ main {
   filter: brightness(0) invert(1);
 }
 .create-post-container,
-.edit-post-container {
+.edit-post-container,
+.delete-post-container {
   position: fixed;
   z-index: 3;
   padding-top: 100px;
@@ -677,7 +678,8 @@ main {
   overflow: auto;
 }
 .create-post-form,
-.edit-post-form {
+.edit-post-form,
+.delete-post-form {
   display: flex;
   width: 60%;
   height: 80%;
@@ -693,13 +695,17 @@ main {
   overflow: auto;
 }
 .create-post-close-button {
-  width: 8.5%;
+  width: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border-radius: 100px;
   background-color: rgb(250, 124, 124);
   margin-top: 13px;
   margin-left: 10px;
-  font-size: 30px;
   font-weight: bold;
+  font-size: 30px;
+  padding: 0;
   color: white;
   border-color: transparent;
   align-self: baseline;
@@ -790,6 +796,15 @@ main {
   padding: 10px;
   object-fit: contain;
 }
+.smooth-image {
+  transition: opacity 1s;
+}
+.image-visible {
+  opacity: 1;
+}
+.image-hidden {
+  opacity: 0;
+}
 .post-text-container,
 .post-thread-container {
   display: flex;
@@ -870,4 +885,65 @@ main {
   width: 25px;
   height: 25px;
   cursor: pointer;
+}
+.edit-post-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+.reset-edit-post-button {
+  width: max-content;
+  background-color: #adb5bd;
+  border: transparent;
+  border-radius: 24px;
+  color: white;
+  font-size: medium;
+  font-weight: bold;
+  height: 70%;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+.reset-edit-post-button:hover {
+  background-color: #858c93;
+}
+.reset-edit-post-button:active {
+  background-color: #5b6065;
+}
+.delete-post-form {
+  flex-direction: row;
+  padding: 20px;
+}
+.delete-confirmation-container {
+  display: flex;
+  width: 90%;
+  justify-content: space-evenly;
+}
+.delete-post-confirmed {
+  font-size: x-large;
+  font-weight: 600;
+  width: 150px;
+  border-color: transparent;
+  border-radius: 23px;
+  background-color: #ff2e2e;
+  color: white;
+}
+.delete-post-confirmed:hover,
+.delete-post-confirmed:active {
+  background-color: #c42525;
+}
+.delete-post-unconfirmed {
+  font-size: x-large;
+  font-weight: 600;
+  width: 150px;
+  border-color: transparent;
+  border-radius: 23px;
+  background-color: #0ae981;
+  color: white;
+}
+.delete-post-unconfirmed:hover,
+.delete-post-unconfirmed:active {
+  background-color: #07a75c;
 }

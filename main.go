@@ -39,6 +39,8 @@ func main() {
 	http.HandleFunc("/ws/user", functions.ServeWs)
 
 	http.HandleFunc("/create-post", functions.CreatePost)
+	http.HandleFunc("/edit-post", functions.EditPost)
+	http.HandleFunc("/post-interactions", functions.PostInteractions)
 	go functions.H.Run()
 	go functions.SqlExec.ExecuteStatements()
 

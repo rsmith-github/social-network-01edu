@@ -23,7 +23,7 @@ type connection struct {
 }
 
 // readPump pumps messages from the websocket connection to the hub.
-func (s subscription) readPump() {
+func (s *subscription) readPump() {
 	c := s.conn
 	defer func() {
 		H.unregister <- s
@@ -94,7 +94,7 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("ws opened", user)
 	c := &connection{send: make(chan ChatFields, 1), ws: ws}
 	s := subscription{c, id, user, cookie.Value}
-	H.register <- s
+	H.register <- &s
 	go s.writePump()
 	go s.readPump()
 }
