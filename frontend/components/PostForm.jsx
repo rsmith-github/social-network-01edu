@@ -16,7 +16,7 @@ export default function PostForm(props) {
         .then(data => {
           console.log(data)
           setPosts(data)
-          setLoaded(true)
+          // setLoaded(true)
         })
     }
   }, [loaded])
