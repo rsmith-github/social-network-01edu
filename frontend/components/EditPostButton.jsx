@@ -1,4 +1,5 @@
 import React, { useState } from "react"
+
 export const EditButton = (editedPost) => {
     let editPost = editedPost
 
@@ -222,7 +223,7 @@ export const EditButton = (editedPost) => {
                         {errorMes &&
                             <p className="edit-error-message">{errorMes}</p>
                         }
-                        <input type="submit" className="create-post-submit-button" value="Create" />
+                        <input type="submit" className="create-post-submit-button" value="Edit Post" />
                     </form>
                 </div >
             }
