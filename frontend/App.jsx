@@ -8,6 +8,26 @@ import NavBar from "./components/Navbar";
 import Profile from "./pages/Profile";
 import PublicProfiles from "./pages/PublicProfiles";
 
+import { Provider } from "react-redux";
+import { createStore } from "redux";
+import { useDispatch } from "react-redux";
+
+// Define a reducer function that updates the follower count for a specific user
+function followerCountsReducer(state = {}, action) {
+  switch (action.type) {
+    case "UPDATE_FOLLOWER_COUNT":
+      return {
+        ...state,
+        [action.payload.userEmail]: action.payload.count,
+      };
+    default:
+      return state;
+  }
+}
+
+// Create a Redux store that uses the followerCountReducer
+const store = createStore(followerCountsReducer);
+
 const root = ReactDOM.createRoot(document.querySelector("#app"));
 
 function App() {
@@ -88,19 +108,11 @@ function App() {
         setValid(true);
       }
     };
-    fetchData().then(() => {
-      // if (valid && websocket.current === null) {
-      //   console.log("inside useEffect to open connection...");
-      //   websocket.current = new WebSocket(
-      //     "ws://" + document.location.host + "/ws/user"
-      //   );
-      //   console.log(websocket);
-      //   websocket.current.onopen = () => {
-      //     console.log("Chat box connection open");
-      //   };
-      // }
-    });
+    fetchData().then(() => {});
   }, [followerCounts, name]);
+
+  // must be in body of component
+  const dispatch = useDispatch();
 
   const handleWSocket = (usr) => {
     if (wSocket === null) {
@@ -113,9 +125,8 @@ function App() {
       newSocket.onmessage = (event) => {
         let msg = JSON.parse(event.data);
 
-        if (msg.toFollow === usr.email) {
-          // Send message to relevant user according to isFollowing true or false.
 
+        if (msg.toFollow === usr.email) {
           /*
           // send notification sounds.
           try {
@@ -125,20 +136,36 @@ function App() {
               notifSound.play();
             } catch (error) {}
             */
-
+          // Send message to relevant user according to isFollowing true or false.
           if (msg.isFollowing) {
-            setFollowerCounts({
-              ...followerCounts,
-              [usr.email]: msg.followers + 1,
+            dispatch({
+              type: "UPDATE_FOLLOWER_COUNT",
+              payload: {
+                userEmail: msg.toFollow,
+                count: usr.followers + 1,
+              },
             });
+            // setFollowerCounts({
+            //   ...followerCounts,
+            //   [usr.email]: msg.followers + 1,
+            // });
             alert(msg.followRequest + " started following you, legend!");
           } else {
-            setFollowerCounts({
-              ...followerCounts,
-              [usr.email]: msg.followers,
+            dispatch({
+              type: "UPDATE_FOLLOWER_COUNT",
+              payload: {
+                userEmail: msg.toFollow,
+                count: usr.followers,
+              },
             });
+            // setFollowerCounts({
+            //   ...followerCounts,
+            //   [usr.email]: msg.followers,
+            // });
             alert(msg.followRequest + " unfollowed you, loser.");
           }
+        } else if (msg.followRequest === usr.email) {
+          
         }
       };
 
@@ -189,6 +216,7 @@ function App() {
               user={user}
               followerCounts={followerCounts}
               setFollowerCounts={setFollowerCounts}
+              dispatch={dispatch}
             />
           }
         />
@@ -201,6 +229,7 @@ function App() {
               user={user}
               followerCounts={followerCounts}
               setFollowerCounts={setFollowerCounts}
+              dispatch={dispatch}
             />
           }
         />
@@ -210,4 +239,8 @@ function App() {
   );
 }
 
-root.render(<App />);
+root.render(
+  <Provider store={store}>
+    <App />
+  </Provider>
+);

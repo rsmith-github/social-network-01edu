@@ -15,6 +15,7 @@ export default function Profile(props) {
         currentUser={props.currentUser}
         followerCounts={props.followerCounts}
         setFollowerCounts={props.setFollowerCounts}
+        dispatch={props.dispatch}
       />
 
       <div>

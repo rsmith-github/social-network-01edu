@@ -37,6 +37,7 @@ export default function PublicProfiles(props) {
         currentUser={props.user} // user that's interacting with the dom.
         followerCounts={props.followerCounts}
         setFollowerCounts={props.setFollowerCounts}
+        dispatch={props.dispatch}
       />
     );
   }
