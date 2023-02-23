@@ -209,6 +209,14 @@ func Generate() string {
 	return fmt.Sprintf("%x", u2)
 }
 
+func GetFriends(w http.ResponseWriter, r *http.Request) {
+	user := LoggedInUser(r)
+	friends := GetFollowers(user)
+	content, _ := json.Marshal(friends)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(content)
+}
+
 func CreateChat(w http.ResponseWriter, r *http.Request) {
 	var data ChatRoomFields
 	body, err := ioutil.ReadAll(r.Body)
@@ -379,20 +387,25 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 		user := LoggedInUser(r).Nickname
 		if user == "" {
 			postData.Error = "Cannot Add Post, please Sign Up or Log In"
-
+			content, _ := json.Marshal(postData)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
 		} else if (len(postData.Thread) == 0) && (postData.Image == "") && (postData.Text == "") {
 			postData.Error = "please add content or close"
+			content, _ := json.Marshal(postData)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
 		} else {
 			postData.Id = Generate()
 			postData.Author = user
 			fmt.Println("post", postData)
 			AddPost(postData)
+			// get all posts and return
+			allPosts := GetUserPosts(user)
+			content, _ := json.Marshal(allPosts)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
 		}
-		// get all posts and return
-		allPosts := GetUserPosts(user)
-		content, _ := json.Marshal(allPosts)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(content)
 	}
 }
 
@@ -437,14 +450,10 @@ func PostInteractions(w http.ResponseWriter, r *http.Request) {
 				err = RemovePost(postData.Id)
 				if err != nil {
 					postData.Error = "Error Deleting Post please try again later"
-					content, _ := json.Marshal(postData)
-					w.Header().Set("Content-Type", "application/json")
-					w.Write(content)
-				} else {
-					content, _ := json.Marshal(postData)
-					w.Header().Set("Content-Type", "application/json")
-					w.Write(content)
 				}
+				content, _ := json.Marshal(postData)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
 			}
 		} else if likeData.Type == "comments" {
 			commentData := GetPostComments(likeData.PostId, user)
@@ -477,8 +486,14 @@ func EditPost(w http.ResponseWriter, r *http.Request) {
 
 		} else if (len(postData.Thread) == 0) && (postData.Image == "") && (postData.Text == "") {
 			postData.Error = "Cannot submit empty edit"
+			content, _ := json.Marshal(postData)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
 		} else if user != currentPost.Author {
 			postData.Error = "you are NOT the author"
+			content, _ := json.Marshal(postData)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
 		} else {
 			fmt.Println("post", postData)
 			if postData.Image == "" {
@@ -487,6 +502,9 @@ func EditPost(w http.ResponseWriter, r *http.Request) {
 			err = UpdatePost(postData)
 			if err != nil {
 				postData.Error = "Error Editing Post please try again later"
+				content, _ := json.Marshal(postData)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
 			}
 
 		}

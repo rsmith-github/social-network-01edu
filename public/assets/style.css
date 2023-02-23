@@ -189,6 +189,13 @@ main {
   border-bottom: 3px solid rgba(215, 57, 0, 0.874);
   z-index: 1;
 }
+.chat-form {
+  display: flex;
+  height: 90%;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+}
 .create-chat-close-container,
 .open-chat-close-container,
 .chatbox-close-container {
@@ -245,7 +252,7 @@ main {
   color: gray;
 }
 .chatrooms > button {
-  height: 40px;
+  height: max-content;
   border: none;
   width: 100%;
   margin-bottom: 5px;
@@ -253,17 +260,36 @@ main {
   color: black;
   font-weight: 500;
   border-radius: 3px;
+  padding: 5px;
 }
-.chatrooms > button > h2 {
+.chatrooms > button > .group-button,
+.chatrooms > button > .private-button {
+  display: flex;
+  align-items: center;
+}
+.chatrooms > button > .group-button > h2,
+.chatrooms > button > .private-button > h2 {
   font-size: large;
   text-align: start;
   margin: 0;
 }
-.chatrooms > button > p {
+.chatrooms > button > .group-button > img,
+.chatrooms > button > .private-button > img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid orange;
+  object-fit: contain;
+  margin-right: 3px;
+}
+.chatrooms > button > .group-button > p {
   font-size: small;
   text-align: start;
   margin: 0;
   color: #9c9c9c;
+  margin-left: 10px;
+  width: 50%;
+  text-overflow: ellipsis;
 }
 .create-chat-close-button:hover {
   background-color: rgba(172, 46, 0, 0.874);
@@ -276,25 +302,67 @@ main {
 .create-chat-close-button > span {
   font-weight: 900;
 }
-#chat-name {
+.create-chat-image-container {
   width: 100%;
+  max-height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 5px;
+  margin-top: 5px;
+}
+.create-chat-image-container > img {
+  width: 80px;
+  height: 80px;
+  border: 3px solid orange;
+  border-radius: 50%;
+}
+.add-chat-image,
+.add-post-image {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+.add-chat-image > input,
+.add-post-image > input {
+  width: 90%;
+  border: none;
+}
+.create-chat-image {
+  background-color: whitesmoke;
+}
+.chat-image-message {
+  margin: 0;
   font-size: small;
 }
-#chat-description {
-  width: 100%;
+#chat-name {
+  width: 90%;
   font-size: small;
+  border: none;
+  background-color: whitesmoke;
+}
+#chat-description {
+  width: 90%;
+  min-height: 35px;
+  font-size: small;
+  margin-top: 10px;
+  border: none;
+  background-color: whitesmoke;
 }
 .create-chat-type {
   display: flex;
+  width: 90%;
   justify-content: space-around;
+  margin-top: 10px;
 }
 .create-chat-followers {
-  height: 75px;
+  min-height: 80px;
   width: 100%;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-bottom: 5px;
 }
 .create-chat-followers > div {
   width: 50%;
@@ -339,30 +407,17 @@ main {
   width: max-content;
   background-color: #adb5bd;
   border: transparent;
-  border-radius: 15px;
   color: white;
   font-size: medium;
   font-weight: bold;
 }
 .create-chat-submit-button:hover {
-  width: max-content;
   background-color: rgba(215, 57, 0, 0.874);
-  border: transparent;
-  border-radius: 15px;
   color: white;
-  font-size: medium;
-  font-weight: bold;
-  transform: scaleX(1.1);
 }
 .create-chat-submit-button:active {
-  width: max-content;
   background-color: rgba(114, 31, 1, 0.874);
-  border: transparent;
-  border-radius: 15px;
   color: white;
-  font-size: medium;
-  font-weight: bold;
-  transform: scaleX(1.1);
 }
 .chatbox-close-button,
 .add-user,
@@ -384,22 +439,21 @@ main {
   color: white;
   border: none;
 }
-.chat-info-private {
+.chat-info-private,
+.chat-info-group {
   display: flex;
   justify-content: center;
   width: 100%;
+  align-items: center;
+  padding: 5px;
 }
 .chat-info-private > h1 {
   font-size: medium;
-}
-.chat-info-group {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  align-items: center;
+  margin: 0;
 }
 .chat-info-group > h1 {
   font-size: medium;
+  margin: 0;
 }
 .chat-info-group > h2 {
   font-size: medium;
@@ -408,6 +462,15 @@ main {
   font-size: small;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+.chat-info-private > img,
+.chat-info-group > img {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid orange;
+  object-fit: contain;
+  margin-right: 3px;
 }
 .chat-info-description {
   overflow: auto;
@@ -422,37 +485,43 @@ main {
   overflow-wrap: break-word;
   right: 0;
 }
+.chat-buttons {
+  display: flex;
+  align-items: center;
+}
 .edit-group-button,
-.leave-group-button {
+.leave-group-button,
+.chat-description-button {
   border: none;
   background-color: transparent;
   font-weight: bold;
   font-size: small;
   color: #00000073;
 }
+.chat-description-button {
+  margin: 0;
+  margin-left: 3px;
+}
 .edit-group-button:hover,
-.leave-group-button:hover {
+.leave-group-button:hover,
+.chat-description-button:hover {
   background-color: rgba(215, 57, 0, 0.874);
   color: white;
 }
 .edit-group-button:active,
-.leave-group-button:active {
+.leave-group-button:active,
+.chat-description-button:active {
   background-color: rgba(163, 45, 2, 0.874);
   color: white;
-}
-.reset-edit-form {
-  width: 100%;
-  display: flex;
-  justify-content: center;
 }
 .reset-edit-form-button {
   width: max-content;
   background-color: #adb5bd;
   border: transparent;
-  border-radius: 15px;
   color: white;
   font-size: medium;
   font-weight: bold;
+  margin-right: 50px;
 }
 .reset-edit-form-button:hover {
   background-color: #858c93;
@@ -640,7 +709,9 @@ main {
 }
 .create-post-container,
 .edit-post-container,
-.delete-post-container {
+.delete-post-container,
+.comment-view-container,
+.create-comment-container {
   position: fixed;
   z-index: 3;
   padding-top: 100px;
@@ -664,13 +735,13 @@ main {
   flex-direction: column;
   align-items: center;
   background-color: whitesmoke;
-  box-shadow: 4px 15px 50px rgb(6, 187, 45);
+  box-shadow: 4px 15px 50px rgba(215, 57, 0, 0.874);
   border-radius: 50px;
   margin-bottom: 30px;
   margin-top: 30px;
   overflow: auto;
 }
-.create-post-close-button {
+.close-button {
   width: 50px;
   display: flex;
   justify-content: center;
@@ -682,9 +753,10 @@ main {
   padding: 0;
   color: white;
   border-color: transparent;
+  margin-top: 5px;
 }
-.create-post-close-button:hover,
-.create-post-close-button:focus {
+.close-button:hover,
+.close-button:focus {
   background-color: darkred;
   color: black;
 }
@@ -699,6 +771,69 @@ main {
 .create-post-image-container > img {
   max-width: 50%;
   object-fit: contain;
+}
+.post-text-content {
+  width: 90%;
+  border: none;
+  margin-bottom: 10px;
+  min-height: 50px;
+}
+.create-post-threads {
+  width: 90%;
+  display: flex;
+  margin: 10px;
+}
+.add-thread-input {
+  border: none;
+  width: 90%;
+}
+.add-thread-button {
+  width: 10%;
+  border: none;
+  font-size: x-large;
+  font-weight: bolder;
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.add-thread-button:hover {
+  background-color: rgb(184, 183, 183);
+  color: white;
+}
+.add-thread-button:active {
+  background-color: rgb(122, 122, 122);
+  color: white;
+}
+.remove-thread {
+  font-weight: bold;
+  margin-top: 10px;
+}
+.thread-container {
+  display: flex;
+  font-weight: bold;
+  color: orange;
+  align-items: center;
+  justify-content: center;
+}
+.thread-container > p {
+  margin: 0;
+  margin-left: 10px;
+}
+.create-post-submit-button {
+  border: none;
+  font-weight: bold;
+  font-size: x-large;
+  background-color: white;
+  margin-bottom: 10px;
+}
+.create-post-submit-button:hover {
+  background-color: rgba(215, 57, 0, 0.874);
+  color: white;
+}
+.create-post-submit-button:active {
+  background-color: rgba(138, 37, 0, 0.874);
+  color: white;
 }
 .post-container {
   grid-area: posts;
@@ -947,6 +1082,7 @@ main {
   justify-content: space-around;
   width: 90%;
   align-items: center;
+  margin-bottom: 10px;
 }
 .comment-view-close-button {
   margin: 0;
@@ -1072,13 +1208,49 @@ main {
 .add-comment-button:active {
   background-color: #be7302;
 }
+.image-location {
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+}
+#Url:after,
+#local::after {
+  width: 15px;
+  height: 15px;
+  border-radius: 15px;
+  top: -4px;
+  left: -2px;
+  position: relative;
+  background-color: #d1d3d1;
+  content: "";
+  display: inline-block;
+  visibility: visible;
+  border: 2px solid white;
+}
+#Url:checked:after,
+#local:checked:after {
+  width: 15px;
+  height: 15px;
+  border-radius: 15px;
+  position: relative;
+  background-color: #ffa500;
+  content: "";
+  display: inline-block;
+  visibility: visible;
+  border: 2px solid white;
+}
+.error-message {
+  color: red;
+}
 .create-chat-followers::-webkit-scrollbar,
 .chatrooms::-webkit-scrollbar,
 .message-text-input::-webkit-scrollbar,
 .previous-messages::-webkit-scrollbar,
 .comment-view::-webkit-scrollbar,
 .add-comment-form::-webkit-scrollbar,
-.create-post-form::-webkit-scrollbar {
+.create-post-form::-webkit-scrollbar,
+.post-container::-webkit-scrollbar,
+.chat-form::-webkit-scrollbar {
   width: 8px;
 }
 .create-chat-followers::-webkit-scrollbar-track,
@@ -1087,7 +1259,9 @@ main {
 .previous-messages::-webkit-scrollbar-track,
 .comment-view::-webkit-scrollbar-track,
 .add-comment-form::-webkit-scrollbar-track,
-.create-post-form::-webkit-scrollbar-track {
+.create-post-form::-webkit-scrollbar-track,
+.post-container::-webkit-scrollbar-track,
+.chat-form::-webkit-scrollbar-track {
   background: transparent;
   border-radius: 10px;
 }
@@ -1097,7 +1271,9 @@ main {
 .previous-messages::-webkit-scrollbar-thumb,
 .comment-view::-webkit-scrollbar-thumb,
 .add-comment-form::-webkit-scrollbar-thumb,
-.create-post-form::-webkit-scrollbar-thumb {
+.create-post-form::-webkit-scrollbar-thumb,
+.post-container::-webkit-scrollbar-thumb,
+.chat-form::-webkit-scrollbar-thumb {
   border-radius: 10px;
   background: rgba(228, 137, 0);
 }
@@ -1107,6 +1283,8 @@ main {
 .previous-messages::-webkit-scrollbar-thumb:hover,
 .comment-view::-webkit-scrollbar-thumb:hover,
 .add-comment-form::-webkit-scrollbar-thumb:hover,
-.create-post-form::-webkit-scrollbar-thumb:hover {
+.create-post-form::-webkit-scrollbar-thumb:hover,
+.post-container::-webkit-scrollbar-thumb:hover,
+.chat-form::-webkit-scrollbar-thumb:hover {
   background: rgba(228, 137, 0);
 }

@@ -29,6 +29,9 @@ export const DeleteButton = (deletedPost) => {
                 console.log(response)
                 if (response["error"] != "") {
                     setErrorMes(response["error"])
+                    setTimeout(() => {
+                        setErrorMes("")
+                    }, 5000)
                 } else {
                     deletedPost["func"](postId)
                     closeDeletePostForm()
@@ -47,7 +50,7 @@ export const DeleteButton = (deletedPost) => {
                             <button type="button" className="delete-post-unconfirmed" onClick={closeDeletePostForm}>No</button>
                         </div>
                         {errorMes &&
-                            <p className="delete-error-message">{errorMes}</p>
+                            <p className="error-message">{errorMes}</p>
                         }
                     </div>
                 </div>

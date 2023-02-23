@@ -81,22 +81,23 @@ func CheckErr(err error, line string) {
 func CheckIfPrivateExistsBasedOnUsers(chatFields ChatRoomFields) bool {
 	db := OpenDB()
 	s := fmt.Sprintf("SELECT * FROM chatroom WHERE type = '%v'", chatFields.Type)
-	fmt.Println(chatFields)
 	row, err := db.Query(s)
 	sameNameGroups := []ChatRoomFields{}
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var id, name, description, chatType, users string
+	var id, name, description, chatType, users, admin, avatar string
 	for row.Next() { // Iterate and fetch the records from result cursor
-		row.Scan(&id, &name, &description, &chatType, &users)
+		row.Scan(&id, &name, &description, &chatType, &users, &admin, &avatar)
 		groupChat := ChatRoomFields{
 			Id:          id,
 			Name:        name,
 			Description: description,
 			Type:        chatType,
 			Users:       users,
+			Admin:       admin,
+			Avatar:      avatar,
 		}
 		sameNameGroups = append(sameNameGroups, groupChat)
 	}
@@ -125,12 +126,12 @@ func AddChat(chatFields ChatRoomFields, creator string) error {
 	chatFields.Users = strings.Join(sliceOfUsers, ",")
 	chatFields.Admin = creator
 	db := OpenDB()
-	stmt, err := db.Prepare(`INSERT INTO "chatroom" (id,name,description,type,users,admin) values (?, ?, ?, ?, ?, ?)`)
+	stmt, err := db.Prepare(`INSERT INTO "chatroom" (id,name,description,type,users,admin,avatar) values (?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		fmt.Println("error preparing table:", err)
 		return err
 	}
-	_, errorWithTable := stmt.Exec(chatFields.Id, chatFields.Name, chatFields.Description, chatFields.Type, chatFields.Users, chatFields.Admin)
+	_, errorWithTable := stmt.Exec(chatFields.Id, chatFields.Name, chatFields.Description, chatFields.Type, chatFields.Users, chatFields.Admin, chatFields.Avatar)
 	if errorWithTable != nil {
 		fmt.Println("error adding to table:", errorWithTable)
 		return errorWithTable
@@ -146,9 +147,9 @@ func GetUserChats(username string) ChatroomType {
 		log.Fatal(err)
 	}
 
-	var id, name, description, chatType, users, admin string
+	var id, name, description, chatType, users, admin, avatar string
 	for row.Next() { // Iterate and fetch the records from result cursor
-		row.Scan(&id, &name, &description, &chatType, &users, &admin)
+		row.Scan(&id, &name, &description, &chatType, &users, &admin, &avatar)
 		groupChat := ChatRoomFields{
 			Id:          id,
 			Name:        name,
@@ -156,6 +157,7 @@ func GetUserChats(username string) ChatroomType {
 			Type:        chatType,
 			Users:       users,
 			Admin:       admin,
+			Avatar:      avatar,
 		}
 		sliceOfUsers := strings.Split(groupChat.Users, ",")
 		for i, involved := range sliceOfUsers {
@@ -164,6 +166,8 @@ func GetUserChats(username string) ChatroomType {
 				if groupChat.Type == "group" {
 					involvedChats.Group = append(involvedChats.Group, groupChat)
 				} else if groupChat.Type == "private" {
+					row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", groupChat.Users, db, "GetUserFromPrivateChatroom")
+					groupChat.Avatar = QueryUser(row, err).Avatar
 					involvedChats.Private = append(involvedChats.Private, groupChat)
 				}
 			}
@@ -182,9 +186,9 @@ func GetChatRoom(chatroom string, user string) ChatRoomFields {
 	}
 
 	var groupChat ChatRoomFields
-	var id, name, description, chatType, users, admin string
+	var id, name, description, chatType, users, admin, avatar string
 	for row.Next() {
-		row.Scan(&id, &name, &description, &chatType, &users, &admin)
+		row.Scan(&id, &name, &description, &chatType, &users, &admin, &avatar)
 		groupChat = ChatRoomFields{
 			Id:          id,
 			Name:        name,
@@ -192,12 +196,17 @@ func GetChatRoom(chatroom string, user string) ChatRoomFields {
 			Type:        chatType,
 			Users:       users,
 			Admin:       admin,
+			Avatar:      avatar,
 		}
 		sliceOfUsers := strings.Split(groupChat.Users, ",")
 		for i := range sliceOfUsers {
 			if sliceOfUsers[i] == user {
 				groupChat.Users = strings.Join(removeUserFromChatButton(sliceOfUsers, i), ",")
 			}
+		}
+		if groupChat.Type == "private" {
+			row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", groupChat.Users, db, "GetUserFromPrivateChatroom")
+			groupChat.Avatar = QueryUser(row, err).Avatar
 		}
 	}
 	return groupChat
@@ -233,9 +242,6 @@ func UpdateChatroom(chatroom ChatRoomFields, action string, user string) ChatRoo
 		}
 		fmt.Println(users)
 		chatroom.Users = strings.Join(returnedUserDisplay, ",")
-		// else{
-
-		// }
 	} else {
 		chatroom.Admin = user
 
@@ -665,6 +671,37 @@ func GetCommentLikes(id, l string) []CommentsAndLikesFields {
 }
 
 //
+// Followers
+//
+
+func GetFollowers(user User) []string {
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT * FROM followers WHERE follower = '%v' OR followee = '%v'", user.Email, user.Email)
+	rows, _ := db.Query(s)
+	var id int
+	var follower, followee string
+	var friends []string
+	for rows.Next() {
+		err := rows.Scan(&id, &follower, &followee)
+		if err != nil {
+			fmt.Println("error getting friends", err)
+		} else {
+			if follower == user.Email {
+				row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", followee, db, "GetUserFromFollowers")
+				friends = append(friends, QueryUser(row, err).Nickname)
+			} else {
+				row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", follower, db, "GetUserFromFollowers")
+				friends = append(friends, QueryUser(row, err).Nickname)
+			}
+		}
+
+	}
+	friends = append(friends, user.Nickname)
+	rows.Close()
+	return friends
+}
+
+//
 // DB
 //
 
@@ -682,7 +719,7 @@ func CreateSqlTables() {
 	db := OpenDB()
 
 	// if you need to delete a table rather than delete a whole database
-	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS likescom`)
+	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS chatroom`)
 	// CheckErr(deleteTblErr, "-------Error deleting table")
 
 	// Create user table if it doen't exist.
@@ -695,7 +732,7 @@ func CreateSqlTables() {
 
 	// Create chatroom table if doesn't exist.
 	// add and avatar
-	var _, chatRoomTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `chatroom` (`id` TEXT NOT NULL, `name` TEXT, `description` TEXT, `type` TEXT NOT NULL, `users` VARCHAR(255) NOT NULL,`admin` TEXT NOT NULL)")
+	var _, chatRoomTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `chatroom` (`id` TEXT NOT NULL, `name` TEXT, `description` TEXT, `type` TEXT NOT NULL, `users` VARCHAR(255) NOT NULL,`admin` TEXT NOT NULL, avatar TEXT)")
 	CheckErr(chatRoomTblErr, "-------Error creating table")
 
 	// Create chats table if doesn't exist.

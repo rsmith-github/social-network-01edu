@@ -14,6 +14,8 @@ export const ChatBox = (response) => {
     const [messages, setMessages] = useState(null)
     const conn = useRef(null)
     const chatroomId = response.r
+    const chatImg = response.i
+    console.log({ chatImg })
 
     useEffect(() => {
         const fetchData = async () => {
@@ -90,20 +92,22 @@ export const ChatBox = (response) => {
         evt.preventDefault()
         const data = new FormData(evt.target);
         let values = Object.fromEntries(data.entries())
-        console.log(chatroomId)
-        let msgSend = {
-            "sender": user,
-            "date": new Date().getTime(),
-            "message": values["message"],
-            "id": chatroomId
-        }
-        setEmoji('')
-        if (conn.current != undefined) {
-            console.log(msgSend)
-            conn.current.send(JSON.stringify(msgSend))
+        console.log(values)
+        if (values["message"] != "") {
+            let msgSend = {
+                "sender": user,
+                "date": new Date().getTime(),
+                "message": values["message"],
+                "id": chatroomId
+            }
+            setEmoji('')
+            if (conn.current != undefined) {
+                console.log(msgSend)
+                conn.current.send(JSON.stringify(msgSend))
 
-        } else {
-            console.log("no connection")
+            } else {
+                console.log("no connection")
+            }
         }
     }
 
@@ -130,6 +134,14 @@ export const ChatBox = (response) => {
 
     }
 
+    const handleBrokenAuthImage = (source) => {
+        if (source != "") {
+            return source
+        } else {
+            return "https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png"
+        }
+    }
+
     return (
         <>
             {visible && (
@@ -146,36 +158,34 @@ export const ChatBox = (response) => {
                             ) : (
                                 (admin === user) ? (
                                     <>
-                                        <EditChat n={chatName} d={chatDescription} u={chatUsers} i={chatroomId} l={user} change={handleChatroomChange} />
+                                        <h2 className="chat-description-button" onClick={showDescriptionBox}>Description</h2>
+                                        <EditChat n={chatName} d={chatDescription} u={chatUsers} i={chatroomId} l={user} change={handleChatroomChange} img={chatImg} />
                                         <button className="leave-group-button" onClick={leaveChat}>Leave</button>
                                     </>
                                 )
                                     : (
                                         <>
+                                            <h2 className="chat-description-button" onClick={showDescriptionBox}>Description</h2>
                                             <button className="leave-group-button" type="button" onClick={leaveChat}>Leave</button>
                                         </>
                                     )
-
                             )}
 
                         </div>
                     </div>
                     <div className="chatbox-header-container">
-                        {/* for chat images */}
-                        {/* <img src="" alt="" srcset="" /> */}
                         {privateChat ? (
                             <div className="chat-info-private">
-                                {/* Add image of group chat */}
+                                <img src={handleBrokenAuthImage(chatImg)} />
                                 <h1>{chatUsers}</h1>
                             </div>
                         ) : (
                             <>
 
                                 <div className="chat-info-group">
-                                    {/* Add image of chat */}
+                                    <img src={handleBrokenAuthImage(chatImg)} />
                                     <h1>{chatName}</h1>
-                                    <h2 onClick={showDescriptionBox}>Description</h2>
-                                    {/* <p>{chatUsers}</p> */}
+                                    {/* <h2 onClick={showDescriptionBox}>Description</h2> */}
                                 </div>
                                 {descriptionBox && (
                                     <div className="chat-info-description" >
@@ -225,10 +235,8 @@ export const ChatBox = (response) => {
                             </div>
                         )}
                     </div>
-                    <form method="post" className="message-form" onSubmit={handleMessageSubmit}>
-                        <div className="message-textarea" contentEditable={true}>
-                            <textarea name="message" className="message-text-input" value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="For Emojis Press: 'Windows + ;' or 'Ctrl + Cmd + Space'" />
-                        </div>
+                    <form className="message-form" onSubmit={handleMessageSubmit}>
+                        <textarea name="message" contentEditable={true} className="message-text-input" value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="For Emojis Press: 'Windows + ;' or 'Ctrl + Cmd + Space'" />
                         <input type="submit" value="Send" className="message-send-button" />
                     </form>
 
@@ -238,11 +246,17 @@ export const ChatBox = (response) => {
 
             <button onClick={openChatRoom}>
                 {response.t ? (
-                    <h2>{response.u}</h2>
+                    <div className="private-button">
+                        <img src={handleBrokenAuthImage(chatImg)} />
+                        <h2>{response.u}</h2>
+                    </div>
                 ) : (
                     <>
-                        <h2>{response.n}</h2>
-                        <p>{response.u}</p>
+                        <div className="group-button">
+                            <img src={handleBrokenAuthImage(chatImg)} />
+                            <h2>{response.n}</h2>
+                            <p>{response.u}</p>
+                        </div>
                     </>
                 )}
 

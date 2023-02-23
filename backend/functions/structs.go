@@ -20,9 +20,9 @@ type Session struct {
 	email       string
 }
 
-// add img
 type ChatRoomFields struct {
 	Id          string `json:"chatroom-id"`
+	Avatar      string `json:"chat-avatar"`
 	Name        string `json:"chat-name"`
 	Description string `json:"chat-description"`
 	Type        string `json:"chat-type"`

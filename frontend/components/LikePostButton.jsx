@@ -39,7 +39,6 @@ export const LikeButton = (likeInfo) => {
             <div className="like-post-container">
                 <p>{likeInfo.num}</p>
                 <button type="button" onClick={handleLikeButton}>
-                    {/* <img src="../../public/assets/img/like.png" /> */}
                     {likeInfo.liked ? (
                         <i className="fa fa-thumbs-up liked"></i>
                     ) : (

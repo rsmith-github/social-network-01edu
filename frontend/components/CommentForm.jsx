@@ -76,6 +76,9 @@ export const AddComment = (newComment) => {
                 console.log(response)
                 if (response.hasOwnProperty("error")) {
                     setErrorMes(response["error"])
+                    setTimeout(() => {
+                        setErrorMes("")
+                    }, 5000)
                 } else {
                     newComment["onSubmit"](response)
                     closeCommentForm()
@@ -94,9 +97,9 @@ export const AddComment = (newComment) => {
     return (
         <>
             {visible &&
-                <div className="create-post-container">
+                <div className="create-comment-container">
                     <form className="add-comment-form" onSubmit={handleCommentSubmit}>
-                        <button className="create-post-close-button" type="button" onClick={closeCommentForm}>
+                        <button className="close-button" type="button" onClick={closeCommentForm}>
                             <span>&times;</span>
                         </button>
                         <h1>Create Comment </h1>
@@ -148,32 +151,29 @@ export const AddComment = (newComment) => {
                                     <input type="text" className="create-post-image" id="create-post-image" placeholder="https://..."
                                         onChange={(e) => setUrlImage(e.target.value)}
                                     />
-                                    <label htmlFor="create-post-image">Add Image</label>
                                 </div>
                             </>
                         )}
                         <p>File Must Not Exceed 20MB</p>
-                        <div className="create-post-textarea" contentEditable={true}>
-                            <textarea name="comment-text" className="post-text-content" onChange={(e) => setEmoji(e.target.value)} placeholder="For Emojis Press: 'Windows + ;' or 'Ctrl + Cmd + Space'" />
-                        </div>
+                        <textarea name="comment-text" contentEditable={true} className="post-text-content" onChange={(e) => setEmoji(e.target.value)} placeholder="For Emojis Press: 'Windows + ;' or 'Ctrl + Cmd + Space'" />
                         <div className="create-post-threads">
                             <input type="text" className="add-thread-input" placeholder="Add Thread" value={thread} onChange={(e) => setThread(e.target.value)} onKeyPress={handleKeyPress} />
                             <button className="add-thread-button" type="button" onClick={addThread}>+</button>
-                            {threadArr &&
-                                <>
-                                    <p>Click the # to remove</p>
-                                    <div className="thread-container">
-                                        {threadArr.map((t, index) =>
-                                            <p key={index} className="added-thread" onClick={() => removeThread(index)}>{t}</p>
-                                        )
-                                        }
-                                    </div>
-                                </>
-                            }
-
                         </div>
+                        {threadArr &&
+                            <>
+                                <p className="remove-thread">Click the # to remove</p>
+                                <div className="thread-container">
+                                    {threadArr.map((t, index) =>
+                                        <p key={index} className="added-thread" onClick={() => removeThread(index)}>{t}</p>
+                                    )
+                                    }
+                                </div>
+                            </>
+                        }
+
                         {errorMes &&
-                            <p className="edit-error-message">{errorMes}</p>
+                            <p className="error-message">{errorMes}</p>
                         }
                         <input type="submit" className="create-post-submit-button" value="Create Comment" />
                     </form>

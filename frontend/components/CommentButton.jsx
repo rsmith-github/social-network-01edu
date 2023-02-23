@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"
-import { DisLikeButton, LikeButton } from "./DislikePostButton"
+import { LikeButton } from "./LikePostButton"
+import { DisLikeButton } from "./DislikePostButton"
 import { EditButton } from "./EditPostButton"
 import { AddComment } from "./CommentForm"
 import { LikeCommentButton } from "./CommentLikeButton"
@@ -110,10 +111,10 @@ export const CommentButton = (commentInfo) => {
     return (
         <>
             {visible &&
-                <div className="create-post-container">
+                <div className="comment-view-container">
                     <div className="comment-view">
                         <div className="comment-post-header">
-                            <button className="create-post-close-button" type="button" onClick={closeComments}>
+                            <button className="close-button" type="button" onClick={closeComments}>
                                 <span>&times;</span>
                             </button>
                             <h1>Comments</h1>

@@ -5,6 +5,8 @@ import { DeleteButton } from "./DeletePostButton"
 import { EditButton } from "./EditPostButton"
 import { DisLikeButton } from "./DislikePostButton"
 import { LikeButton } from "./LikePostButton"
+import { PublicPostButton } from "./PublicPostButton"
+import { PrivatePostButton } from "./PrivatePostButton"
 
 // Post form in the center
 export default function PostForm(props) {
@@ -92,6 +94,12 @@ export default function PostForm(props) {
     setPosts(updatedPosts.reverse());
   }
 
+  const handlePrivatePosts = (friendsList) => {
+    const friends = friendsList
+    const updatedPosts = posts.filter((post) => friends.includes(post["author"]));
+    setPosts(updatedPosts.reverse());
+  }
+
   return (
     <>
       <div className="formContainer">
@@ -99,8 +107,8 @@ export default function PostForm(props) {
           <img src={props.avatar} alt="profile photo" />
         </div>
         <div className="privacyButtons">
-          <button className="postType">Public Post</button>
-          <button className="postType">Private Post</button>
+          <PublicPostButton allPost={getAllPost} />
+          <PrivatePostButton privatePost={handlePrivatePosts} />
         </div>
       </div>
       <div className="post-container">

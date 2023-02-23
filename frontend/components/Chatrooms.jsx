@@ -93,7 +93,7 @@ export const GetChat = () => {
                                 {chats["private-chatrooms"] ? (
                                     <>
                                         {chats["private-chatrooms"].map(chat =>
-                                            <ChatBox r={chat["chatroom-id"]} n={""} u={chat["users"]} t={isPrivate} onClose={checkGroupDisplay} />
+                                            <ChatBox r={chat["chatroom-id"]} n={""} u={chat["users"]} t={isPrivate} i={chat["chat-avatar"]} onClose={checkGroupDisplay} />
                                         )}
                                     </>
                                 ) : (
@@ -106,7 +106,7 @@ export const GetChat = () => {
                                 {chats["group-chatrooms"] ? (
                                     <>
                                         {chats["group-chatrooms"].map(chat =>
-                                            <ChatBox r={chat["chatroom-id"]} n={chat["chat-name"]} u={chat["users"]} t={isPrivate} onClose={checkGroupDisplay} />
+                                            <ChatBox r={chat["chatroom-id"]} n={chat["chat-name"]} u={chat["users"]} t={isPrivate} i={chat["chat-avatar"]} onClose={checkGroupDisplay} />
                                         )}
                                     </>
                                 ) : (
