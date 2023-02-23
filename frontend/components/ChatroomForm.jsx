@@ -4,18 +4,13 @@ export const CreateChat = (newChat) => {
     const [user, setUser] = useState('')
     const [description, setDescription] = useState('')
     const [visible, setVisible] = useState(false);
-    console.log({ newChat })
-
-    // const [chatAvatar, setChatAvatar] = useState('')
     const [isPrivate, setIsPrivate] = useState(false)
-    const friendsArr = [
-        { name: "AJ", selected: false },
-        { name: "Jay", selected: false },
-        { name: "m", selected: false },
-        { name: "k", selected: false },
-        { name: "jas", selected: false },
-    ]
-    const [friends, setFriends] = useState(friendsArr)
+    const [friends, setFriends] = useState([])
+    const [urlImage, setUrlImage] = useState("")
+    const [selectedImage, setSelectedImage] = useState(null)
+    const [localImage, setLocalImage] = useState("")
+    const [local, setLocal] = useState(false)
+
     useEffect(() => {
         fetch('http://localhost:8080/api/user')
             .then(response => response.json())
@@ -24,13 +19,19 @@ export const CreateChat = (newChat) => {
                 setUser(data["nickname"])
             })
     }, [visible])
+
     // fetch to get the names of followers to create chat and add selected key and set to false
-    //    const [friends, setFriends] = useState([]);
-    // useEffect(()=>{
-    //     fetch('/api/friends')
-    //     .then(response => response.json())
-    //     .then(data => setFriends(data))
-    // },[])
+    useEffect(() => {
+        fetch('http://localhost:8080/get-friends')
+            .then(response => response.json())
+            .then(data => {
+                console.log({ data })
+                let friends = []
+                data.map(friend => friends.push({ name: friend, selected: false }))
+                console.log({ friends })
+                setFriends(friends)
+            })
+    }, [visible])
 
     // send info to golang
     const handleGroupChatSubmit = (evt) => {
@@ -45,7 +46,11 @@ export const CreateChat = (newChat) => {
             }
         })
         values["users"] = users.join(',')
-        // value["chat-avatar"]=chatAvatar
+        if (local) {
+            values["chat-avatar"] = localImage
+        } else {
+            values["chat-avatar"] = urlImage
+        }
         console.log({ values })
 
         fetch("http://localhost:8080/create-chat", {
@@ -60,10 +65,13 @@ export const CreateChat = (newChat) => {
         setName('')
         setDescription('')
         setIsPrivate(false)
-        // reset selected friends
         const updatedFriends = friends.map(friend => { return { ...friend, selected: false } })
         setFriends(updatedFriends)
         setIsPrivate(false);
+        setUrlImage("")
+        setSelectedImage(null)
+        setLocalImage("")
+        setLocal(false)
         closeForm()
     }
 
@@ -99,6 +107,14 @@ export const CreateChat = (newChat) => {
         });
         setFriends(updatedFriends);
     }
+    const handleLocalChange = (location) => {
+        if (location) {
+            setLocal(true)
+        } else {
+            setLocal(false)
+        }
+
+    }
 
     const closeForm = () => {
         setIsPrivate(false)
@@ -117,15 +133,59 @@ export const CreateChat = (newChat) => {
                         <h1>Create Chat</h1>
                     </div>
                     <form onSubmit={handleGroupChatSubmit} className="chat-form">
-                        <input type="text" name="chat-name" id="chat-name" placeholder="Enter Group Chat Name Here" onChange={(e) => setName(e.target.value)} disabled={isPrivate} value={name} required /><br />
-                        {/* <input
-                            type="text"
-                            className="chat-image"
-                            id="avatar"
-                            placeholder="https://..."
-                            onChange={(e) => setChatAvatar(e.target.value)}
-                        /> */}
-                        <textarea name="chat-description" id="chat-description" placeholder="Description" onChange={(e) => setDescription(e.target.value)} disabled={isPrivate} value={description} /><br />
+                        <div className="image-location">
+                            <div>
+                                <input type="radio" id="Url" name="img-location" value="Url" onChange={() => handleLocalChange(false)} defaultChecked />
+                                <label htmlFor="Url">Online</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="local" name="img-location" value="local" onChange={() => handleLocalChange(true)} />
+                                <label htmlFor="local">Local</label>
+                            </div>
+                        </div>
+                        {local ? (
+                            <>
+                                {selectedImage &&
+                                    <div className="create-chat-image-container">
+                                        <img src={URL.createObjectURL(selectedImage)} alt="" onClick={() => {
+                                            document.querySelector(".create-chat-image").value = ""
+                                            setLocalImage("")
+                                            setSelectedImage(null)
+                                        }} />
+                                    </div>}
+                                <div className="add-chat-image">
+                                    <input type="file" className="create-chat-image" onChange={(e) => {
+                                        if (e.target.files[0].size < 20000000) {
+                                            setSelectedImage(e.target.files[0])
+                                            const fileReader = new FileReader();
+                                            fileReader.onload = function (e) {
+                                                setLocalImage(e.target.result);
+                                            };
+                                            fileReader.readAsDataURL(e.target.files[0]);
+                                        }
+                                        ;
+                                    }} />
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {urlImage &&
+                                    <div className="create-chat-image-container">
+                                        <img src={urlImage} alt="" onClick={() => {
+                                            document.querySelector(".create-chat-image").value = ""
+                                            setUrlImage("")
+                                        }} />
+                                    </div>}
+                                <div className="add-chat-image">
+                                    <input type="text" className="create-chat-image" id="create-chat-image" placeholder="https://..."
+                                        onChange={(e) => setUrlImage(e.target.value)}
+                                    />
+                                </div>
+                            </>
+                        )}
+                        <p className="chat-image-message">File Must Not Exceed 20MB</p>
+                        <input type="text" name="chat-name" id="chat-name" placeholder="Enter Group Chat Name Here" onChange={(e) => setName(e.target.value)} disabled={isPrivate} value={name} required />
+                        <textarea name="chat-description" id="chat-description" placeholder="Description" onChange={(e) => setDescription(e.target.value)} disabled={isPrivate} value={description} />
                         <div className="create-chat-type">
                             <div>
                                 <input type="radio" name="chat-type" id="group" value="group" onChange={() => handlePrivateChange(false)} defaultChecked />
@@ -139,10 +199,11 @@ export const CreateChat = (newChat) => {
                         <div className="create-chat-followers">
                             {friends.map(friend => {
                                 if (friend.name != user) {
-                                    return (<div>
-                                        <input type="checkbox" className="friend-info" id={friend.name} checked={friend.selected} onChange={() => handleFriendClick(friend.name)} />
-                                        <label htmlFor={friend.name}>{friend.name}</label>
-                                    </div>
+                                    return (
+                                        <div>
+                                            <input type="checkbox" className="friend-info" id={friend.name} checked={friend.selected} onChange={() => handleFriendClick(friend.name)} />
+                                            <label htmlFor={friend.name}>{friend.name}</label>
+                                        </div>
                                     )
                                 }
                             }

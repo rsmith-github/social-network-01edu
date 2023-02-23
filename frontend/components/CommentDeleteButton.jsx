@@ -1,22 +1,23 @@
 import React, { useState } from "react"
-export const DeleteButton = (deletedPost) => {
+
+export const DeleteCommentButton = (deletedPost) => {
     const [visible, setVisible] = useState(false)
     const [errorMes, setErrorMes] = useState("")
-    const postId = deletedPost.id
+    const commentId = deletedPost.id
 
-    const openDeletePostForm = () => {
+    const openDeleteCommentForm = () => {
         setVisible((prev) => !prev)
     };
 
-    const closeDeletePostForm = () => {
+    const closeDeleteCommentForm = () => {
         setVisible((prev) => !prev)
     };
 
-    const handleDeletePostSubmit = (evt) => {
+    const handleDeleteCommentSubmit = (evt) => {
         evt.preventDefault()
-        const values = { "post-id": postId, "type": "delete" }
+        const values = { "comment-id": commentId, "type": "delete" }
         console.log(values)
-        fetch("http://localhost:8080/post-interactions", {
+        fetch("http://localhost:8080/comment-interactions", {
             method: "POST",
             headers: {
                 'Content-Type': "multipart/form-data"
@@ -33,8 +34,8 @@ export const DeleteButton = (deletedPost) => {
                         setErrorMes("")
                     }, 5000)
                 } else {
-                    deletedPost["func"](postId)
-                    closeDeletePostForm()
+                    deletedPost["func"](commentId)
+                    closeDeleteCommentForm()
                 }
             })
     }
@@ -44,10 +45,10 @@ export const DeleteButton = (deletedPost) => {
             {visible &&
                 <div className="delete-post-container">
                     <div className="delete-post-form">
-                        <h1>Are You Sure You Want to Delete Your Post</h1>
+                        <h1>Are You Sure You Want to Delete Your Comment</h1>
                         <div className="delete-confirmation-container">
-                            <button type="button" className="delete-post-confirmed" onClick={handleDeletePostSubmit}>Yes</button>
-                            <button type="button" className="delete-post-unconfirmed" onClick={closeDeletePostForm}>No</button>
+                            <button type="button" className="delete-post-confirmed" onClick={handleDeleteCommentSubmit}>Yes</button>
+                            <button type="button" className="delete-post-unconfirmed" onClick={closeDeleteCommentForm}>No</button>
                         </div>
                         {errorMes &&
                             <p className="error-message">{errorMes}</p>
@@ -55,7 +56,7 @@ export const DeleteButton = (deletedPost) => {
                     </div>
                 </div>
             }
-            <button type="button" onClick={openDeletePostForm}>
+            <button type="button" onClick={openDeleteCommentForm}>
                 <img src="../../public/assets/img/delete.png" />
             </button>
         </>

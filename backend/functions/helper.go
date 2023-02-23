@@ -81,22 +81,23 @@ func CheckErr(err error, line string) {
 func CheckIfPrivateExistsBasedOnUsers(chatFields ChatRoomFields) bool {
 	db := OpenDB()
 	s := fmt.Sprintf("SELECT * FROM chatroom WHERE type = '%v'", chatFields.Type)
-	fmt.Println(chatFields)
 	row, err := db.Query(s)
 	sameNameGroups := []ChatRoomFields{}
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var id, name, description, chatType, users string
+	var id, name, description, chatType, users, admin, avatar string
 	for row.Next() { // Iterate and fetch the records from result cursor
-		row.Scan(&id, &name, &description, &chatType, &users)
+		row.Scan(&id, &name, &description, &chatType, &users, &admin, &avatar)
 		groupChat := ChatRoomFields{
 			Id:          id,
 			Name:        name,
 			Description: description,
 			Type:        chatType,
 			Users:       users,
+			Admin:       admin,
+			Avatar:      avatar,
 		}
 		sameNameGroups = append(sameNameGroups, groupChat)
 	}
@@ -125,12 +126,12 @@ func AddChat(chatFields ChatRoomFields, creator string) error {
 	chatFields.Users = strings.Join(sliceOfUsers, ",")
 	chatFields.Admin = creator
 	db := OpenDB()
-	stmt, err := db.Prepare(`INSERT INTO "chatroom" (id,name,description,type,users,admin) values (?, ?, ?, ?, ?, ?)`)
+	stmt, err := db.Prepare(`INSERT INTO "chatroom" (id,name,description,type,users,admin,avatar) values (?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		fmt.Println("error preparing table:", err)
 		return err
 	}
-	_, errorWithTable := stmt.Exec(chatFields.Id, chatFields.Name, chatFields.Description, chatFields.Type, chatFields.Users, chatFields.Admin)
+	_, errorWithTable := stmt.Exec(chatFields.Id, chatFields.Name, chatFields.Description, chatFields.Type, chatFields.Users, chatFields.Admin, chatFields.Avatar)
 	if errorWithTable != nil {
 		fmt.Println("error adding to table:", errorWithTable)
 		return errorWithTable
@@ -146,9 +147,9 @@ func GetUserChats(username string) ChatroomType {
 		log.Fatal(err)
 	}
 
-	var id, name, description, chatType, users, admin string
+	var id, name, description, chatType, users, admin, avatar string
 	for row.Next() { // Iterate and fetch the records from result cursor
-		row.Scan(&id, &name, &description, &chatType, &users, &admin)
+		row.Scan(&id, &name, &description, &chatType, &users, &admin, &avatar)
 		groupChat := ChatRoomFields{
 			Id:          id,
 			Name:        name,
@@ -156,6 +157,7 @@ func GetUserChats(username string) ChatroomType {
 			Type:        chatType,
 			Users:       users,
 			Admin:       admin,
+			Avatar:      avatar,
 		}
 		sliceOfUsers := strings.Split(groupChat.Users, ",")
 		for i, involved := range sliceOfUsers {
@@ -164,6 +166,8 @@ func GetUserChats(username string) ChatroomType {
 				if groupChat.Type == "group" {
 					involvedChats.Group = append(involvedChats.Group, groupChat)
 				} else if groupChat.Type == "private" {
+					row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", groupChat.Users, db, "GetUserFromPrivateChatroom")
+					groupChat.Avatar = QueryUser(row, err).Avatar
 					involvedChats.Private = append(involvedChats.Private, groupChat)
 				}
 			}
@@ -182,9 +186,9 @@ func GetChatRoom(chatroom string, user string) ChatRoomFields {
 	}
 
 	var groupChat ChatRoomFields
-	var id, name, description, chatType, users, admin string
+	var id, name, description, chatType, users, admin, avatar string
 	for row.Next() {
-		row.Scan(&id, &name, &description, &chatType, &users, &admin)
+		row.Scan(&id, &name, &description, &chatType, &users, &admin, &avatar)
 		groupChat = ChatRoomFields{
 			Id:          id,
 			Name:        name,
@@ -192,12 +196,17 @@ func GetChatRoom(chatroom string, user string) ChatRoomFields {
 			Type:        chatType,
 			Users:       users,
 			Admin:       admin,
+			Avatar:      avatar,
 		}
 		sliceOfUsers := strings.Split(groupChat.Users, ",")
 		for i := range sliceOfUsers {
 			if sliceOfUsers[i] == user {
 				groupChat.Users = strings.Join(removeUserFromChatButton(sliceOfUsers, i), ",")
 			}
+		}
+		if groupChat.Type == "private" {
+			row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", groupChat.Users, db, "GetUserFromPrivateChatroom")
+			groupChat.Avatar = QueryUser(row, err).Avatar
 		}
 	}
 	return groupChat
@@ -233,9 +242,6 @@ func UpdateChatroom(chatroom ChatRoomFields, action string, user string) ChatRoo
 		}
 		fmt.Println(users)
 		chatroom.Users = strings.Join(returnedUserDisplay, ",")
-		// else{
-
-		// }
 	} else {
 		chatroom.Admin = user
 
@@ -351,7 +357,14 @@ func GetUserPosts(user string) []PostFields {
 			postTableRows.PostAuthor = true
 		}
 		postTableRows.Likes = len(GetPostLikes(postTableRows.Id, "l"))
+		postLike := GetPostLike(postTableRows.Id, user)
+		if postLike.Like == "l" {
+			postTableRows.PostLiked = true
+		} else if postLike.Like == "d" {
+			postTableRows.PostDisliked = true
+		}
 		postTableRows.Dislikes = len(GetPostLikes(postTableRows.Id, "d"))
+		postTableRows.PostComments = len(GetPostComments(postTableRows.Id, user))
 
 		sliceOfPostTableRows = append(sliceOfPostTableRows, postTableRows)
 	}
@@ -375,20 +388,27 @@ func GetPost(postId string, user string) PostFields {
 	for rows.Next() {
 		rows.Scan(&id, &author, &image, &text, &thread, &time)
 		post = PostFields{
-			Id:         id,
-			Author:     author,
-			Image:      image,
-			Text:       text,
-			Thread:     thread,
-			Time:       time,
-			PostAuthor: false,
-			Likes:      len(GetPostLikes(postId, "l")),
-			Dislikes:   len(GetPostLikes(postId, "d")),
+			Id:           id,
+			Author:       author,
+			Image:        image,
+			Text:         text,
+			Thread:       thread,
+			Time:         time,
+			PostAuthor:   false,
+			PostComments: len(GetPostComments(postId, user)),
+			Likes:        len(GetPostLikes(postId, "l")),
+			Dislikes:     len(GetPostLikes(postId, "d")),
 		}
 		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", post.Author, db, "GetUserFromPosts")
 		post.AuthorImg = QueryUser(row, err).Avatar
 		if post.Author == user {
 			post.PostAuthor = true
+		}
+		postLike := GetPostLike(post.Id, user)
+		if postLike.Like == "l" {
+			post.PostLiked = true
+		} else if postLike.Like == "d" {
+			post.PostDisliked = true
 		}
 	}
 	rows.Close()
@@ -421,7 +441,6 @@ func GetPostLike(id, user string) LikesFields {
 
 func AddPostLikes(postLiked LikesFields) error {
 	LikedPost := GetPostLike(postLiked.PostId, postLiked.Username)
-	fmt.Println("liked post", LikedPost)
 	db := OpenDB()
 	var s string
 	if LikedPost.Like == "" {
@@ -468,22 +487,218 @@ func GetPostLikes(id, l string) []LikesFields {
 	return sliceOfLikedRows
 }
 
-func LoggedInUser(r *http.Request) User {
-	cookie, err := r.Cookie("session")
-	if err != nil {
-		fmt.Println("no session in place")
-		return User{}
-	}
+//
+// Comments
+//
+
+func AddComment(commentFields CommentFields) error {
+	fmt.Println("comments", commentFields)
 	db := OpenDB()
-	// Compare session to users in database
-	sessionRows, err := PreparedQuery("SELECT * FROM sessions WHERE sessionUUID = ?", cookie.Value, db, "GetUserFromSessions")
-	session := QuerySession(sessionRows, err)
-	// Secure sql query and get user based on session
-	rows, err := PreparedQuery("SELECT * FROM users WHERE id = ?", session.userID, db, "GetUserFromSessions")
-	user := QueryUser(rows, err)
-	defer rows.Close()
-	db.Close()
-	return user
+	stmt, err := db.Prepare(`INSERT INTO "comments" (id, postid, author, image, text, thread, time) values(?, ?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		log.Fatal("error preparing to comment table:= ", err)
+		return err
+	}
+	_, err = stmt.Exec(commentFields.CommentId, commentFields.PostId, commentFields.Author, commentFields.Image, commentFields.Text, commentFields.Thread, commentFields.Time)
+	if err != nil {
+		log.Fatal("Error adding comment to table", err)
+		return err
+	}
+	fmt.Println("added comment to table")
+	return err
+}
+
+func GetPostComments(postId, user string) []CommentFields {
+	// fmt.Println(user, "postId", postId)
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT * FROM comments WHERE postid = '%v'", postId)
+
+	sliceOfCommentRows := []CommentFields{}
+	rows, _ := db.Query(s)
+	var commentid, postid, author, image, thread, text string
+	var time int
+
+	for rows.Next() {
+		rows.Scan(&commentid, &postid, &author, &image, &text, &thread, &time)
+		commentRows := CommentFields{
+			CommentId:     commentid,
+			PostId:        postid,
+			Author:        author,
+			Image:         image,
+			Text:          text,
+			Thread:        thread,
+			Time:          time,
+			CommentAuthor: false,
+			Likes:         len(GetCommentLikes(commentid, "l")),
+			Dislikes:      len(GetCommentLikes(commentid, "d")),
+		}
+
+		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", commentRows.Author, db, "GetUserFromPosts")
+		commentRows.AuthorImg = QueryUser(row, err).Avatar
+
+		if commentRows.Author == user {
+			commentRows.CommentAuthor = true
+		}
+		commentLike := GetCommentLike(commentRows.CommentId, user)
+		if commentLike.Like == "l" {
+			commentRows.CommentLiked = true
+		} else if commentLike.Like == "d" {
+			commentRows.CommentDisliked = true
+		}
+		sliceOfCommentRows = append(sliceOfCommentRows, commentRows)
+	}
+	rows.Close()
+	return sliceOfCommentRows
+}
+
+func RemoveComment(id string) error {
+	db := OpenDB()
+	stmt, err := db.Prepare(`DELETE FROM "comments" WHERE "id" = ?`)
+	if err != nil {
+		fmt.Println("error removing post from posts table", err)
+	}
+	stmt.Exec(id)
+	return err
+}
+
+func GetComment(commentId, user string) CommentFields {
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT * FROM comments WHERE id = '%v'", commentId)
+	rows, _ := db.Query(s)
+	var commentid, postid, author, image, thread, text string
+	var time int
+	var commentPost CommentFields
+
+	for rows.Next() {
+		rows.Scan(&commentid, &postid, &author, &image, &text, &thread, &time)
+		commentPost = CommentFields{
+			CommentId: commentid,
+			PostId:    postid,
+			Author:    author,
+			Image:     image,
+			Text:      text,
+			Thread:    thread,
+			Time:      time,
+			Likes:     len(GetCommentLikes(commentid, "l")),
+			Dislikes:  len(GetCommentLikes(commentid, "d")),
+		}
+		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", commentPost.Author, db, "GetUserFromPosts")
+		commentPost.AuthorImg = QueryUser(row, err).Avatar
+		if commentPost.Author == user {
+			commentPost.CommentAuthor = true
+		}
+		commentLike := GetCommentLike(commentPost.CommentId, user)
+		if commentLike.Like == "l" {
+			commentPost.CommentLiked = true
+		} else if commentLike.Like == "d" {
+			commentPost.CommentDisliked = true
+		}
+	}
+	rows.Close()
+	return commentPost
+}
+
+//
+// Comment Likes
+//
+
+func AddCommentLike(commentLikes CommentsAndLikesFields) error {
+	LikedComment := GetCommentLike(commentLikes.CommentId, commentLikes.Username)
+	db := OpenDB()
+	var s string
+	if LikedComment.Like == "" {
+		s = "INSERT INTO likescom (like, id, username) values (?, ?, ?)"
+	} else if commentLikes.Like != LikedComment.Like {
+		s = "UPDATE likescom SET like = ? WHERE id = ? AND username = ?"
+	} else {
+		s = "DELETE FROM likescom WHERE like = ? AND id = ? AND username = ?"
+	}
+	stmt, _ := db.Prepare(s)
+	_, err := stmt.Exec(commentLikes.Like, commentLikes.CommentId, commentLikes.Username)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+func GetCommentLike(id, user string) CommentsAndLikesFields {
+	CommentLikeRow := CommentsAndLikesFields{}
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT * FROM likescom WHERE id = '%v' AND username = '%v'", id, user)
+	rows, _ := db.Query(s)
+	var commentId string
+	var author string
+	var like string
+	if rows.Next() {
+		rows.Scan(&commentId, &author, &like)
+		CommentLikeRow = CommentsAndLikesFields{
+			CommentId: commentId,
+			Username:  author,
+			Like:      like,
+		}
+	}
+	rows.Close()
+	return CommentLikeRow
+}
+
+func GetCommentLikes(id, l string) []CommentsAndLikesFields {
+	sliceOfCommentLikesRow := []CommentsAndLikesFields{}
+	db := OpenDB()
+	var s string
+	if l == "all" {
+		s = fmt.Sprintf("SELECT * FROM likescom WHERE username = '%v' AND like = '%v'", id, "l")
+
+	} else {
+		s = fmt.Sprintf("SELECT * FROM likescom WHERE id = '%v' AND like = '%v'", id, l)
+
+	}
+
+	rows, _ := db.Query(s)
+	var commentId string
+	var author string
+	var like string
+	for rows.Next() {
+		rows.Scan(&commentId, &author, &like)
+		likedRows := CommentsAndLikesFields{
+			CommentId: commentId,
+			Username:  author,
+			Like:      like,
+		}
+		sliceOfCommentLikesRow = append(sliceOfCommentLikesRow, likedRows)
+	}
+	rows.Close()
+	return sliceOfCommentLikesRow
+}
+
+//
+// Followers
+//
+
+func GetFollowers(user User) []string {
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT * FROM followers WHERE follower = '%v' OR followee = '%v'", user.Email, user.Email)
+	rows, _ := db.Query(s)
+	var id int
+	var follower, followee string
+	var friends []string
+	for rows.Next() {
+		err := rows.Scan(&id, &follower, &followee)
+		if err != nil {
+			fmt.Println("error getting friends", err)
+		} else {
+			if follower == user.Email {
+				row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", followee, db, "GetUserFromFollowers")
+				friends = append(friends, QueryUser(row, err).Nickname)
+			} else {
+				row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", follower, db, "GetUserFromFollowers")
+				friends = append(friends, QueryUser(row, err).Nickname)
+			}
+		}
+
+	}
+	friends = append(friends, user.Nickname)
+	rows.Close()
+	return friends
 }
 
 //
@@ -504,7 +719,7 @@ func CreateSqlTables() {
 	db := OpenDB()
 
 	// if you need to delete a table rather than delete a whole database
-	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS likes`)
+	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS chatroom`)
 	// CheckErr(deleteTblErr, "-------Error deleting table")
 
 	// Create user table if it doen't exist.
@@ -517,7 +732,7 @@ func CreateSqlTables() {
 
 	// Create chatroom table if doesn't exist.
 	// add and avatar
-	var _, chatRoomTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `chatroom` (`id` TEXT NOT NULL, `name` TEXT, `description` TEXT, `type` TEXT NOT NULL, `users` VARCHAR(255) NOT NULL,`admin` TEXT NOT NULL)")
+	var _, chatRoomTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `chatroom` (`id` TEXT NOT NULL, `name` TEXT, `description` TEXT, `type` TEXT NOT NULL, `users` VARCHAR(255) NOT NULL,`admin` TEXT NOT NULL, avatar TEXT)")
 	CheckErr(chatRoomTblErr, "-------Error creating table")
 
 	// Create chats table if doesn't exist.
@@ -529,16 +744,21 @@ func CreateSqlTables() {
 	CheckErr(postTblErr, "-------Error creating table")
 
 	// Create Likes table if not exists
-	var _, likesTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `likes` (`id` TEXT NOT NULL, `username` TEXT NOT NULL, `like` TEXT);")
+	var _, likesTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `likes` (`id` TEXT NOT NULL, `username` TEXT NOT NULL, `like` TEXT)")
 	CheckErr(likesTblErr, "-------Error creating table")
 
 	// Create comments table if not exists
-	// var _, commentError = db.Exec("CREATE TABLE IF NOT EXISTS `comments` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `username` VARCHAR(64), `comment` TEXT NOT NULL, `post_ID` INTEGER NOT NULL )")
-	// CheckErr(commentError, "-------Error creating table")
+	var _, commentError = db.Exec("CREATE TABLE IF NOT EXISTS `comments` (`id` TEXT NOT NULL UNIQUE, `postid` TEXT NOT NULL, `author` TEXT NOT NULL, `image` TEXT, `text` TEXT, `thread` TEXT, `time` NUMBER)")
+	CheckErr(commentError, "-------Error creating table")
+
+	// Create Likes table if not exists
+	var _, CommentLikesTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `likescom` (`id` TEXT NOT NULL, `username` TEXT NOT NULL, `like` TEXT)")
+	CheckErr(CommentLikesTblErr, "-------Error creating table")
 
 	// Create messages table if not exists
 	// var _, msgErr = db.Exec("CREATE TABLE IF NOT EXISTS `messages` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `sender` VARCHAR(64), `receiver` VARCHAR(64), `message` TEXT, `time` TEXT NOT NULL, `status` VARCHAR(64))")
 	// CheckErr(msgErr, "-------Error creating table")
+
 	// Create followers table if not exists
 	var _, followErr = db.Exec("CREATE TABLE IF NOT EXISTS `followers` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `follower` VARCHAR(64), `followee` VARCHAR(64))")
 	CheckErr(followErr, "-------Error creating table")
@@ -645,4 +865,22 @@ func QuerySession(rows *sql.Rows, err error) Session {
 	}
 	rows.Close() //good habit to close
 	return sess
+}
+
+func LoggedInUser(r *http.Request) User {
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		fmt.Println("no session in place")
+		return User{}
+	}
+	db := OpenDB()
+	// Compare session to users in database
+	sessionRows, err := PreparedQuery("SELECT * FROM sessions WHERE sessionUUID = ?", cookie.Value, db, "GetUserFromSessions")
+	session := QuerySession(sessionRows, err)
+	// Secure sql query and get user based on session
+	rows, err := PreparedQuery("SELECT * FROM users WHERE id = ?", session.userID, db, "GetUserFromSessions")
+	user := QueryUser(rows, err)
+	defer rows.Close()
+	db.Close()
+	return user
 }

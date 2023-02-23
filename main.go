@@ -32,15 +32,18 @@ func main() {
 	http.HandleFunc("/api/followers", functions.FollowersApi)
 	http.HandleFunc("/profile", functions.Profile)
 	// http.HandleFunc("/public-profiles", functions.DynamicPath)
+	http.HandleFunc("/get-friends", functions.GetFriends)
 	http.HandleFunc("/create-chat", functions.CreateChat)
 	http.HandleFunc("/edit-chatroom", functions.EditChatroom)
 	http.HandleFunc("/get-chat", functions.Chat)
 	http.HandleFunc("/ws/chat", functions.ServeWs)
 	http.HandleFunc("/ws/user", functions.ServeWs)
-
 	http.HandleFunc("/create-post", functions.CreatePost)
 	http.HandleFunc("/edit-post", functions.EditPost)
 	http.HandleFunc("/post-interactions", functions.PostInteractions)
+	http.HandleFunc("/create-comment", functions.CreateComment)
+	http.HandleFunc("/comment-interactions", functions.CommentInteractions)
+
 	go functions.H.Run()
 	go functions.SqlExec.ExecuteStatements()
 

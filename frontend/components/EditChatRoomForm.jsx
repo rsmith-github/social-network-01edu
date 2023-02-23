@@ -1,31 +1,33 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 export const EditChat = (response) => {
     const [name, setName] = useState("")
     const [description, setDescription] = useState("")
     // const [chatAvatar, setChatAvatar] = useState('')
     const [visible, setVisible] = useState(false);
-
+    const [friends, setFriends] = useState([])
     const loggedInUser = response.l
-    const friendsArr = [
-        { name: "j", selected: false },
-        { name: "a", selected: false },
-        { name: "m", selected: false },
-        { name: "k", selected: false },
-        { name: "jas", selected: false },
-    ]
-    const [friends, setFriends] = useState(friendsArr)
     const currentUsers = response.u.split(",")
-    // console.log(response)
+    console.log({ currentUsers })
 
-
-
-    // fetch to get the names of followers to create chat and add selected key and set to false
-    //    const [friends, setFriends] = useState([]);
-    // useEffect(()=>{
-    //     fetch('/api/friends')
-    //     .then(response => response.json())
-    //     .then(data => setFriends(data))
-    // },[visible])
+    useEffect(() => {
+        fetch('http://localhost:8080/get-friends')
+            .then(response => response.json())
+            .then(data => {
+                console.log({ data })
+                let friends = []
+                data.map(friend => friends.push({ "name": friend, selected: false }))
+                friends.map(friend => {
+                    const selectedMember = currentUsers.find(member => friend.name === member)
+                    if (selectedMember) {
+                        friend.selected = true
+                    }
+                    return friend
+                }
+                )
+                console.log({ friends })
+                setFriends(friends)
+            })
+    }, [visible])
 
     // send info to golang
     const handleGroupChatSubmit = (evt) => {
@@ -103,33 +105,36 @@ export const EditChat = (response) => {
                         </button>
                         <h1>Edit Form</h1>
                     </div>
-                    <div className="reset-edit-form">
-                        <button className="reset-edit-form-button" onClick={reset}>Reset</button>
-                    </div>
                     <form onSubmit={handleGroupChatSubmit} className="chat-form">
+                        <div className="create-chat-image-container">
+                            <img src={response.img} />
+                        </div>
                         <input type="hidden" name="chatroom-id" value={response.i} />
-                        <input type="text" name="chat-name" id="chat-name" placeholder="Enter Group Chat Name Here" onChange={(e) => setName(e.target.value)} value={name} required /><br />
-                        {/* <input
-                            type="text"
-                            className="chat-image"
-                            id="avatar"
-                            placeholder="https://..."
-                            onChange={(e) => setChatAvatar(e.target.value)}
-                        /> */}
-                        <textarea name="chat-description" id="chat-description" placeholder="Description" onChange={(e) => setDescription(e.target.value)} value={description} /><br />
+                        <input type="text" name="chat-name" id="chat-name" placeholder="Enter Group Chat Name Here" onChange={(e) => setName(e.target.value)} value={name} required />
+                        <textarea name="chat-description" id="chat-description" placeholder="Description" onChange={(e) => setDescription(e.target.value)} value={description} />
                         <div className="create-chat-followers">
-                            {friends.map(friend => {
-                                if (friend.name != loggedInUser) {
-                                    return (<div>
-                                        <input type="checkbox" className="friend-info" id={friend.name} checked={friend.selected} onChange={() => handleFriendClick(friend.name)} />
-                                        <label htmlFor={friend.name}>{friend.name}</label>
-                                    </div>
-                                    )
-                                }
+                            {friends ? (
+                                <>
+                                    {friends.map(friend => {
+                                        if (friend.name != loggedInUser) {
+                                            return (<div>
+                                                <input type="checkbox" className="friend-info" id={friend.name} checked={friend.selected} onChange={() => handleFriendClick(friend.name)} />
+                                                <label htmlFor={friend.name}>{friend.name}</label>
+                                            </div>
+                                            )
+                                        }
 
-                            })}
+                                    })
+                                    }
+                                </>
+                            ) : (
+                                <p> No Followers/Followees</p>
+                            )
+
+                            }
                         </div>
                         <div className="create-chat-submit-container">
+                            <button className="reset-edit-form-button" onClick={reset}>Reset</button>
                             <input className="create-chat-submit-button" type="submit" value="Submit" />
                         </div>
                     </form>

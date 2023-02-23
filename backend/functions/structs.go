@@ -20,9 +20,9 @@ type Session struct {
 	email       string
 }
 
-// add img
 type ChatRoomFields struct {
 	Id          string `json:"chatroom-id"`
+	Avatar      string `json:"chat-avatar"`
 	Name        string `json:"chat-name"`
 	Description string `json:"chat-description"`
 	Type        string `json:"chat-type"`
@@ -56,17 +56,20 @@ type OpenChatInfo struct {
 }
 
 type PostFields struct {
-	Id         string `json:"post-id"`
-	Author     string `json:"author"`
-	AuthorImg  string `json:"author-img"`
-	Image      string `json:"post-image"`
-	Text       string `json:"post-text-content"`
-	Thread     string `json:"post-threads"`
-	Likes      int    `json:"post-likes"`
-	Dislikes   int    `json:"post-dislikes"`
-	PostAuthor bool   `json:"post-author"`
-	Time       int    `json:"post-time"`
-	Error      string `json:"error"`
+	Id           string `json:"post-id"`
+	Author       string `json:"author"`
+	AuthorImg    string `json:"author-img"`
+	Image        string `json:"post-image"`
+	Text         string `json:"post-text-content"`
+	Thread       string `json:"post-threads"`
+	Likes        int    `json:"post-likes"`
+	PostLiked    bool   `json:"post-liked"`
+	Dislikes     int    `json:"post-dislikes"`
+	PostDisliked bool   `json:"post-disliked"`
+	PostComments int    `json:"post-comments"`
+	PostAuthor   bool   `json:"post-author"`
+	Time         int    `json:"post-time"`
+	Error        string `json:"error"`
 }
 
 type LikesFields struct {
@@ -76,9 +79,31 @@ type LikesFields struct {
 	Type     string `json:"type"`
 }
 
-type ReturnLikesFields struct {
-	PostId  string `json:"post-id"`
-	Like    int    `json:"post-likes"`
-	Dislike int    `json:"post-dislikes"`
-	Error   string `json:"error"`
+type CommentFields struct {
+	CommentId       string `json:"comment-id"`
+	PostId          string `json:"post-id"`
+	Author          string `json:"author"`
+	AuthorImg       string `json:"author-img"`
+	Image           string `json:"comment-image"`
+	Text            string `json:"comment-text"`
+	Thread          string `json:"comment-threads"`
+	Time            int    `json:"comment-time"`
+	CommentLiked    bool   `json:"comment-liked"`
+	Likes           int    `json:"comment-likes"`
+	CommentDisliked bool   `json:"comment-disliked"`
+	Dislikes        int    `json:"comment-dislikes"`
+	CommentAuthor   bool   `json:"comment-author"`
+	Error           string `json:"error"`
+}
+
+type ReturnComments struct {
+	TotalComments []CommentFields `json:"total-comments"`
+	Post          PostFields      `json:"post-comment"`
+}
+
+type CommentsAndLikesFields struct {
+	CommentId string `json:"comment-id"`
+	Username  string `json:"username"`
+	Like      string `json:"like"`
+	Type      string `json:"type"`
 }
