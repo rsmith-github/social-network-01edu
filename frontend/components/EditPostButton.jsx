@@ -1,4 +1,5 @@
 import React, { useState } from "react"
+
 export const EditButton = (editedPost) => {
     let editPost = editedPost
 
@@ -99,6 +100,9 @@ export const EditButton = (editedPost) => {
                 console.log(response)
                 if (response["error"] != "") {
                     setErrorMes(response["error"])
+                    setTimeout(() => {
+                        setErrorMes("")
+                    }, 5000)
                 } else {
                     editedPost["func"](response)
                     closeEditPostForm()
@@ -119,7 +123,7 @@ export const EditButton = (editedPost) => {
                     <form className="edit-post-form" onSubmit={handleEditPostSubmit} >
                         <input type="hidden" name="post-id" value={editedPost["post"]["post-id"]} />
                         <div className="edit-post-header">
-                            <button className="create-post-close-button" type="button" onClick={closeEditPostForm}>
+                            <button className="close-button" type="button" onClick={closeEditPostForm}>
                                 <span>&times;</span>
                             </button>
                             <h1>Edit Post </h1>
@@ -195,9 +199,7 @@ export const EditButton = (editedPost) => {
                             </>
                         )}
                         <p>File Must Not Exceed 20MB</p>
-                        <div className="create-post-textarea" contentEditable={true}>
-                            <textarea name="post-text-content" className="post-text-content" value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="For Emojis Press: 'Windows + ;' or 'Ctrl + Cmd + Space'" />
-                        </div>
+                        <textarea name="post-text-content" contentEditable={true} className="post-text-content" value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="For Emojis Press: 'Windows + ;' or 'Ctrl + Cmd + Space'" />
                         <div className="create-post-threads">
                             <input type="text" className="add-thread-input" placeholder="Add Thread" value={thread} onChange={(e) => setThread(e.target.value)} onKeyPress={handleKeyPress} />
                             <button className="add-thread-button" type="button" onClick={addThread}>+</button>
@@ -220,9 +222,9 @@ export const EditButton = (editedPost) => {
 
                         </div>
                         {errorMes &&
-                            <p className="edit-error-message">{errorMes}</p>
+                            <p className="error-message">{errorMes}</p>
                         }
-                        <input type="submit" className="create-post-submit-button" value="Create" />
+                        <input type="submit" className="create-post-submit-button" value="Edit Post" />
                     </form>
                 </div >
             }

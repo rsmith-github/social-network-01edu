@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react"
+import { CommentButton } from "./CommentButton"
 import { CreatePost } from "./CreatePostForm"
 import { DeleteButton } from "./DeletePostButton"
 import { EditButton } from "./EditPostButton"
-import { DisLikeButton, LikeButton } from "./LikesDislikesButton"
+import { DisLikeButton } from "./DislikePostButton"
+import { LikeButton } from "./LikePostButton"
+import { PublicPostButton } from "./PublicPostButton"
+import { PrivatePostButton } from "./PrivatePostButton"
 
 // Post form in the center
 export default function PostForm(props) {
@@ -90,6 +94,12 @@ export default function PostForm(props) {
     setPosts(updatedPosts.reverse());
   }
 
+  const handlePrivatePosts = (friendsList) => {
+    const friends = friendsList
+    const updatedPosts = posts.filter((post) => friends.includes(post["author"]));
+    setPosts(updatedPosts.reverse());
+  }
+
   return (
     <>
       <div className="formContainer">
@@ -97,8 +107,8 @@ export default function PostForm(props) {
           <img src={props.avatar} alt="profile photo" />
         </div>
         <div className="privacyButtons">
-          <button className="postType">Public Post</button>
-          <button className="postType">Private Post</button>
+          <PublicPostButton allPost={getAllPost} />
+          <PrivatePostButton privatePost={handlePrivatePosts} />
         </div>
       </div>
       <div className="post-container">
@@ -144,9 +154,11 @@ export default function PostForm(props) {
 
 
             <div className="post-interactions">
-              <LikeButton id={post["post-id"]} num={formatNumber(post["post-likes"])} func={handleEditPost} />
-              <DisLikeButton id={post["post-id"]} num={formatNumber(post["post-dislikes"])} func={handleEditPost} />
-              <button type="button" value={post["post-id"]}><img src="../../public/assets/img/comment.png" /></button>
+              <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></link>
+
+              <LikeButton id={post["post-id"]} num={formatNumber(post["post-likes"])} func={handleEditPost} liked={post["post-liked"]} />
+              <DisLikeButton id={post["post-id"]} num={formatNumber(post["post-dislikes"])} func={handleEditPost} disliked={post["post-disliked"]} />
+              <CommentButton id={post["post-id"]} post={post} num={formatNumber(post["post-comments"])} edit={handleEditPost} delete={handleDeletePost} />
               {post["post-author"] &&
                 <>
                   <EditButton post={post} func={handleEditPost} />
