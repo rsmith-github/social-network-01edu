@@ -49,6 +49,33 @@ type Follow struct {
 	Followee string `json:"followee"`
 }
 
+type followMessage struct {
+	FollowRequest string `json:"followRequest"`
+	ToFollow      string `json:"toFollow"`
+	IsFollowing   bool   `json:"isFollowing"`
+	Followers     int    `json:"followers"`
+	Total         int    `json:"totalFollowers"`
+}
+
+type followNotification struct {
+	UpdateUser string `json:"updateUser"`
+	Followers  int    `json:"followers"`
+}
+
+type NotifFields struct {
+	ChatId        string `json:"notification-chatId"`
+	Sender        string `json:"notification-sender"`
+	Receiver      string `json:"notification-receiver"`
+	NumOfMessages int    `json:"notification-numOfMessages"`
+	Date          int    `json:"notification-date"`
+	TotalNumber   int    `json:"notification-totalNotifs"`
+}
+
+type NotifType struct {
+	Type       string `json:"notification-type"`
+	FriendName string `json:"friend-name"`
+}
+
 type OpenChatInfo struct {
 	User             string         `json:"user"`
 	Chatroom         ChatRoomFields `json:"chatroom"`
