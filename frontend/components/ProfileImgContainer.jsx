@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 
 // Component that contains image, followers etc.
@@ -8,46 +9,6 @@ export default function ProfileImgContainer(props) {
 
   // Variable to check following status. Set to true if user presses follow or on refreshing the page.
   const [isFollowing, setIsFollowing] = useState(false);
-
-  // const followerCount = props.user.followers;
-
-  // const [followerCount, setFollowerCount] = useState(props.user.followers);
-
-  const followerCount =
-    props.followerCounts[props.user.email] || props.user.followers;
-
-  // Redundant code.
-
-  //  useEffect(() => {
-  //    if (props.socket) {
-  //      const handleMessage = (event) => {
-  //        const msg = JSON.parse(event.data);
-  //        // Probably redundant code.
-  //        // console.log(msg);
-  //         if (msg.follower !== undefined) {
-  //           // setFollowerCount(msg.followers);
-  //         }
-  //         if (
-  //           msg.updateUser === props.currentUser.email &&
-  //           msg.followRequest !== undefined
-  //         ) {
-  //           console.log("BBRRRUHUHHHHHHHHHHh");
-  //           if (isFollowing) {
-  //             alert(msg.followRequest + " started following you, legend!");
-  //           } else {
-  //             alert(msg.followRequest + " unfollowed you, loser.");
-  //           }
-  //           // setFollowerCount(msg.followers);
-  //         }
-  //      };
-  //      props.socket.addEventListener("message", handleMessage);
-  //      return () => {
-  //        props.socket.removeEventListener("message", handleMessage);
-  //      };
-  //    }
-  //  }, []);
-
-  // Send a request on refresh to check if the current user is already following user rendered on this component.
 
   // Get all the followers of the user rendered on component.
   useEffect(() => {
@@ -74,32 +35,21 @@ export default function ProfileImgContainer(props) {
   }, []);
 
   // Follow button handler
-  const followHandler = (ev) => {
+  const followHandler = () => {
     const newIsFollowing = !isFollowing;
     setIsFollowing(newIsFollowing);
 
-    // Update follower count on the follower's browser.
-    const count = followerCount + (newIsFollowing ? 1 : -1);
-
-    // setFollowerCount(followerCount + (newIsFollowing ? -1 : 1));
-
-    props.setFollowerCounts({
-      ...props.followerCounts,
-      [props.user.email]: count,
+    // Send follow request through the backend via websocket.
+    const follow = JSON.stringify({
+      followRequest: props.currentUser.email,
+      toFollow: props.user.email,
+      isFollowing: newIsFollowing,
+      followers: props.user.followers,
     });
+    props.socket.send(follow);
 
-    // Send follow request through the backend.
-    props.socket.send(
-      JSON.stringify({
-        followRequest: props.currentUser.email,
-        toFollow: props.user.email,
-        isFollowing: newIsFollowing,
-        followers: props.user.followers,
-      })
-    );
+    props.fetchUsersData();
   };
-
-  // Comment for gitea
 
   return (
     <div className="profileImgContainer">
@@ -142,7 +92,7 @@ export default function ProfileImgContainer(props) {
             </div>
             <div>
               <span className="count" id={`${props.user.email}-followers`}>
-                {followerCount}
+                {props.user.followers}
               </span>
             </div>
           </div>

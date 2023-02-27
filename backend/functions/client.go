@@ -207,13 +207,13 @@ func (s *subscription) writePump() {
 			// Unmarshal message received from front end.
 			followMessage := message.incomingData.(followMessage)
 			// Update the follower count
-			followerCount, err := updateFollowerCount(followMessage.FollowRequest, followMessage.ToFollow, followMessage.IsFollowing)
+			followeeFollowerCount, followerFollwingCount, err := updateFollowerCount(followMessage.FollowRequest, followMessage.ToFollow, followMessage.IsFollowing)
 			if err != nil {
 				log.Printf("error updating follower count: %v", err)
 			}
 			followMessage.Total = GetTotalFollowers(followMessage.ToFollow)
 			// Send an update message to the client with the new follower count
-			updateMsg := followNotification{UpdateUser: followMessage.ToFollow, Followers: followerCount}
+			updateMsg := followNotification{UpdateUser: followMessage.ToFollow, Followers: *&followeeFollowerCount, FollowerFollowingCount: followerFollwingCount}
 			if err2 := c.ws.WriteJSON(followMessage); err2 != nil {
 				log.Printf("error sending follower message: %v", err2)
 			}

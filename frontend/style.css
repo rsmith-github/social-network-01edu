@@ -54,6 +54,8 @@ main {
     display: flex;
     height: max-content;
     justify-content: center;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
+    margin-left: 10px;
 }
 
 .aboutme {
@@ -65,7 +67,6 @@ main {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 70%;
     background-color: white;
 }
 
@@ -167,6 +168,8 @@ main {
     justify-content: center;
     background-color: white;
     height: 100%;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
+    margin-right: 10px;
 }
 
 /*  */
@@ -1003,6 +1006,10 @@ main {
     background-color: white;
     margin-bottom: 10px;
     width: 100%;
+}
+
+.post {
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
 }
 
 .post-header {

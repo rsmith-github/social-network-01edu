@@ -18,6 +18,7 @@ func main() {
 	// Handle websocket connections.
 	hub := websocket.NewHub()
 	go hub.Run()
+
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		websocket.ServeWs(hub, w, r)
 	})

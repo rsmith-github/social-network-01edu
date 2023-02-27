@@ -36,8 +36,7 @@ export default function PublicProfiles(props) {
         }}
         socket={props.socket} // socket passed down from App.jsx
         currentUser={props.user} // user that's interacting with the dom.
-        followerCounts={props.followerCounts}
-        setFollowerCounts={props.setFollowerCounts}
+        fetchUsersData={props.fetchUsersData}
       />
     );
   }

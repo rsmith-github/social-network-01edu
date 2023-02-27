@@ -15,8 +15,6 @@ export default function Home(props) {
               name={props.name}
               user={props.user}
               avatar={props.avatar}
-              followerCounts={props.followerCounts}
-              setFollowerCounts={props.setFollowerCounts}
             />
             <PostForm avatar={props.avatar} />
             <RightSide />

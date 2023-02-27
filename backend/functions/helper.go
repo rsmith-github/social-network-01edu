@@ -329,7 +329,7 @@ func RemovePost(id string) error {
 	return err
 }
 func GetUserPosts(user string) []PostFields {
-	fmt.Println(user, "retreiving posts")
+	// fmt.Println(user, "retreiving posts")
 	db := OpenDB()
 	sliceOfPostTableRows := []PostFields{}
 	rows, _ := db.Query(`SELECT * FROM "posts"`)
@@ -671,7 +671,7 @@ func GetCommentLikes(id, l string) []CommentsAndLikesFields {
 }
 
 // Followers
-func updateFollowerCount(followerEmail string, followeeEmail string, isFollowing bool) (int, error) {
+func updateFollowerCount(followerEmail string, followeeEmail string, isFollowing bool) (int, int, error) {
 	// Update the follower count in the database.
 
 	db := OpenDB()
@@ -684,19 +684,25 @@ func updateFollowerCount(followerEmail string, followeeEmail string, isFollowing
 	// Increment if follow button pressed otherwise decrement.
 	if isFollowing {
 		db.Exec("UPDATE users SET followers=followers+1 WHERE email=?", followeeEmail)
+		db.Exec("UPDATE users SET following=following+1 WHERE email=?", followerEmail)
 		PreparedExec("INSERT INTO followers (follower, followee) values (?,?)", follow, db, "updateFollowerCount")
 	} else {
 		db.Exec("UPDATE users SET followers=followers-1 WHERE email=?", followeeEmail)
+		db.Exec("UPDATE users SET following=following-1 WHERE email=?", followerEmail)
 		PreparedExec("DELETE FROM followers WHERE follower=? AND followee=?", follow, db, "updateFollowerCount")
 	}
 
-	// Secure sql query and get user based on session
+	// Secure sql query and get user based on session, get followee updated following/followers details
 	rows, err := PreparedQuery("SELECT * FROM users WHERE email = ?", followeeEmail, db, "updateFollowerCount")
-	user := QueryUser(rows, err)
+	followee := QueryUser(rows, err)
+
+	// get follower updated following/followers details
+	rows1, err1 := PreparedQuery("SELECT * FROM users WHERE email = ?", followerEmail, db, "updateFollowerCount")
+	follower := QueryUser(rows1, err1)
 
 	db.Close()
 	// Return the new follower count
-	return user.Followers, nil
+	return followee.Followers, follower.Following, nil
 }
 
 func GetFollowers(user User) []string {
@@ -728,7 +734,7 @@ func GetFollowers(user User) []string {
 
 func GetTotalFollowers(email string) int {
 	db := OpenDB()
-	s := fmt.Sprintf("SELECT * FROM followers WHERE follower = '%v'",  email)
+	s := fmt.Sprintf("SELECT * FROM followers WHERE follower = '%v'", email)
 	rows, _ := db.Query(s)
 	var id int
 	var follower, followee string
@@ -738,12 +744,12 @@ func GetTotalFollowers(email string) int {
 		if err != nil {
 			fmt.Println("error getting friends", err)
 		}
-		followField:= Follow{
+		followField := Follow{
 			Follower: follower,
 			Followee: followee,
 		}
-		totalFollowers=append(totalFollowers, followField)
-		}
+		totalFollowers = append(totalFollowers, followField)
+	}
 	rows.Close()
 
 	return len(totalFollowers)

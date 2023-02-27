@@ -58,8 +58,9 @@ type followMessage struct {
 }
 
 type followNotification struct {
-	UpdateUser string `json:"updateUser"`
-	Followers  int    `json:"followers"`
+	UpdateUser             string `json:"updateUser"`
+	Followers              int    `json:"followers"`
+	FollowerFollowingCount int    `json:"followerFollowingCount"`
 }
 
 type NotifFields struct {

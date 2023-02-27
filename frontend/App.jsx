@@ -8,7 +8,7 @@ import NavBar from "./components/Navbar";
 import Profile from "./pages/Profile";
 import PublicProfiles from "./pages/PublicProfiles";
 
-const root = ReactDOM.createRoot(document.querySelector("#app"));
+import Swal from "sweetalert2";
 
 function App() {
   // Current user state vars.
@@ -18,55 +18,48 @@ function App() {
   // can probably merge with existing wSocket handler
   const websocket = useRef(null);
 
-    // Variable to handle incoming WebSocket messages with the new follower count and update the UI.
-  // ("global" follower count.)
-  const [followerCounts, setFollowerCounts] = useState({});
-
-
-   // store current user
+  // store current user
   const [user, setUser] = useState({});
 
   // All users state vars
   const [users, setUsers] = useState([]);
 
   const openConnection = (name) => {
-    if (websocket.current === null && name !== undefined && name !=="") {
-      websocket.current = new WebSocket("ws://" + document.location.host + "/ws/user");
+    if (websocket.current === null && name !== undefined && name !== "") {
+      websocket.current = new WebSocket(
+        "ws://" + document.location.host + "/ws/user"
+      );
 
       websocket.current.onopen = () => {
-          console.log("user connection open");
+        console.log("user connection open");
       };
-      websocket.current.onmessage = (event)=> {
-          let msg = JSON.parse(event.data);
-          console.log(msg, "this is the notificaiton...")
+      websocket.current.onmessage = (event) => {
+        let msg = JSON.parse(event.data);
+        // console.log(msg, "this is the notificaiton...");
         if (msg.toFollow === user.email) {
           // Send message to relevant user according to isFollowing true or false.
-
-          /*
-          // send notification sounds.
-          try {
-            const notifSound = new Audio(
-              "public/assets/sounds/notification.mp3"
-              );
-              notifSound.play();
-            } catch (error) {}
-            */
-
           if (msg.isFollowing) {
-            setFollowerCounts({
-              ...followerCounts,
-              [user.email]: msg.followers + 1,
+            // Sweet Alert notification
+            Swal.fire({
+              title: "New follower:",
+              text: msg.followRequest + " just followed you",
+              icon: "info",
+              confirmButtonText: "OK",
             });
-            alert(msg.followRequest + " started following you, legend!");
+            fetchUsersData();
           } else {
-            setFollowerCounts({
-              ...followerCounts,
-              [user.email]: msg.followers,
+            // Sweet Alert notification
+            Swal.fire({
+              title: "Update:",
+              text: msg.followRequest + " unfollowed you",
+              icon: "info",
+              confirmButtonText: "OK",
             });
-            alert(msg.followRequest + " unfollowed you, loser.");
+            // fetch user data
+            fetchUsersData();
           }
         }
-        }
+      };
     }
   };
 
@@ -77,7 +70,9 @@ function App() {
     }
   };
 
- 
+  // Websocket
+  const [wSocket, setWSocket] = useState(null);
+
   useEffect(() => {
     window.addEventListener("beforeunload", closeConnection);
     return () => {
@@ -85,93 +80,95 @@ function App() {
     };
   }, []);
 
+  const fetchData = async () => {
+    // validate user based on session.
+    const response = await fetch("http://localhost:8080/api/user", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+    const content = await response.json(); //getting current user.
+
+    // Set user details
+    setName(content.first);
+    setAvatar(content.avatar);
+
+    // Format user data to store in state variable.
+    const user = {
+      email: content.email,
+      last: content.last,
+      dob: content.dob,
+      nickname: content.nickname,
+      aboutme: content.about,
+      followers: content.followers,
+      following: content.following,
+    };
+    setUser(user);
+
+    // try to connect user to websocket.
+    handleWSocket(user); // works here
+    openConnection(name);
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      // validate user based on session.
-      const response = await fetch("http://localhost:8080/api/user", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      const content = await response.json(); //getting current user.
+    fetchData();
+  }, [name, users]); // fetch users data again when users have been updated, after follow. name var is for login.
 
-      // Set user details
-      setName(content.first);
-      setAvatar(content.avatar);
-
-      const user = {
-        email: content.email,
-        last: content.last,
-        dob: content.dob,
-        nickname: content.nickname,
-        aboutme: content.about,
-        followers: followerCounts[content.email]
-          ? followerCounts[content.email]
-          : content.followers,
-        following: content.following,
+  const handleWSocket = (usr) => {
+    if (wSocket === null) {
+      // Connect websocket after logging in.
+      const newSocket = new WebSocket("ws://" + document.location.host + "/ws");
+      newSocket.onopen = () => {
+        console.log("WebSocket connection opened");
       };
 
-      setUser(user);
-      // try to connect to websocket.
-      openConnection(name);
-    };
-    fetchData();
-  }, [followerCounts, name]);
+      newSocket.onmessage = (event) => {
+        let msg = JSON.parse(event.data);
 
-  // const handleWSocket = (usr) => {
-  //   if (wSocket === null) {
-  //     // Connect websocket after logging in.
-  //     const newSocket = new WebSocket("ws://" + document.location.host + "/ws");
-  //     newSocket.onopen = () => {
-  //       console.log("WebSocket connection opened");
-  //     };
+        if (msg.toFollow === usr.email) {
+          // Send message to relevant user according to isFollowing true or false.
+          if (msg.isFollowing) {
+            // Sweet Alert notification
+            Swal.fire({
+              title: "New follower:",
+              text: msg.followRequest + " just followed you",
+              icon: "info",
+              confirmButtonText: "OK",
+            });
+            fetchUsersData();
+          } else {
+            // Sweet Alert notification
+            Swal.fire({
+              title: "Update:",
+              text: msg.followRequest + " unfollowed you",
+              icon: "info",
+              confirmButtonText: "OK",
+            });
 
-  //     newSocket.onmessage = (event) => {
-  //       let msg = JSON.parse(event.data);
+            // fetch user data
+            fetchUsersData();
+          }
+        }
+      };
 
-  //       if (msg.toFollow === usr.email) {
-  //         // Send message to relevant user according to isFollowing true or false.
+      setWSocket(newSocket);
+    }
+  };
 
-  //         /*
-  //         // send notification sounds.
-  //         try {
-  //           const notifSound = new Audio(
-  //             "public/assets/sounds/notification.mp3"
-  //             );
-  //             notifSound.play();
-  //           } catch (error) {}
-  //           */
+  // Fetch users from api. Fetches whenever there is a follow request.
+  const fetchUsersData = async () => {
+    // Fetch users from "all users" api
+    const usersPromise = await fetch("http://localhost:8080/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const usersJson = await usersPromise.json(); //getting current user.
+    setUsers(usersJson);
+  };
 
-  //         if (msg.isFollowing) {
-  //           setFollowerCounts({
-  //             ...followerCounts,
-  //             [usr.email]: msg.followers + 1,
-  //           });
-  //           alert(msg.followRequest + " started following you, legend!");
-  //         } else {
-  //           setFollowerCounts({
-  //             ...followerCounts,
-  //             [usr.email]: msg.followers,
-  //           });
-  //           alert(msg.followRequest + " unfollowed you, loser.");
-  //         }
-  //       }
-  //     };
-
-  //     setWSocket(newSocket);
-  //   }
-  // };
-
+  // Fetch users data (followers, following etc.)
   useEffect(() => {
-    (async () => {
-      // Fetch users from "all users" api
-      const usersPromise = await fetch("http://localhost:8080/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      const usersJson = await usersPromise.json(); //getting current user.
-      setUsers(usersJson);
-    })();
+    fetchUsersData();
   }, []);
 
   return (
@@ -186,15 +183,11 @@ function App() {
               name={name}
               avatar={avatar}
               user={user}
-              followerCounts={followerCounts}
-              setFollowerCounts={setFollowerCounts}
+              fetchUsersData={fetchUsersData}
             />
           }
         />
-        <Route
-          path="/login"
-          element={<Login setName={setName}/>}
-        />
+        <Route path="/login" element={<Login setName={setName} />} />
         <Route path="/register" element={<Register />} />
         <Route
           path="/profile/"
@@ -203,8 +196,7 @@ function App() {
               name={name}
               avatar={avatar}
               user={user}
-              followerCounts={followerCounts}
-              setFollowerCounts={setFollowerCounts}
+              fetchUsersData={fetchUsersData}
             />
           }
         />
@@ -213,10 +205,10 @@ function App() {
           element={
             <PublicProfiles
               users={users}
-              socket={websocket.current}
+              socket={websocket.current} // Socket 1
+              // socket={wSocket} // Socket 2
               user={user}
-              followerCounts={followerCounts}
-              setFollowerCounts={setFollowerCounts}
+              fetchUsersData={fetchUsersData}
             />
           }
         />
@@ -225,5 +217,7 @@ function App() {
     // </StrictMode>
   );
 }
+
+const root = ReactDOM.createRoot(document.getElementById("app"));
 
 root.render(<App />);

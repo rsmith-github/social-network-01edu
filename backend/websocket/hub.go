@@ -34,8 +34,9 @@ type followMessage struct {
 }
 
 type followNotification struct {
-	UpdateUser string `json:"updateUser"`
-	Followers  int    `json:"followers"`
+	UpdateUser             string `json:"updateUser"`
+	Followers              int    `json:"followers"`
+	FollowerFollowingCount int    `json:"followerFollowingCount"`
 }
 
 func NewHub() *Hub {
@@ -75,14 +76,14 @@ func (h *Hub) Run() {
 					if updateCount <= 1 {
 
 						// Update the follower count
-						followerCount, err := updateFollowerCount(msg.FollowRequest, msg.ToFollow, msg.IsFollowing)
+						followeeFollowerCount, followerFollwingCount, err := updateFollowerCount(msg.FollowRequest, msg.ToFollow, msg.IsFollowing)
 						if err != nil {
 							log.Printf("error updating follower count: %v", err)
 							continue
 						}
 
 						// Send an update message to the client with the new follower count
-						updateMsg := followNotification{UpdateUser: msg.ToFollow, Followers: *&followerCount}
+						updateMsg := followNotification{UpdateUser: msg.ToFollow, Followers: *&followeeFollowerCount, FollowerFollowingCount: followerFollwingCount}
 						if err := client.conn.WriteJSON(updateMsg); err != nil {
 							log.Printf("error sending update message: %v", err)
 							continue
@@ -100,7 +101,7 @@ func (h *Hub) Run() {
 	}
 }
 
-func updateFollowerCount(followerEmail string, followeeEmail string, isFollowing bool) (int, error) {
+func updateFollowerCount(followerEmail string, followeeEmail string, isFollowing bool) (int, int, error) {
 	// Update the follower count in the database.
 
 	db := functions.OpenDB()
@@ -113,19 +114,26 @@ func updateFollowerCount(followerEmail string, followeeEmail string, isFollowing
 	// Increment if follow button pressed otherwise decrement.
 	if isFollowing {
 		db.Exec("UPDATE users SET followers=followers+1 WHERE email=?", followeeEmail)
+		db.Exec("UPDATE users SET following=following+1 WHERE email=?", followerEmail)
 		functions.PreparedExec("INSERT INTO followers (follower, followee) values (?,?)", follow, db, "updateFollowerCount")
+
 	} else {
-		db.Exec("UPDATE users SET followers=followers-1 WHERE email=?", followeeEmail) 
+		db.Exec("UPDATE users SET followers=followers-1 WHERE email=?", followeeEmail)
+		db.Exec("UPDATE users SET following=following-1 WHERE email=?", followerEmail)
 		functions.PreparedExec("DELETE FROM followers WHERE follower=? AND followee=?", follow, db, "updateFollowerCount")
 	}
 
-	// Secure sql query and get user based on session
+	// Secure sql query and get user based on session, get followee updated following/followers details
 	rows, err := functions.PreparedQuery("SELECT * FROM users WHERE email = ?", followeeEmail, db, "updateFollowerCount")
-	user := functions.QueryUser(rows, err)
+	followee := functions.QueryUser(rows, err)
+
+	// get follower updated following/followers details
+	rows1, err1 := functions.PreparedQuery("SELECT * FROM users WHERE email = ?", followerEmail, db, "updateFollowerCount")
+	follower := functions.QueryUser(rows1, err1)
 
 	db.Close()
 	// Return the new follower count
-	return user.Followers, nil
+	return followee.Followers, follower.Following, nil
 }
 
 /*

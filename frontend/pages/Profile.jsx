@@ -13,10 +13,8 @@ export default function Profile(props) {
         avatar={props.avatar}
         socket={props.socket}
         currentUser={props.currentUser}
-        followerCounts={props.followerCounts}
-        setFollowerCounts={props.setFollowerCounts}
+        fetchUsersData={props.fetchUsersData}
       />
-
       <div>
         <p>{props.user.email}</p>
         <p>{props.user.nickname}</p>
