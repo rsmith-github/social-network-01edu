@@ -10,18 +10,6 @@ export default function ProfileImgContainer(props) {
   // Variable to check following status. Set to true if user presses follow or on refreshing the page.
   const [isFollowing, setIsFollowing] = useState(false);
 
-  // const followerCount = props.user.followers;
-
-  // const [followerCount0, setFollowerCount0] = useState(props.user.followers);
-
-  let followerCount =
-    useSelector((state) => state[props.user.email]) || props.user.followers;
-
-  // const followingCount = useSelector((state) => state[props.user.email]);
-  // console.log(followingCount);
-
-  // Send a request on refresh to check if the current user is already following user rendered on this component.
-
   // Get all the followers of the user rendered on component.
   useEffect(() => {
     (async () => {
@@ -51,29 +39,17 @@ export default function ProfileImgContainer(props) {
     const newIsFollowing = !isFollowing;
     setIsFollowing(newIsFollowing);
 
-    // Update follower count on the follower's browser.
-    // Update follower count on the follower's browser.
-    const count = followerCount + (newIsFollowing ? 1 : -1);
-    console.log(props);
-    props.dispatch({
-      type: "UPDATE_FOLLOWER_COUNT",
-      payload: {
-        userEmail: props.user.email,
-        count,
-      },
-    });
-
+    // Send follow request through the backend via websocket.
     const follow = JSON.stringify({
       followRequest: props.currentUser.email,
       toFollow: props.user.email,
       isFollowing: newIsFollowing,
       followers: props.user.followers,
     });
-    // Send follow request through the backend.
     props.socket.send(follow);
-  };
 
-  // Comment for gitea
+    props.fetchUsersData();
+  };
 
   return (
     <div className="profileImgContainer">
@@ -116,7 +92,7 @@ export default function ProfileImgContainer(props) {
             </div>
             <div>
               <span className="count" id={`${props.user.email}-followers`}>
-                testing: {followerCount}
+                {props.user.followers}
               </span>
             </div>
           </div>

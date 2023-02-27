@@ -329,7 +329,7 @@ func RemovePost(id string) error {
 	return err
 }
 func GetUserPosts(user string) []PostFields {
-	fmt.Println(user, "retreiving posts")
+	// fmt.Println(user, "retreiving posts")
 	db := OpenDB()
 	sliceOfPostTableRows := []PostFields{}
 	rows, _ := db.Query(`SELECT * FROM "posts"`)
