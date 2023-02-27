@@ -45,6 +45,12 @@ export const ChatBox = (response) => {
                 conn.current = new WebSocket("ws://" + document.location.host + "/ws/chat")
                 console.log(conn.current)
                 conn.current.onopen = () => {
+                    //create notification object
+                    let updateNotif = {
+                        "notification-chatId" : chatroomId,
+                        "notification-receiver" : resp.user,
+                    }
+                    conn.current.send(JSON.stringify(updateNotif)) 
                     console.log("Chat box connection open")
                 }
                 conn.current.onmessage = (evt) => {

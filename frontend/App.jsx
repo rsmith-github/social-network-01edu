@@ -14,15 +14,59 @@ function App() {
   // Current user state vars.
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState("");
-  const [valid, setValid] = useState(false);
 
   // can probably merge with existing wSocket handler
   const websocket = useRef(null);
 
-  const openConnection = (ws) => {
-    if (websocket.current === null) {
-      console.log("open connection...");
-      websocket.current = ws;
+    // Variable to handle incoming WebSocket messages with the new follower count and update the UI.
+  // ("global" follower count.)
+  const [followerCounts, setFollowerCounts] = useState({});
+
+
+   // store current user
+  const [user, setUser] = useState({});
+
+  // All users state vars
+  const [users, setUsers] = useState([]);
+
+  const openConnection = (name) => {
+    if (websocket.current === null && name !== undefined && name !=="") {
+      websocket.current = new WebSocket("ws://" + document.location.host + "/ws/user");
+
+      websocket.current.onopen = () => {
+          console.log("user connection open");
+      };
+      websocket.current.onmessage = (event)=> {
+          let msg = JSON.parse(event.data);
+          console.log(msg, "this is the notificaiton...")
+        if (msg.toFollow === user.email) {
+          // Send message to relevant user according to isFollowing true or false.
+
+          /*
+          // send notification sounds.
+          try {
+            const notifSound = new Audio(
+              "public/assets/sounds/notification.mp3"
+              );
+              notifSound.play();
+            } catch (error) {}
+            */
+
+          if (msg.isFollowing) {
+            setFollowerCounts({
+              ...followerCounts,
+              [user.email]: msg.followers + 1,
+            });
+            alert(msg.followRequest + " started following you, legend!");
+          } else {
+            setFollowerCounts({
+              ...followerCounts,
+              [user.email]: msg.followers,
+            });
+            alert(msg.followRequest + " unfollowed you, loser.");
+          }
+        }
+        }
     }
   };
 
@@ -30,23 +74,10 @@ function App() {
     if (websocket.current !== null) {
       websocket.current.close(1000, "user refreshed or logged out.");
       websocket.current = null;
-      setValid(false);
     }
   };
 
-  // store current user
-  const [user, setUser] = useState({});
-
-  // Variable to handle incoming WebSocket messages with the new follower count and update the UI.
-  // ("global" follower count.)
-  const [followerCounts, setFollowerCounts] = useState({});
-
-  // Websocket
-  const [wSocket, setWSocket] = useState(null);
-
-  // All users state vars
-  const [users, setUsers] = useState([]);
-
+ 
   useEffect(() => {
     window.addEventListener("beforeunload", closeConnection);
     return () => {
@@ -82,69 +113,54 @@ function App() {
 
       setUser(user);
       // try to connect to websocket.
-      handleWSocket(user);
-
-      if (user.nickname !== undefined) {
-        setValid(true);
-      }
+      openConnection(name);
     };
-    fetchData().then(() => {
-      // if (valid && websocket.current === null) {
-      //   console.log("inside useEffect to open connection...");
-      //   websocket.current = new WebSocket(
-      //     "ws://" + document.location.host + "/ws/user"
-      //   );
-      //   console.log(websocket);
-      //   websocket.current.onopen = () => {
-      //     console.log("Chat box connection open");
-      //   };
-      // }
-    });
+    fetchData();
   }, [followerCounts, name]);
 
-  const handleWSocket = (usr) => {
-    if (wSocket === null) {
-      // Connect websocket after logging in.
-      const newSocket = new WebSocket("ws://" + document.location.host + "/ws");
-      newSocket.onopen = () => {
-        console.log("WebSocket connection opened");
-      };
+  // const handleWSocket = (usr) => {
+  //   if (wSocket === null) {
+  //     // Connect websocket after logging in.
+  //     const newSocket = new WebSocket("ws://" + document.location.host + "/ws");
+  //     newSocket.onopen = () => {
+  //       console.log("WebSocket connection opened");
+  //     };
 
-      newSocket.onmessage = (event) => {
-        let msg = JSON.parse(event.data);
+  //     newSocket.onmessage = (event) => {
+  //       let msg = JSON.parse(event.data);
 
-        if (msg.toFollow === usr.email) {
-          // Send message to relevant user according to isFollowing true or false.
+  //       if (msg.toFollow === usr.email) {
+  //         // Send message to relevant user according to isFollowing true or false.
 
-          /*
-          // send notification sounds.
-          try {
-            const notifSound = new Audio(
-              "public/assets/sounds/notification.mp3"
-              );
-              notifSound.play();
-            } catch (error) {}
-            */
+  //         /*
+  //         // send notification sounds.
+  //         try {
+  //           const notifSound = new Audio(
+  //             "public/assets/sounds/notification.mp3"
+  //             );
+  //             notifSound.play();
+  //           } catch (error) {}
+  //           */
 
-          if (msg.isFollowing) {
-            setFollowerCounts({
-              ...followerCounts,
-              [usr.email]: msg.followers + 1,
-            });
-            alert(msg.followRequest + " started following you, legend!");
-          } else {
-            setFollowerCounts({
-              ...followerCounts,
-              [usr.email]: msg.followers,
-            });
-            alert(msg.followRequest + " unfollowed you, loser.");
-          }
-        }
-      };
+  //         if (msg.isFollowing) {
+  //           setFollowerCounts({
+  //             ...followerCounts,
+  //             [usr.email]: msg.followers + 1,
+  //           });
+  //           alert(msg.followRequest + " started following you, legend!");
+  //         } else {
+  //           setFollowerCounts({
+  //             ...followerCounts,
+  //             [usr.email]: msg.followers,
+  //           });
+  //           alert(msg.followRequest + " unfollowed you, loser.");
+  //         }
+  //       }
+  //     };
 
-      setWSocket(newSocket);
-    }
-  };
+  //     setWSocket(newSocket);
+  //   }
+  // };
 
   useEffect(() => {
     (async () => {
@@ -177,7 +193,7 @@ function App() {
         />
         <Route
           path="/login"
-          element={<Login setName={setName} openConn={openConnection} />}
+          element={<Login setName={setName}/>}
         />
         <Route path="/register" element={<Register />} />
         <Route
@@ -197,7 +213,7 @@ function App() {
           element={
             <PublicProfiles
               users={users}
-              socket={wSocket}
+              socket={websocket.current}
               user={user}
               followerCounts={followerCounts}
               setFollowerCounts={setFollowerCounts}
