@@ -205,8 +205,8 @@ function App() {
           element={
             <PublicProfiles
               users={users}
-              socket={websocket.current} // Socket 1
-              // socket={wSocket} // Socket 2
+              // socket={websocket.current} // Socket 1
+              socket={wSocket} // Socket 2
               user={user}
               fetchUsersData={fetchUsersData}
             />

@@ -90,6 +90,7 @@ main {
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 80%;
 }
 
 .followerDiv span {
@@ -1518,4 +1519,27 @@ main {
 .post-container::-webkit-scrollbar-thumb:hover,
 .chat-form::-webkit-scrollbar-thumb:hover {
     background: rgba(228, 137, 0);
+}
+
+
+/*
+PROFILE PAGE
+*/
+
+#name-email-dob {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+#name-email-dob p {
+    width: 50%;
+    text-align: left;
+}
+
+.moreInfo:hover {
+    color: rgba(228, 137, 0);
+}
+
+.bold {
+    font-weight: 700;
 }

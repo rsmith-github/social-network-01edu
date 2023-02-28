@@ -8,11 +8,14 @@ export default function NavBar(props) {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
     });
-    console.log(props)
+    console.log(props);
     props["closeConn"]();
     props.setName("");
   };
 
+  const onHover = (ev) => {
+    ev.target.click();
+  };
   return (
     <nav className="navbar navbar-expand-md navbar-dark bg-dark mb-4">
       <button
@@ -21,6 +24,7 @@ export default function NavBar(props) {
         data-bs-toggle="collapse"
         data-bs-target="#navbarCollapse"
         style={{ marginLeft: "10px" }}
+        onMouseEnter={onHover}
       >
         <span className="navbar-toggler-icon"></span>
       </button>
