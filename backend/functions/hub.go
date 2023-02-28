@@ -2,6 +2,7 @@ package functions
 
 import (
 	"fmt"
+	"log"
 )
 
 type message struct {
@@ -108,13 +109,27 @@ func (h *hub) Run() {
 			case followMessage:
 				followData := m.incomingData.(followMessage)
 				db := OpenDB()
+
+				//get the users who have interacted
 				row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", followData.ToFollow, db, "GetUserFromFollowers")
+				row2, err2 := PreparedQuery("SELECT * FROM users WHERE email = ?", followData.FollowRequest, db, "GetUserFromFollowers")
 				followee := h.user[QueryUser(row, err).Nickname]
+				follower := h.user[QueryUser(row2, err2).Nickname]
+				
+				//update count and all dat...
+				followeeFollowerCount, followerFollwingCount, err := updateFollowerCount(followData.FollowRequest, followData.ToFollow, followData.IsFollowing)
+				if err != nil {
+					log.Printf("error updating follower count: %v", err)
+				}
+				updateMsg := followNotification{UpdateUser: followData.ToFollow, Followers: followeeFollowerCount, FollowerFollowingCount: followerFollwingCount}
 				for s := range followee {
 					s.conn.send <- m
 				}
+				for s := range follower {
+					s.conn.send <- message{incomingData: updateMsg}
+					s.conn.send <- m
+				}
 			}
-			// else if etc
 		}
 	}
 }
@@ -156,7 +171,4 @@ func (d *sqlExecute) ExecuteStatements() {
 			}
 		}
 	}
-	//for notifications := range SqlExec.followers{
-	//run the updateNotification from sql here...
-	//}
 }

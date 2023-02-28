@@ -54,7 +54,6 @@ type followMessage struct {
 	ToFollow      string `json:"toFollow"`
 	IsFollowing   bool   `json:"isFollowing"`
 	Followers     int    `json:"followers"`
-	Total         int    `json:"totalFollowers"`
 }
 
 type followNotification struct {

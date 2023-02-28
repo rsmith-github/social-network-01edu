@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import Profile from "./Profile";
 
 export default function PublicProfiles(props) {
-  console.log(props.socket, "asdf")
   const location = useLocation();
   // Get user from url
   const query = new URLSearchParams(location.search);

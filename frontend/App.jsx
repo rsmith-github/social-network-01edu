@@ -24,7 +24,7 @@ function App() {
   // All users state vars
   const [users, setUsers] = useState([]);
 
-  const openConnection = (name) => {
+  const openConnection = (name, usr) => {
     if (websocket.current === null && name !== undefined && name !== "") {
       websocket.current = new WebSocket(
         "ws://" + document.location.host + "/ws/user"
@@ -35,8 +35,7 @@ function App() {
       };
       websocket.current.onmessage = (event) => {
         let msg = JSON.parse(event.data);
-        // console.log(msg, "this is the notificaiton...");
-        if (msg.toFollow === user.email) {
+        if (msg.toFollow === usr.email) {
           // Send message to relevant user according to isFollowing true or false.
           if (msg.isFollowing) {
             // Sweet Alert notification
@@ -55,10 +54,10 @@ function App() {
               icon: "info",
               confirmButtonText: "OK",
             });
-            // fetch user data
-            fetchUsersData();
           }
         }
+         // fetch user data
+         fetchUsersData();
       };
     }
   };
@@ -107,7 +106,7 @@ function App() {
 
     // try to connect user to websocket.
     handleWSocket(user); // works here
-    openConnection(name);
+    openConnection(name, user);
   };
 
   useEffect(() => {
@@ -124,7 +123,7 @@ function App() {
 
       newSocket.onmessage = (event) => {
         let msg = JSON.parse(event.data);
-
+        console.log("this is the message.", msg)
         if (msg.toFollow === usr.email) {
           // Send message to relevant user according to isFollowing true or false.
           if (msg.isFollowing) {
@@ -150,7 +149,6 @@ function App() {
           }
         }
       };
-
       setWSocket(newSocket);
     }
   };

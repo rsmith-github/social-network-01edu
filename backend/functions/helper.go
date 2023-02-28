@@ -700,7 +700,6 @@ func updateFollowerCount(followerEmail string, followeeEmail string, isFollowing
 	rows1, err1 := PreparedQuery("SELECT * FROM users WHERE email = ?", followerEmail, db, "updateFollowerCount")
 	follower := QueryUser(rows1, err1)
 
-	db.Close()
 	// Return the new follower count
 	return followee.Followers, follower.Following, nil
 }
@@ -725,7 +724,6 @@ func GetFollowers(user User) []string {
 				friends = append(friends, QueryUser(row, err).Nickname)
 			}
 		}
-
 	}
 	friends = append(friends, user.Nickname)
 	rows.Close()
@@ -805,7 +803,7 @@ func GetChatNotif(receiverName, senderName, chatRoomId string) NotifFields {
 	return chatNotif
 }
 
-func GetChatNotifForAll(receiverName, chatRoomId string) []NotifFields {
+func GetChatNotifications(receiverName, chatRoomId string) []NotifFields {
 	db := OpenDB()
 	var sliceOfNotification []NotifFields
 	n := fmt.Sprintf(`SELECT * FROM notifications WHERE receiver = '%v' AND chatId ='%v'`, receiverName, chatRoomId)
@@ -878,14 +876,16 @@ func GetAllNotifs(user string) []NotifFields {
 
 	for rows.Next() {
 		rows.Scan(&sender, &receiver, &chatId, &notifNum, &date)
-		notifTableRows := NotifFields{
-			ChatId:        chatId,
-			Sender:        sender,
-			Receiver:      receiver,
-			NumOfMessages: notifNum,
-			Date:          date,
+		if notifNum > 0 {
+			notifTableRows := NotifFields{
+				ChatId:        chatId,
+				Sender:        sender,
+				Receiver:      receiver,
+				NumOfMessages: notifNum,
+				Date:          date,
+			}
+			sliceOfNotifFields = append(sliceOfNotifFields, notifTableRows)
 		}
-		sliceOfNotifFields = append(sliceOfNotifFields, notifTableRows)
 	}
 	rows.Close()
 	return sliceOfNotifFields
@@ -1044,9 +1044,6 @@ func PreparedExec(query string, m map[string]string, db *sql.DB, functionName st
 			fmt.Println(err.Error())
 		}
 	}
-
-	return
-
 }
 
 func QuerySession(rows *sql.Rows, err error) Session {
