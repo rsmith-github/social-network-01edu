@@ -135,3 +135,13 @@ type CommentsAndLikesFields struct {
 	Like      string `json:"like"`
 	Type      string `json:"type"`
 }
+
+type GroupFields struct {
+	Id          string `json:"group-id"`
+	Avatar      string `json:"group-avatar"`
+	Name        string `json:"group-name"`
+	Description string `json:"group-description"`
+	Users       string `json:"users"`
+	Admin       string `json:"admin"`
+	Action      string `json:"action"`
+}

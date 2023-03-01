@@ -180,7 +180,7 @@ export const CreatePost = (newPost) => {
             }
 
             <button className="create-post-button" onClick={openPostForm}>
-                <img src="../../public/assets/img/add-post-icon.png" alt="" />
+                <img src="https://cdn-icons-png.flaticon.com/128/4712/4712540.png" alt="" />
             </button>
         </>
     )

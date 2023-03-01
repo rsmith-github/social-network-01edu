@@ -10,6 +10,7 @@ export const CreateChat = (newChat) => {
     const [selectedImage, setSelectedImage] = useState(null)
     const [localImage, setLocalImage] = useState("")
     const [local, setLocal] = useState(false)
+    const [errorMes, setErrorMes] = useState("")
 
     useEffect(() => {
         fetch('http://localhost:8080/api/user')
@@ -52,27 +53,39 @@ export const CreateChat = (newChat) => {
             values["chat-avatar"] = urlImage
         }
         console.log({ values })
+        if (users.length != 0) {
+            fetch("http://localhost:8080/create-chat", {
+                method: "POST",
+                headers: {
+                    'Content-Type': "multipart/form-data"
+                },
+                body: JSON.stringify(values),
+            })
+                .then(response => response.json())
+                .then(response => {
+                    if (!response.hasOwnProperty("chatroom-id")) {
+                        setErrorMes("error creating group chat! Please Try Again")
+                    } else {
+                        newChat["onSubmit"](response)
+                        setName('')
+                        setDescription('')
+                        setIsPrivate(false)
+                        const updatedFriends = friends.map(friend => { return { ...friend, selected: false } })
+                        setFriends(updatedFriends)
+                        setIsPrivate(false);
+                        setUrlImage("")
+                        setSelectedImage(null)
+                        setLocalImage("")
+                        setLocal(false)
+                        closeForm()
+                    }
+                })
+        } else {
+            setErrorMes("Please Add User to Group")
+        }
 
-        fetch("http://localhost:8080/create-chat", {
-            method: "POST",
-            headers: {
-                'Content-Type': "multipart/form-data"
-            },
-            body: JSON.stringify(values),
-        })
-            .then(response => response.json())
-            .then(response => newChat["onSubmit"](response))
-        setName('')
-        setDescription('')
-        setIsPrivate(false)
-        const updatedFriends = friends.map(friend => { return { ...friend, selected: false } })
-        setFriends(updatedFriends)
-        setIsPrivate(false);
-        setUrlImage("")
-        setSelectedImage(null)
-        setLocalImage("")
-        setLocal(false)
-        closeForm()
+
+
     }
 
     // when private is selected, disable group chat name and description and uncheck all followers
@@ -209,6 +222,9 @@ export const CreateChat = (newChat) => {
                             }
                             )}
                         </div>
+                        {errorMes &&
+                            <p className="error-message">{errorMes}</p>
+                        }
                         <div className="create-chat-submit-container">
                             <input className="create-chat-submit-button" type="submit" value="Submit" />
                         </div>

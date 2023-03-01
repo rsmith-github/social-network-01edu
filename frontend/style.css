@@ -18,9 +18,9 @@ main {
     width: 100%;
     height: 90vh;
     grid-template-columns: 1fr 2fr 1fr;
-    grid-template-rows: 80px 1fr 1fr 15px;
+    grid-template-rows: 80px 60px 1fr 1fr 15px;
     grid-gap: 1rem;
-    grid-template-areas: "profile post-buttons right-side" "profile posts right-side" "profile posts right-side";
+    grid-template-areas: "profile post-buttons right-side" "profile group right-side" "profile posts right-side" " profile posts right-side";
 }
 
 .form-signin {
@@ -854,7 +854,8 @@ main {
 .edit-post-form,
 .delete-post-form,
 .comment-view,
-.add-comment-form {
+.add-comment-form,
+.create-group-form {
     display: flex;
     width: 60%;
     height: 80%;
@@ -1462,6 +1463,89 @@ main {
 }
 
 /*  */
+/* CREATE GROUP_POSTS */
+/*  */
+
+.group-posts-container {
+    grid-area: group;
+    width: 100%;
+    height: 100%;
+    /* border-top: 5px solid rgba(215, 57, 0, 0.874); */
+    background-color: white;
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    justify-content: space-between;
+}
+
+.create-group-post-button {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    border: 3px solid #adb5bda6;
+    background-color: white;
+}
+
+.create-group-post-button>img {
+    height: 40px;
+}
+
+.create-group-posts-close-container {
+    width: 90%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding-left: 10px;
+    padding-right: 10px;
+    margin: 20px;
+}
+
+.create-group-posts-close-container>h1 {
+    margin: 0;
+
+}
+
+.group-post-rooms {
+    display: flex;
+    align-items: center;
+    width: 90%;
+    justify-content: space-between;
+    overflow-x: auto;
+}
+
+.group-post-rooms>button {
+    margin-right: 10px;
+}
+
+.group-post-button {
+    width: max-content;
+    height: 100%;
+    display: flex;
+    margin-right: 10px;
+    border: transparent;
+    padding: 3px;
+    align-items: center;
+    border-radius: 10px;
+}
+
+.group-post-button>img {
+    height: 40px;
+    border-radius: 50%;
+    max-width: 40px;
+    border: 2px solid rgba(215, 57, 0, 0.874);
+}
+
+.group-post-button>p {
+    margin: 0;
+    font-size: small;
+    font-weight: bolder;
+    margin-left: 5px;
+}
+
+/*  */
 /* ERROR */
 /*  */
 
@@ -1482,6 +1566,10 @@ main {
     width: 8px;
 }
 
+.group-post-rooms::-webkit-scrollbar {
+    height: 4px;
+}
+
 .create-chat-followers::-webkit-scrollbar-track,
 .chatrooms::-webkit-scrollbar-track,
 .message-text-input::-webkit-scrollbar-track,
@@ -1490,7 +1578,8 @@ main {
 .add-comment-form::-webkit-scrollbar-track,
 .create-post-form::-webkit-scrollbar-track,
 .post-container::-webkit-scrollbar-track,
-.chat-form::-webkit-scrollbar-track {
+.chat-form::-webkit-scrollbar-track,
+.group-post-rooms::-webkit-scrollbar-track {
     background: transparent;
     border-radius: 10px;
 }
@@ -1503,7 +1592,8 @@ main {
 .add-comment-form::-webkit-scrollbar-thumb,
 .create-post-form::-webkit-scrollbar-thumb,
 .post-container::-webkit-scrollbar-thumb,
-.chat-form::-webkit-scrollbar-thumb {
+.chat-form::-webkit-scrollbar-thumb,
+.group-post-rooms::-webkit-scrollbar-thumb {
     border-radius: 10px;
     background: rgba(228, 137, 0);
 }
@@ -1516,6 +1606,7 @@ main {
 .add-comment-form::-webkit-scrollbar-thumb:hover,
 .create-post-form::-webkit-scrollbar-thumb:hover,
 .post-container::-webkit-scrollbar-thumb:hover,
-.chat-form::-webkit-scrollbar-thumb:hover {
+.chat-form::-webkit-scrollbar-thumb:hover,
+.group-post-rooms::-webkit-scrollbar-thumb:hover {
     background: rgba(228, 137, 0);
 }

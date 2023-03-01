@@ -75,6 +75,114 @@ func CheckErr(err error, line string) {
 }
 
 //
+// Group Posts
+//
+
+func AddGroup(groupFields GroupFields, creator string) error {
+	groupFields.Users = creator
+	groupFields.Admin = creator
+	db := OpenDB()
+	stmt, err := db.Prepare(`INSERT INTO "groups" (id,name,description,users,admin,avatar) values (?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		fmt.Println("error preparing table:", err)
+		return err
+	}
+	_, errorWithTable := stmt.Exec(groupFields.Id, groupFields.Name, groupFields.Description, groupFields.Users, groupFields.Admin, groupFields.Avatar)
+	if errorWithTable != nil {
+		fmt.Println("error adding to table:", errorWithTable)
+		return errorWithTable
+	}
+	return nil
+}
+
+func AddUserToGroup(groupId, user string) error {
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT users FROM groups WHERE id = '%v'", groupId)
+	row, err := db.Query(s)
+	if err != nil {
+		return err
+	}
+	var group GroupFields
+	var users string
+	for row.Next() { // Iterate and fetch the records from result cursor
+		row.Scan(&users)
+		group = GroupFields{
+			Users: users,
+		}
+	}
+	row.Close()
+	group.Users += "," + user
+	stmt, err := db.Prepare("UPDATE groups SET users = ? WHERE id = ?")
+	if err != nil {
+		fmt.Println("error updating chatroom", err)
+		return err
+	}
+	stmt.Exec(group.Users, groupId)
+	return nil
+}
+
+func GetUserGroups(username string) []GroupFields {
+	db := OpenDB()
+	row, err := db.Query("SELECT * FROM groups")
+	var involvedGroups []GroupFields
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var id, name, description, users, admin, avatar string
+	for row.Next() { // Iterate and fetch the records from result cursor
+		row.Scan(&id, &name, &description, &users, &admin, &avatar)
+		group := GroupFields{
+			Id:          id,
+			Name:        name,
+			Description: description,
+			Users:       users,
+			Admin:       admin,
+			Avatar:      avatar,
+		}
+		sliceOfUsers := strings.Split(group.Users, ",")
+		for i, involved := range sliceOfUsers {
+			if involved == username {
+				group.Users = strings.Join(removeUserFromChatButton(sliceOfUsers, i), ",")
+				involvedGroups = append(involvedGroups, group)
+			}
+		}
+	}
+	row.Close()
+	return involvedGroups
+}
+
+func UpdateGroup(groupRoom GroupFields, action string, user string) GroupFields {
+	db := OpenDB()
+	users := strings.Split(groupRoom.Users, ",")
+	sort.Strings(users)
+	if action == "leave" {
+		if user == groupRoom.Admin {
+			randomIndex := rand.Intn(len(users))
+			groupRoom.Admin = users[randomIndex]
+		}
+		var returnedUserDisplay []string
+		for _, u := range users {
+			if u != user {
+				returnedUserDisplay = append(returnedUserDisplay, u)
+			}
+		}
+		fmt.Println(users)
+		groupRoom.Users = strings.Join(returnedUserDisplay, ",")
+	} else {
+		groupRoom.Admin = user
+
+		groupRoom.Users += strings.Join(users, ",") + "," + user
+	}
+	stmt, err := db.Prepare("UPDATE groups SET name = ?, description = ?, users=? , admin =? WHERE id = ?")
+	if err != nil {
+		fmt.Println("error updating group", err)
+	}
+	stmt.Exec(groupRoom.Name, groupRoom.Description, groupRoom.Users, groupRoom.Admin, groupRoom.Id)
+	return groupRoom
+}
+
+//
 // Chats
 //
 
@@ -719,10 +827,17 @@ func GetFollowers(user User) []string {
 		} else {
 			if follower == user.Email {
 				row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", followee, db, "GetUserFromFollowers")
-				friends = append(friends, QueryUser(row, err).Nickname)
+				name := QueryUser(row, err).Nickname
+				if !Contains(friends, name) {
+					friends = append(friends, name)
+				}
+
 			} else {
 				row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", follower, db, "GetUserFromFollowers")
-				friends = append(friends, QueryUser(row, err).Nickname)
+				name := QueryUser(row, err).Nickname
+				if !Contains(friends, name) {
+					friends = append(friends, name)
+				}
 			}
 		}
 
@@ -966,6 +1081,14 @@ func CreateSqlTables() {
 	//Create notifications table if not exists
 	var _, notifErr = db.Exec("CREATE TABLE IF NOT EXISTS `notifications` (`sender` TEXT NOT NULL, `receiver` TEXT NOT NULL, `chatId` TEXT NOT NULL, `numOfMessages` NUMBER, `date` NUMBER)")
 	CheckErr(notifErr, "-------Error creating table")
+
+	//Create Groups table if not exists
+	var _, GroupTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `groups` (`id` TEXT NOT NULL, `name` TEXT, `description` TEXT, `users` VARCHAR(255) NOT NULL,`admin` TEXT NOT NULL, avatar TEXT)")
+	CheckErr(GroupTblErr, "-------Error creating table")
+
+	// Create Group Posts table if doesn't exist.
+	var _, GroupPostTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `group-posts` ( `id` TEXT,`post-id` TEXT NOT NULL UNIQUE, `author` TEXT NOT NULL, `image` TEXT,`text` TEXT,`thread` TEXT, `time` NUMBER)")
+	CheckErr(GroupPostTblErr, "-------Error creating table")
 
 	db.Close()
 

@@ -602,3 +602,51 @@ func CommentInteractions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+func CreateGroup(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		user := LoggedInUser(r).Nickname
+		groups := GetUserGroups(user)
+		fmt.Println("get groups", groups)
+		content, _ := json.Marshal(groups)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+		GetUserGroups(user)
+	} else {
+		var data GroupFields
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+
+		err = json.Unmarshal(body, &data)
+		if err != nil {
+			panic(err)
+		}
+
+		if data.Users != "" {
+			user := LoggedInUser(r).Nickname
+			data.Users += "," + user
+
+			data.Id = Generate()
+			data.Admin = user
+			// add admin and addmin should be the LoggedInUser.Nickname
+			AddGroup(data, user)
+			var returnedUserDisplay []string
+			for _, u := range strings.Split(data.Users, ",") {
+				if u != user {
+					returnedUserDisplay = append(returnedUserDisplay, u)
+				}
+			}
+			groupRoom := data
+			groupRoom.Users = strings.Join(returnedUserDisplay, ",")
+			content, _ := json.Marshal(groupRoom)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		} else {
+			content, _ := json.Marshal("Please Select Users For Your Group!!!!!")
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		}
+	}
+}
