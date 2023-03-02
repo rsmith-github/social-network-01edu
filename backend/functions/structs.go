@@ -135,3 +135,37 @@ type CommentsAndLikesFields struct {
 	Like      string `json:"like"`
 	Type      string `json:"type"`
 }
+
+type GroupFields struct {
+	Id          string `json:"group-id"`
+	Avatar      string `json:"group-avatar"`
+	Name        string `json:"group-name"`
+	Description string `json:"group-description"`
+	Users       string `json:"users"`
+	Admin       string `json:"admin"`
+	Action      string `json:"action"`
+}
+
+type GroupPostFields struct {
+	Id           string `json:"group-id"`
+	PostId       string `json:"post-id"`
+	Author       string `json:"author"`
+	AuthorImg    string `json:"author-img"`
+	Image        string `json:"post-image"`
+	Text         string `json:"post-text-content"`
+	Thread       string `json:"post-threads"`
+	Likes        int    `json:"post-likes"`
+	PostLiked    bool   `json:"post-liked"`
+	Dislikes     int    `json:"post-dislikes"`
+	PostDisliked bool   `json:"post-disliked"`
+	PostAuthor   bool   `json:"post-author"`
+	Time         int    `json:"post-time"`
+	Error        string `json:"error"`
+}
+
+type GroupsAndLikesFields struct {
+	PostId   string `json:"post-id"`
+	Username string `json:"username"`
+	Like     string `json:"like"`
+	Type     string `json:"type"`
+}

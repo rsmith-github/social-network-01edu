@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-export const CreatePost = (newPost) => {
+export const AddGroupPost = (newPost) => {
     const [urlImage, setUrlImage] = useState("")
     const [selectedImage, setSelectedImage] = useState(null)
     const [localImage, setLocalImage] = useState("")
@@ -34,6 +34,7 @@ export const CreatePost = (newPost) => {
         const data = new FormData(evt.target);
         let values = Object.fromEntries(data.entries())
         console.log({ values })
+        values["group-id"] = newPost.id
         if (local) {
             values["post-image"] = localImage
         } else {
@@ -45,7 +46,7 @@ export const CreatePost = (newPost) => {
         values['post-time'] = new Date().getTime()
 
 
-        fetch("http://localhost:8080/create-post", {
+        fetch("http://localhost:8080/create-group-post", {
             method: "POST",
             headers: {
                 'Content-Type': "multipart/form-data"
@@ -61,7 +62,6 @@ export const CreatePost = (newPost) => {
                         setErrorMes("")
                     }, 5000)
                 } else {
-
                     console.log(response)
                     newPost["onSubmit"](response)
                     closePostForm()
@@ -179,9 +179,7 @@ export const CreatePost = (newPost) => {
 
             }
 
-            <button className="create-post-button" onClick={openPostForm}>
-                <img src="https://cdn-icons-png.flaticon.com/128/4712/4712540.png" alt="" />
-            </button>
+            <button type="button" className="add-comment-button" onClick={openPostForm}> Add Post</button>
         </>
     )
 }

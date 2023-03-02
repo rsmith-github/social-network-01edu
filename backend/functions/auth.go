@@ -614,3 +614,216 @@ func CommentInteractions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+func CreateGroup(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		user := LoggedInUser(r).Nickname
+		groups := GetUserGroups(user)
+		content, _ := json.Marshal(groups)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+		GetUserGroups(user)
+	} else {
+		var data GroupFields
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+
+		err = json.Unmarshal(body, &data)
+		if err != nil {
+			panic(err)
+		}
+
+		if data.Users != "" {
+			user := LoggedInUser(r).Nickname
+			data.Users += "," + user
+
+			data.Id = Generate()
+			data.Admin = user
+			// add admin and addmin should be the LoggedInUser.Nickname
+			AddGroup(data, user)
+			var returnedUserDisplay []string
+			for _, u := range strings.Split(data.Users, ",") {
+				if u != user {
+					returnedUserDisplay = append(returnedUserDisplay, u)
+				}
+			}
+			groupRoom := data
+			groupRoom.Users = strings.Join(returnedUserDisplay, ",")
+			content, _ := json.Marshal(groupRoom)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		} else {
+			content, _ := json.Marshal("Please Select Users For Your Group!!!!!")
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		}
+	}
+}
+
+func GroupPosts(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	groupId := string(body)
+	user := LoggedInUser(r).Nickname
+	groupPosts := GetGroupPosts(user, groupId)
+	fmt.Println("get groups", groupPosts)
+	content, _ := json.Marshal(groupPosts)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(content)
+	GetUserGroups(user)
+}
+
+func CreateGroupPost(w http.ResponseWriter, r *http.Request) {
+	var postData GroupPostFields
+	if r.Method != "POST" {
+		// bad request
+	} else {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+
+		err = json.Unmarshal(body, &postData)
+		if err != nil {
+			panic(err)
+		}
+		user := LoggedInUser(r).Nickname
+		if user == "" {
+			postData.Error = "Cannot Add Post, please Sign Up or Log In"
+			content, _ := json.Marshal(postData)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		} else if (len(postData.Thread) == 0) && (postData.Image == "") && (postData.Text == "") {
+			postData.Error = "please add content or close"
+			content, _ := json.Marshal(postData)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		} else {
+			postData.PostId = Generate()
+			postData.Author = user
+			fmt.Println("post", postData)
+			err := AddGroupPost(postData)
+			if err != nil {
+				postData.Error = "Could Not Add Post, Please Try Again Later"
+				content, _ := json.Marshal(postData)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
+			} else {
+				// get all posts and return
+				fmt.Println("post added to", postData.Id)
+				allPosts := GetGroupPosts(user, postData.Id)
+				fmt.Println("all Posts", allPosts)
+				content, _ := json.Marshal(allPosts)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
+			}
+
+		}
+	}
+}
+
+func GroupPostInteractions(w http.ResponseWriter, r *http.Request) {
+	var likeData GroupsAndLikesFields
+
+	if r.Method != "POST" {
+		//bad request
+	} else {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+		err = json.Unmarshal(body, &likeData)
+		if err != nil {
+			panic(err)
+		}
+		user := LoggedInUser(r).Nickname
+		if likeData.Type == "like/dislike" {
+			likeData.Username = user
+			err := AddGroupLike(likeData)
+			if err != nil {
+				postLikes := GetGroupPost(likeData.PostId, user)
+				postLikes.Error = "Please Try Again Later"
+				content, _ := json.Marshal(postLikes)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
+			} else {
+				postLikes := GetGroupPost(likeData.PostId, user)
+				content, _ := json.Marshal(postLikes)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
+			}
+		} else if likeData.Type == "delete" {
+			postData := GetGroupPost(likeData.PostId, user)
+			if user != postData.Author {
+				postData.Error = "you are NOT the author"
+				content, _ := json.Marshal(postData)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
+			} else {
+				err = RemoveGroupPost(postData.PostId)
+				if err != nil {
+					postData.Error = "Error Deleting Post please try again later"
+				}
+				content, _ := json.Marshal(postData)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
+			}
+		}
+	}
+}
+
+func EditGroupPost(w http.ResponseWriter, r *http.Request) {
+	var postData GroupPostFields
+
+	if r.Method != "POST" {
+		// error
+	} else {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+
+		err = json.Unmarshal(body, &postData)
+		if err != nil {
+			panic(err)
+		}
+		user := LoggedInUser(r).Nickname
+		currentPost := GetGroupPost(postData.PostId, user)
+		if user == "" {
+			postData.Error = "Cannot Edit Post, please Sign Up or Log In"
+
+		} else if (len(postData.Thread) == 0) && (postData.Image == "") && (postData.Text == "") {
+			postData.Error = "Cannot submit empty edit"
+			content, _ := json.Marshal(postData)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		} else if user != currentPost.Author {
+			postData.Error = "you are NOT the author"
+			content, _ := json.Marshal(postData)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		} else {
+			fmt.Println("post", postData)
+			if postData.Image == "" {
+				postData.Image = currentPost.Image
+			}
+			err = UpdateGroupPost(postData)
+			if err != nil {
+				postData.Error = "Error Editing Post please try again later"
+				content, _ := json.Marshal(postData)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(content)
+			}
+
+		}
+		post := GetGroupPost(postData.PostId, user)
+		content, _ := json.Marshal(post)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+	}
+}

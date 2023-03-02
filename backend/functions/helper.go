@@ -75,6 +75,311 @@ func CheckErr(err error, line string) {
 }
 
 //
+// Group
+//
+
+func AddGroup(groupFields GroupFields, creator string) error {
+	groupFields.Users = creator
+	groupFields.Admin = creator
+	db := OpenDB()
+	stmt, err := db.Prepare(`INSERT INTO "groups" (id,name,description,users,admin,avatar) values (?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		fmt.Println("error preparing table:", err)
+		return err
+	}
+	_, errorWithTable := stmt.Exec(groupFields.Id, groupFields.Name, groupFields.Description, groupFields.Users, groupFields.Admin, groupFields.Avatar)
+	if errorWithTable != nil {
+		fmt.Println("error adding to table:", errorWithTable)
+		return errorWithTable
+	}
+	return nil
+}
+
+func AddUserToGroup(groupId, user string) error {
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT users FROM groups WHERE id = '%v'", groupId)
+	row, err := db.Query(s)
+	if err != nil {
+		return err
+	}
+	var group GroupFields
+	var users string
+	for row.Next() { // Iterate and fetch the records from result cursor
+		row.Scan(&users)
+		group = GroupFields{
+			Users: users,
+		}
+	}
+	row.Close()
+	group.Users += "," + user
+	stmt, err := db.Prepare("UPDATE groups SET users = ? WHERE id = ?")
+	if err != nil {
+		fmt.Println("error updating chatroom", err)
+		return err
+	}
+	stmt.Exec(group.Users, groupId)
+	return nil
+}
+
+func GetUserGroups(username string) []GroupFields {
+	db := OpenDB()
+	row, err := db.Query("SELECT * FROM groups")
+	var involvedGroups []GroupFields
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var id, name, description, users, admin, avatar string
+	for row.Next() { // Iterate and fetch the records from result cursor
+		row.Scan(&id, &name, &description, &users, &admin, &avatar)
+		group := GroupFields{
+			Id:          id,
+			Name:        name,
+			Description: description,
+			Users:       users,
+			Admin:       admin,
+			Avatar:      avatar,
+		}
+		sliceOfUsers := strings.Split(group.Users, ",")
+		for i, involved := range sliceOfUsers {
+			if involved == username {
+				group.Users = strings.Join(removeUserFromChatButton(sliceOfUsers, i), ",")
+				involvedGroups = append(involvedGroups, group)
+			}
+		}
+	}
+	row.Close()
+	return involvedGroups
+}
+
+func UpdateGroup(groupRoom GroupFields, action string, user string) GroupFields {
+	db := OpenDB()
+	users := strings.Split(groupRoom.Users, ",")
+	sort.Strings(users)
+	if action == "leave" {
+		if user == groupRoom.Admin {
+			randomIndex := rand.Intn(len(users))
+			groupRoom.Admin = users[randomIndex]
+		}
+		var returnedUserDisplay []string
+		for _, u := range users {
+			if u != user {
+				returnedUserDisplay = append(returnedUserDisplay, u)
+			}
+		}
+		fmt.Println(users)
+		groupRoom.Users = strings.Join(returnedUserDisplay, ",")
+	} else {
+		groupRoom.Admin = user
+
+		groupRoom.Users += strings.Join(users, ",") + "," + user
+	}
+	stmt, err := db.Prepare("UPDATE groups SET name = ?, description = ?, users=? , admin =? WHERE id = ?")
+	if err != nil {
+		fmt.Println("error updating group", err)
+	}
+	stmt.Exec(groupRoom.Name, groupRoom.Description, groupRoom.Users, groupRoom.Admin, groupRoom.Id)
+	return groupRoom
+}
+
+//
+// Group Posts
+//
+
+func AddGroupPost(postFields GroupPostFields) error {
+	fmt.Println("new group Psst", postFields)
+	db := OpenDB()
+	stmt, err := db.Prepare(`INSERT into "groupposts" (id, postid , author, image, text, thread, time) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		fmt.Println("error add group-post to table", err)
+		return err
+	}
+	stmt.Exec(postFields.Id, postFields.PostId, postFields.Author, postFields.Image, postFields.Text, postFields.Thread, postFields.Time)
+	return nil
+}
+
+func UpdateGroupPost(postFields GroupPostFields) error {
+	db := OpenDB()
+	stmt, err := db.Prepare(`UPDATE "groupposts" SET "text" = ?, "thread" = ?, "image" = ? WHERE "postid" = ?`)
+	if err != nil {
+		fmt.Println("Cannot update post")
+	}
+	stmt.Exec(postFields.Text, postFields.Thread, postFields.Image, postFields.PostId)
+	return err
+}
+
+func RemoveGroupPost(id string) error {
+	db := OpenDB()
+	stmt, err := db.Prepare("DELETE FROM 'groupposts' WHERE 'postid' = ?")
+	if err != nil {
+		fmt.Println("error removing post from posts table", err)
+	}
+	stmt.Exec(id)
+	return err
+}
+func GetGroupPosts(user, groupId string) []GroupPostFields {
+	db := OpenDB()
+	sliceOfPostTableRows := []GroupPostFields{}
+	s := fmt.Sprintf("SELECT * FROM groupposts WHERE id = '%v'", groupId)
+	rows, err := db.Query(s)
+	if err != nil {
+		fmt.Println("error retrieving group posts", err)
+	}
+	var id string
+	var postId string
+	var author string
+	var image string
+	var text string
+	var thread string
+	var time int
+
+	for rows.Next() {
+		rows.Scan(&id, &postId, &author, &image, &text, &thread, &time)
+		postTableRows := GroupPostFields{
+			Id:     id,
+			PostId: postId,
+			Author: author,
+			Image:  image,
+			Text:   text,
+			Thread: thread,
+			Time:   time,
+		}
+
+		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", postTableRows.Author, db, "GetUserFromPosts")
+		postTableRows.AuthorImg = QueryUser(row, err).Avatar
+		if postTableRows.Author == user {
+			postTableRows.PostAuthor = true
+		}
+		postTableRows.Likes = len(GetGroupPostLikes(postTableRows.PostId, "l"))
+		postTableRows.Dislikes = len(GetGroupPostLikes(postTableRows.PostId, "d"))
+		postLike := GetGroupLike(postTableRows.PostId, user)
+		if postLike.Like == "l" {
+			postTableRows.PostLiked = true
+		} else if postLike.Like == "d" {
+			postTableRows.PostDisliked = true
+		}
+		sliceOfPostTableRows = append(sliceOfPostTableRows, postTableRows)
+	}
+	rows.Close()
+	return sliceOfPostTableRows
+}
+
+func GetGroupPost(postId string, user string) GroupPostFields {
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT * FROM groupposts WHERE postid ='%v'", postId)
+	var post GroupPostFields
+	rows, _ := db.Query(s)
+	var id string
+	var postid string
+	var author string
+	var image string
+	var text string
+	var thread string
+	var time int
+
+	for rows.Next() {
+		rows.Scan(&id, &postid, &author, &image, &text, &thread, &time)
+		post = GroupPostFields{
+			Id:         id,
+			PostId:     postid,
+			Author:     author,
+			Image:      image,
+			Text:       text,
+			Thread:     thread,
+			Time:       time,
+			PostAuthor: false,
+			Likes:      len(GetGroupPostLikes(postId, "l")),
+			Dislikes:   len(GetGroupPostLikes(postId, "d")),
+		}
+		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", post.Author, db, "GetUserFromPosts")
+		post.AuthorImg = QueryUser(row, err).Avatar
+		if post.Author == user {
+			post.PostAuthor = true
+		}
+		postLike := GetGroupLike(post.PostId, user)
+		if postLike.Like == "l" {
+			post.PostLiked = true
+		} else if postLike.Like == "d" {
+			post.PostDisliked = true
+		}
+	}
+	rows.Close()
+	return post
+}
+
+//
+// Group Post Likes
+//
+
+func AddGroupLike(GroupLikes GroupsAndLikesFields) error {
+	LikedGroup := GetGroupLike(GroupLikes.PostId, GroupLikes.Username)
+	db := OpenDB()
+	var s string
+	if LikedGroup.Like == "" {
+		s = "INSERT INTO likesgroup (like, id, username) values (?, ?, ?)"
+	} else if GroupLikes.Like != LikedGroup.Like {
+		s = "UPDATE likesgroup SET like = ? WHERE id = ? AND username = ?"
+	} else {
+		s = "DELETE FROM likesgroup WHERE like = ? AND id = ? AND username = ?"
+	}
+	stmt, _ := db.Prepare(s)
+	_, err := stmt.Exec(GroupLikes.Like, GroupLikes.PostId, GroupLikes.Username)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+func GetGroupLike(id, user string) GroupsAndLikesFields {
+	GroupLikeRow := GroupsAndLikesFields{}
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT * FROM likesgroup WHERE id = '%v' AND username = '%v'", id, user)
+	rows, _ := db.Query(s)
+	var postId string
+	var author string
+	var like string
+	if rows.Next() {
+		rows.Scan(&postId, &author, &like)
+		GroupLikeRow = GroupsAndLikesFields{
+			PostId:   postId,
+			Username: author,
+			Like:     like,
+		}
+	}
+	rows.Close()
+	return GroupLikeRow
+}
+
+func GetGroupPostLikes(id, l string) []GroupsAndLikesFields {
+	sliceOfGroupLikesRow := []GroupsAndLikesFields{}
+	db := OpenDB()
+	var s string
+	if l == "all" {
+		s = fmt.Sprintf("SELECT * FROM likesgroup WHERE username = '%v' AND like = '%v'", id, "l")
+
+	} else {
+		s = fmt.Sprintf("SELECT * FROM likesgroup WHERE id = '%v' AND like = '%v'", id, l)
+
+	}
+
+	rows, _ := db.Query(s)
+	var postId string
+	var author string
+	var like string
+	for rows.Next() {
+		rows.Scan(&postId, &author, &like)
+		likedRows := GroupsAndLikesFields{
+			PostId:   postId,
+			Username: author,
+			Like:     like,
+		}
+		sliceOfGroupLikesRow = append(sliceOfGroupLikesRow, likedRows)
+	}
+	rows.Close()
+	return sliceOfGroupLikesRow
+}
+
+//
 // Chats
 //
 
@@ -126,7 +431,7 @@ func AddChat(chatFields ChatRoomFields, creator string) error {
 	chatFields.Users = strings.Join(sliceOfUsers, ",")
 	chatFields.Admin = creator
 	db := OpenDB()
-	stmt, err := db.Prepare(`INSERT INTO "chatroom" (id,name,description,type,users,admin,avatar) values (?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := db.Prepare(`INSERT INTO "chatroom" (id, name,description,type,users,admin,avatar) values (?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		fmt.Println("error preparing table:", err)
 		return err
@@ -340,7 +645,6 @@ func RemovePost(id string) error {
 	return err
 }
 func GetUserPosts(user string) []PostFields {
-	// fmt.Println(user, "retreiving posts")
 	db := OpenDB()
 	sliceOfPostTableRows := []PostFields{}
 	rows, _ := db.Query(`SELECT * FROM "posts"`)
@@ -681,7 +985,9 @@ func GetCommentLikes(id, l string) []CommentsAndLikesFields {
 	return sliceOfCommentLikesRow
 }
 
+//
 // Followers
+//
 func updateFollowerCount(followerEmail string, followeeEmail string, isFollowing bool) (int, int, error) {
 	// Update the follower count in the database.
 
@@ -938,7 +1244,7 @@ func CreateSqlTables() {
 	db := OpenDB()
 
 	// if you need to delete a table rather than delete a whole database
-	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS chatroom`)
+	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS "groupposts"`)
 	// CheckErr(deleteTblErr, "-------Error deleting table")
 
 	// Create user table if it doen't exist.
@@ -970,13 +1276,9 @@ func CreateSqlTables() {
 	var _, commentError = db.Exec("CREATE TABLE IF NOT EXISTS `comments` (`id` TEXT NOT NULL UNIQUE, `postid` TEXT NOT NULL, `author` TEXT NOT NULL, `image` TEXT, `text` TEXT, `thread` TEXT, `time` NUMBER)")
 	CheckErr(commentError, "-------Error creating table")
 
-	// Create Likes table if not exists
+	// Create  Comment Likes table if not exists
 	var _, CommentLikesTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `likescom` (`id` TEXT NOT NULL, `username` TEXT NOT NULL, `like` TEXT)")
 	CheckErr(CommentLikesTblErr, "-------Error creating table")
-
-	// Create messages table if not exists
-	// var _, msgErr = db.Exec("CREATE TABLE IF NOT EXISTS `messages` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `sender` VARCHAR(64), `receiver` VARCHAR(64), `message` TEXT, `time` TEXT NOT NULL, `status` VARCHAR(64))")
-	// CheckErr(msgErr, "-------Error creating table")
 
 	// Create followers table if not exists
 	var _, followErr = db.Exec("CREATE TABLE IF NOT EXISTS `followers` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `follower` VARCHAR(64), `followee` VARCHAR(64))")
@@ -985,6 +1287,18 @@ func CreateSqlTables() {
 	//Create notifications table if not exists
 	var _, notifErr = db.Exec("CREATE TABLE IF NOT EXISTS `notifications` (`sender` TEXT NOT NULL, `receiver` TEXT NOT NULL, `chatId` TEXT NOT NULL, `numOfMessages` NUMBER, `date` NUMBER)")
 	CheckErr(notifErr, "-------Error creating table")
+
+	//Create Groups table if not exists
+	var _, GroupTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `groups` (`id` TEXT NOT NULL, `name` TEXT, `description` TEXT, `users` VARCHAR(255) NOT NULL,`admin` TEXT NOT NULL, avatar TEXT)")
+	CheckErr(GroupTblErr, "-------Error creating table")
+
+	// Create Group Posts table if doesn't exist.
+	var _, GroupPostTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `groupposts` ( `id` TEXT, `postid` TEXT NOT NULL UNIQUE, `author` TEXT NOT NULL, `image` TEXT,`text` TEXT,`thread` TEXT, `time` NUMBER)")
+	CheckErr(GroupPostTblErr, "-------Error creating table")
+
+	// Create  Group Post Likes table if not exists
+	var _, GroupPostLikesTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `likesgroup` (`id` TEXT NOT NULL, `username` TEXT NOT NULL, `like` TEXT)")
+	CheckErr(GroupPostLikesTblErr, "-------Error creating table")
 
 	db.Close()
 

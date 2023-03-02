@@ -23,7 +23,6 @@ export const LikeButton = (likeInfo) => {
                     setErrorMes(response["error"])
                 } else {
                     likeInfo["func"](response)
-                    closeDeletePostForm()
                 }
             })
     }

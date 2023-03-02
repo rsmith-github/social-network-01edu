@@ -240,8 +240,6 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 		user = LoggedInUser(r).Nickname
 		notifExists = GetAllNotifs(user)
 	}
-	fmt.Println("ws id", id)
-	fmt.Println("ws opened", user)
 	c := &connection{send: make(chan message), ws: ws}
 	s := subscription{c, id, user, cookie.Value}
 	H.register <- &s

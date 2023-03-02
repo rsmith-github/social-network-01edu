@@ -4,6 +4,7 @@ import PostForm from "../components/PostForm";
 import ProfileImgContainer from "../components/ProfileImgContainer";
 import RightSide from "../components/RightSide";
 import { GetChat } from "../components/Chatrooms";
+import { GroupContainer } from "../components/GroupContainer";
 
 export default function Home(props) {
   return (
@@ -16,6 +17,7 @@ export default function Home(props) {
               user={props.user}
               avatar={props.avatar}
             />
+            <GroupContainer />
             <PostForm avatar={props.avatar} />
             <RightSide />
             <GetChat  />

@@ -128,7 +128,7 @@ export const GetChat = () => {
             }
 
             <button id="open-chat-button">
-                <img src="../../public/assets/img/chats-icon.png" onClick={openChatRooms} alt="" />
+                <img src="https://cdn-icons-png.flaticon.com/512/5780/5780993.png" onClick={openChatRooms} alt="" />
             </button>
         </>
     )

@@ -1,13 +1,14 @@
 import React, { useState } from "react"
-export const DisLikeButton = (likeInfo) => {
+
+export const LikeGroupPostButton = (likeInfo) => {
     const [errorMes, setErrorMes] = useState("")
     const postId = likeInfo.id
 
-    const handleDislikeButton = (evt) => {
+    const handleLikeButton = (evt) => {
         evt.preventDefault()
-        const values = { "post-id": postId, "type": "like/dislike", "like": "d" }
+        const values = { "post-id": postId, "type": "like/dislike", "like": "l" }
         console.log(values)
-        fetch("http://localhost:8080/post-interactions", {
+        fetch("http://localhost:8080/group-post-interactions", {
             method: "POST",
             headers: {
                 'Content-Type': "multipart/form-data"
@@ -34,18 +35,16 @@ export const DisLikeButton = (likeInfo) => {
                     {setTimeout(() => setErrorMes(""), 1000)}
                 </>
             }
-            <div className="dislike-post-container">
+            <div className="like-post-container">
                 <p>{likeInfo.num}</p>
-                <button type="button" onClick={handleDislikeButton} >
-                    {likeInfo.disliked ? (
-                        <i className="fa fa-thumbs-down disliked"></i>
+                <button type="button" onClick={handleLikeButton}>
+                    {likeInfo.liked ? (
+                        <i className="fa fa-thumbs-up liked"></i>
                     ) : (
-                        <i className="fa fa-thumbs-down"></i>
+                        <i className="fa fa-thumbs-up"></i>
                     )}
-                    {/* <img src="../../public/assets/img/dislike.png" /> */}
-
                 </button>
-            </div >
+            </div>
         </>
     )
 }
