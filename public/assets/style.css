@@ -1294,3 +1294,19 @@ main {
 .chat-form::-webkit-scrollbar-thumb:hover {
   background: rgba(228, 137, 0);
 }
+:root {
+}
+.rigiht-side {
+  position: relative;
+}
+.Toastify__toast-container {
+  z-index: var(--toastify-z-index);
+  padding: 4px;
+  width: var(--toastify-toast-width);
+  box-sizing: border-box;
+  color: #fff;
+}
+.Toastify__toast-container--top-center {
+  top: none;
+  left: none;
+}

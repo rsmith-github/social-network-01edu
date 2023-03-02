@@ -18,7 +18,7 @@ export default function Home(props) {
             />
             <PostForm avatar={props.avatar} />
             <RightSide />
-            <GetChat />
+            <GetChat  />
           </>
         ) : (
           <>

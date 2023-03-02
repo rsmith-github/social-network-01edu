@@ -164,10 +164,22 @@ func GetUserChats(username string) ChatroomType {
 			if involved == username {
 				groupChat.Users = strings.Join(removeUserFromChatButton(sliceOfUsers, i), ",")
 				if groupChat.Type == "group" {
+					messages := GetPreviousMessages(groupChat.Id)
+					if len(messages) > 0 {
+						date := messages[len(messages)-1].Date
+						fmt.Println(date)
+						groupChat.Date = date
+					}
 					involvedChats.Group = append(involvedChats.Group, groupChat)
 				} else if groupChat.Type == "private" {
 					row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", groupChat.Users, db, "GetUserFromPrivateChatroom")
 					groupChat.Avatar = QueryUser(row, err).Avatar
+					messages := GetPreviousMessages(groupChat.Id)
+					if len(messages) > 0 {
+						date := messages[len(messages)-1].Date
+						fmt.Println(date)
+						groupChat.Date = date
+					}
 					involvedChats.Private = append(involvedChats.Private, groupChat)
 				}
 			}
@@ -289,7 +301,6 @@ func GetPreviousMessages(chatroomId string) []ChatFields {
 			Message:   message,
 			Date:      date,
 		}
-		fmt.Println(m)
 		messages = append(messages, m)
 	}
 	row.Close()
@@ -718,12 +729,20 @@ func GetFollowers(user User) []string {
 		} else {
 			if follower == user.Email {
 				row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", followee, db, "GetUserFromFollowers")
-				friends = append(friends, QueryUser(row, err).Nickname)
+				name := QueryUser(row, err).Nickname
+				if !Contains(friends, name) {
+					friends = append(friends, name)
+				}
+
 			} else {
 				row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", follower, db, "GetUserFromFollowers")
-				friends = append(friends, QueryUser(row, err).Nickname)
+				name := QueryUser(row, err).Nickname
+				if !Contains(friends, name) {
+					friends = append(friends, name)
+				}
 			}
 		}
+
 	}
 	friends = append(friends, user.Nickname)
 	rows.Close()

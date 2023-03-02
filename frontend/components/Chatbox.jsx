@@ -78,9 +78,7 @@ export const ChatBox = (response) => {
 
 
     const closeChatRoom = () => {
-        if (!privateChat) {
-            response["onClose"]()
-        }
+        response["onClose"]()
         setDescriptionBox(false)
         setVisible(false)
 

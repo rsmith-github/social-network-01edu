@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 
 	uuid "github.com/satori/go.uuid"
@@ -281,7 +282,6 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 		w.Write(content)
 	}
 }
-
 func Chat(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		body, err := ioutil.ReadAll(r.Body)
@@ -303,6 +303,18 @@ func Chat(w http.ResponseWriter, r *http.Request) {
 		}()
 	} else {
 		totalChats := GetUserChats(LoggedInUser(r).Nickname)
+		sort.Slice(totalChats.Group, func(i, j int) bool {
+			return totalChats.Group[i].Name < totalChats.Group[j].Name
+		})
+		sort.Slice(totalChats.Private, func(i, j int) bool {
+			return totalChats.Private[i].Name < totalChats.Private[j].Name
+		})
+		sort.Slice(totalChats.Group, func(i, j int) bool {
+			return totalChats.Group[i].Date > totalChats.Group[j].Date
+		})
+		sort.Slice(totalChats.Private, func(i, j int) bool {
+			return totalChats.Private[i].Date > totalChats.Private[j].Date
+		})
 		content, _ := json.Marshal(totalChats)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)

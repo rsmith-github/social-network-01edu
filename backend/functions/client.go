@@ -84,21 +84,20 @@ func (s *subscription) readPump() {
 			chatData.Id = s.room
 			chatData.MessageId = Generate()
 
-			//send notifications to online users 
+			//send notifications to online users
 			chatRoom := GetChatRoom(s.room, s.name)
 			usersInChat := strings.Split(chatRoom.Users, ",")
 			notifSent := make(map[string]bool)
 			for loggedInUsers := range H.user {
 				for chatSubs := range H.rooms[s.room] {
-					fmt.Println(loggedInUsers)
 					if Contains(usersInChat, loggedInUsers) {
 						//+1 because the client's name is removed from the button
 						if loggedInUsers != chatSubs.name && len(usersInChat)+1 > len(H.rooms[s.room]) {
-							fmt.Println("users aren't in chat.")
 							for userSub := range H.user[loggedInUsers] {
 								checkIfNotifExists := GetChatNotif(userSub.name, chatData.Sender, s.room)
 								if checkIfNotifExists != (NotifFields{}) {
 									checkIfNotifExists.NumOfMessages++
+									checkIfNotifExists.Date = chatData.Date
 									SqlExec.notifData <- checkIfNotifExists
 									sendNotif := message{incomingData: checkIfNotifExists}
 									userSub.conn.send <- sendNotif
@@ -132,6 +131,7 @@ func (s *subscription) readPump() {
 						checkIfNotifExists := GetChatNotif(users, chatData.Sender, s.room)
 						if checkIfNotifExists != (NotifFields{}) {
 							checkIfNotifExists.NumOfMessages++
+							checkIfNotifExists.Date = chatData.Date
 							SqlExec.notifData <- checkIfNotifExists
 						} else {
 							newNotification := NotifFields{
@@ -162,7 +162,6 @@ func (s *subscription) readPump() {
 		case followMessage:
 			H.broadcast <- data
 		}
-
 	}
 }
 
@@ -198,6 +197,9 @@ func (s *subscription) writePump() {
 			}
 		case []NotifFields:
 			notifications := message.incomingData.([]NotifFields)
+			for i := range notifications {
+				notifications[i].TotalNumber = GetTotalNotifs(s.name)
+			}
 			err := c.ws.WriteJSON(notifications)
 			if err != nil {
 				fmt.Println("error writing to notifications to websocket:", err)

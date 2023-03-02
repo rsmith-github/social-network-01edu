@@ -29,6 +29,7 @@ type ChatRoomFields struct {
 	Users       string `json:"users"`
 	Admin       string `json:"admin"`
 	Action      string `json:"action"`
+	Date        int    `json:"last-message-date"`
 }
 
 type ChatroomType struct {

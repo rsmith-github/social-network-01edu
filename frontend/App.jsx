@@ -1,4 +1,5 @@
 import React, { useState, useEffect, StrictMode, useRef } from "react";
+import {toast} from 'react-toastify';
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, json } from "react-router-dom";
 import Home from "./pages/Home";
@@ -7,6 +8,10 @@ import Register from "./pages/Register";
 import NavBar from "./components/Navbar";
 import Profile from "./pages/Profile";
 import PublicProfiles from "./pages/PublicProfiles";
+import { injectStyle } from "react-toastify/dist/inject-style";
+
+// CALL IT ONCE IN YOUR APP
+injectStyle();
 
 import Swal from "sweetalert2";
 
@@ -24,17 +29,38 @@ function App() {
   // All users state vars
   const [users, setUsers] = useState([]);
 
+  const notify = (obj)=>{
+    if (obj["notification-sender"]!= "" && obj["notification-sender"] != undefined){
+      toast('🦄 message from: ' + `${obj["notification-sender"]}`, {
+        autoClose: false,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark"
+  });
+}
+}
+
   const openConnection = (name, usr) => {
     if (websocket.current === null && name !== undefined && name !== "") {
       websocket.current = new WebSocket(
         "ws://" + document.location.host + "/ws/user"
       );
-
       websocket.current.onopen = () => {
         console.log("user connection open");
       };
       websocket.current.onmessage = (event) => {
         let msg = JSON.parse(event.data);
+        console.log(msg,'this is msg.')
+        if (Array.isArray(msg)){
+          msg.map((notif)=>{
+            notify(notif)
+        })
+        }else{
+          notify(msg)
+        }
         if (msg.toFollow === usr.email) {
           // Send message to relevant user according to isFollowing true or false.
           if (msg.isFollowing) {
@@ -182,6 +208,7 @@ function App() {
               avatar={avatar}
               user={user}
               fetchUsersData={fetchUsersData}
+
             />
           }
         />
