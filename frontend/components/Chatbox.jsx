@@ -26,22 +26,23 @@ export const ChatBox = (response) => {
                 },
                 body: (chatroomId)
             })
-            const response = await receivedResponse.json()
-            console.log(response)
-            setUser(response["user"])
-            setAdmin(response["chatroom"]["admin"])
-            setMessages(response["previous-messages"])
-            setChatName(response["chatroom"]["chat-name"])
-            setChatDescription(response["chatroom"]["chat-description"])
-            if (response["chatroom"]["chat-type"] == "group") {
+            const response2 = await receivedResponse.json()
+            console.log(response2)
+            setUser(response2["user"])
+            setAdmin(response2["chatroom"]["admin"])
+            setMessages(response2["previous-messages"])
+            setChatName(response2["chatroom"]["chat-name"])
+            setChatDescription(response2["chatroom"]["chat-description"])
+            if (response2["chatroom"]["chat-type"] == "group") {
                 setPrivateChat(false)
             } else {
                 setPrivateChat(true)
             }
-            setChatUsers(response["chatroom"]["users"])
+            setChatUsers(response2["chatroom"]["users"])
+            return response2
         }
         if (visible) {
-            fetchData().then(() => {
+            fetchData().then((resp) => {
                 conn.current = new WebSocket("ws://" + document.location.host + "/ws/chat")
                 console.log(conn.current)
                 conn.current.onopen = () => {
@@ -77,9 +78,7 @@ export const ChatBox = (response) => {
 
 
     const closeChatRoom = () => {
-        if (!privateChat) {
-            response["onClose"]()
-        }
+        response["onClose"]()
         setDescriptionBox(false)
         setVisible(false)
 

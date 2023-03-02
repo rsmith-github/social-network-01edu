@@ -2,6 +2,7 @@ package functions
 
 import (
 	"fmt"
+	"log"
 )
 
 type message struct {
@@ -108,13 +109,30 @@ func (h *hub) Run() {
 			case followMessage:
 				followData := m.incomingData.(followMessage)
 				db := OpenDB()
-				row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", followData.ToFollow, db, "GetUserFromFollowers")
-				followee := h.user[QueryUser(row, err).Nickname]
-				for s := range followee {
+
+				//get the users who have interacted
+				row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", followData.FollowRequest, db, "GetUserFromFollowers")
+				username := QueryUser(row, err).Nickname
+				follower := h.user[username]
+
+				//update count and all dat...
+				followeeFollowerCount, followerFollwingCount, err := updateFollowerCount(followData.FollowRequest, followData.ToFollow, followData.IsFollowing)
+				if err != nil {
+					log.Printf("error updating follower count: %v", err)
+				}
+				updateMsg := followNotification{UpdateUser: followData.ToFollow, Followers: followeeFollowerCount, FollowerFollowingCount: followerFollwingCount}
+				for name, userSubsMap := range h.user {
+					if name != username {
+						for s := range userSubsMap {
+							s.conn.send <- m
+						}
+					}
+				}
+				for s := range follower {
+					s.conn.send <- message{incomingData: updateMsg}
 					s.conn.send <- m
 				}
 			}
-			// else if etc
 		}
 	}
 }
@@ -156,7 +174,4 @@ func (d *sqlExecute) ExecuteStatements() {
 			}
 		}
 	}
-	//for notifications := range SqlExec.followers{
-	//run the updateNotification from sql here...
-	//}
 }
