@@ -13,7 +13,6 @@ export const GroupContainer = () => {
                 .then(data => {
                     console.log("groups", data)
                     setGroupArr(data)
-                    console.log(groupArr)
                     setLoaded(true)
                 })
         }
@@ -23,7 +22,7 @@ export const GroupContainer = () => {
     const newGroupCreated = (groupInfo) => {
         setGroupArr(groupRooms => {
             console.log({ groupInfo })
-            if (groupRooms === []) {
+            if (Array.isArray(groupRooms) && groupRooms.length === 0) {
                 return [groupInfo]
             } else {
                 return [...groupRooms, groupInfo]

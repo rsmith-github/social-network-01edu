@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-export const DisLikeButton = (likeInfo) => {
+export const DisLikeGroupPostButton = (likeInfo) => {
     const [errorMes, setErrorMes] = useState("")
     const postId = likeInfo.id
 
@@ -7,7 +7,7 @@ export const DisLikeButton = (likeInfo) => {
         evt.preventDefault()
         const values = { "post-id": postId, "type": "like/dislike", "like": "d" }
         console.log(values)
-        fetch("http://localhost:8080/post-interactions", {
+        fetch("http://localhost:8080/group-post-interactions", {
             method: "POST",
             headers: {
                 'Content-Type': "multipart/form-data"
@@ -22,6 +22,7 @@ export const DisLikeButton = (likeInfo) => {
                     setErrorMes(response["error"])
                 } else {
                     likeInfo["func"](response)
+                    closeDeletePostForm()
                 }
             })
     }

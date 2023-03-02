@@ -26,10 +26,8 @@ export const CreateChat = (newChat) => {
         fetch('http://localhost:8080/get-friends')
             .then(response => response.json())
             .then(data => {
-                console.log({ data })
                 let friends = []
                 data.map(friend => friends.push({ name: friend, selected: false }))
-                console.log({ friends })
                 setFriends(friends)
             })
     }, [visible])

@@ -848,6 +848,7 @@ main {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.4);
     overflow: auto;
+    display: flex;
 }
 
 .create-post-form,
@@ -956,6 +957,7 @@ main {
     color: orange;
     align-items: center;
     justify-content: center;
+    margin-bottom: 10px;
 }
 
 .thread-container>p {
@@ -1511,13 +1513,9 @@ main {
 .group-post-rooms {
     display: flex;
     align-items: center;
-    width: 90%;
+    max-width: 80%;
     justify-content: space-between;
     overflow-x: auto;
-}
-
-.group-post-rooms>button {
-    margin-right: 10px;
 }
 
 .group-post-button {
@@ -1534,7 +1532,7 @@ main {
 .group-post-button>img {
     height: 40px;
     border-radius: 50%;
-    max-width: 40px;
+    width: 40px;
     border: 2px solid rgba(215, 57, 0, 0.874);
 }
 
@@ -1543,6 +1541,60 @@ main {
     font-size: small;
     font-weight: bolder;
     margin-left: 5px;
+    width: max-content;
+}
+
+.group-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 5px;
+}
+
+.group-header>img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid orange;
+    margin-right: 5px;
+}
+
+.group-header>h1 {
+    margin: 0;
+}
+
+.group-post-container {
+    width: 90%;
+    display: flex;
+    height: 80%;
+    align-items: center;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.group-post-container>.post>.post-image-container {
+    max-height: 80%;
+}
+
+.group-members-form {
+    display: flex;
+    width: 30%;
+    height: 80%;
+    margin: auto;
+    margin-bottom: 10%;
+    flex-direction: column;
+    align-items: center;
+    background-color: whitesmoke;
+    border-radius: 50px;
+    margin-bottom: 30px;
+    margin-top: 30px;
+    overflow: auto;
+}
+
+.no-post {
+    color: gray;
+    font-weight: bold;
+    margin: 0;
 }
 
 /*  */
