@@ -1,5 +1,5 @@
 import React, { useState, useEffect, StrictMode, useRef } from "react";
-import {toast} from 'react-toastify';
+import { toast } from 'react-toastify';
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, json } from "react-router-dom";
 import Home from "./pages/Home";
@@ -29,8 +29,25 @@ function App() {
   // All users state vars
   const [users, setUsers] = useState([]);
 
-  const notify = (obj)=>{
-    if (obj["notification-sender"]!= "" && obj["notification-sender"] != undefined){
+  const RequestNotify = ({ accepted, rejected }) => {
+    const handleAccepted = () => {
+      accepted();
+    }
+    const handleRejected = () => {
+      rejected();
+    }
+    return (
+      <div>
+        <h3>
+          <button onClick={handleAccepted}>Accept</button>
+          <button onClick={handleRejected}>Reject</button>
+        </h3>
+      </div>
+    )
+  }
+
+  const chatNotify = (obj) => {
+    if (obj["notification-sender"] != "" && obj["notification-sender"] != undefined) {
       toast('🦄 message from: ' + `${obj["notification-sender"]}`, {
         autoClose: false,
         hideProgressBar: false,
@@ -39,8 +56,29 @@ function App() {
         draggable: true,
         progress: undefined,
         theme: "dark"
-  });
-}
+      });
+    }else if(obj["notification-followRequest"] !== null && obj["notification-followRequest"] !== undefined){
+      //inside the accepted function send the follow or group message to websocket.
+        toast(<RequestNotify accepted={()=>{console.log('accepted.')}} rejected={()=>console.log('rejected')}/>,{
+        autoClose: false,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark"
+        })
+    }else if(obj["notification-groupRequest"] !== null && obj["notification-groupRequest"] !== undefined){
+      toast(<RequestNotify accepted={()=>console.log('accepted.')} rejected={()=>console.log('rejected')}/>,{
+        autoClose: false,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark"
+      })
+    }
 }
 
   const openConnection = (name, usr) => {
@@ -53,13 +91,13 @@ function App() {
       };
       websocket.current.onmessage = (event) => {
         let msg = JSON.parse(event.data);
-        console.log(msg,'this is msg.')
-        if (Array.isArray(msg)){
-          msg.map((notif)=>{
-            notify(notif)
-        })
-        }else{
-          notify(msg)
+        console.log(msg, 'this is msg.')
+        if (Array.isArray(msg)) {
+          msg.map((notif) => {
+            chatNotify(notif)
+          })
+        } else {
+          chatNotify(msg)
         }
         if (msg.toFollow === usr.email) {
           // Send message to relevant user according to isFollowing true or false.
@@ -82,8 +120,8 @@ function App() {
             });
           }
         }
-         // fetch user data
-         fetchUsersData();
+        // fetch user data
+        fetchUsersData();
       };
     }
   };

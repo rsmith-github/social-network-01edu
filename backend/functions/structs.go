@@ -63,18 +63,17 @@ type followNotification struct {
 	FollowerFollowingCount int    `json:"followerFollowingCount"`
 }
 
-type NotifFields struct {
+type RequestNotifcationFields struct {
+	FollowRequest followMessage `json:"notification-followRequest"`
+	GroupRequest  GroupFields   `json:"notification-groupRequest"`
+}
+type ChatNotifcationFields struct {
 	ChatId        string `json:"notification-chatId"`
 	Sender        string `json:"notification-sender"`
 	Receiver      string `json:"notification-receiver"`
 	NumOfMessages int    `json:"notification-numOfMessages"`
 	Date          int    `json:"notification-date"`
 	TotalNumber   int    `json:"notification-totalNotifs"`
-}
-
-type NotifType struct {
-	Type       string `json:"notification-type"`
-	FriendName string `json:"friend-name"`
 }
 
 type OpenChatInfo struct {

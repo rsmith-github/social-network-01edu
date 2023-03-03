@@ -11,6 +11,7 @@ export const GroupContainer = () => {
             fetch('http://localhost:8080/create-group')
                 .then(response => response.json())
                 .then(data => {
+                    if (data.length >0 && data !==null)
                     console.log("groups", data)
                     setGroupArr(data)
                     setLoaded(true)
@@ -32,11 +33,15 @@ export const GroupContainer = () => {
     return (
         <div className="group-posts-container">
             <div className="group-post-rooms">
+                {groupArr.length>0 &&
+                <>
                 {groupArr.map((group, i) => (
                     <>
                         <GroupButton index={i} group={group} />
                     </>
                 ))}
+                </>
+                }
             </div>
             <div>
                 <CreateGroupButton onSubmit={newGroupCreated} />

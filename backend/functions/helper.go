@@ -1082,10 +1082,10 @@ func GetTotalFollowers(email string) int {
 // notifications
 //
 
-func AddNotif(notifFields NotifFields) error {
+func AddNotif(notifFields ChatNotifcationFields) error {
 	db := OpenDB()
 	stmt, err := db.Prepare(`
-	INSERT INTO "notifications" (chatId,sender,receiver,numOfMessages,date) values (?,?,?,?,?)
+	INSERT INTO "chatNotification" (chatId,sender,receiver,numOfMessages,date) values (?,?,?,?,?)
 	`)
 	if err != nil {
 		fmt.Println("error preparing table:", err)
@@ -1100,24 +1100,24 @@ func AddNotif(notifFields NotifFields) error {
 	return nil
 }
 
-func GetChatNotif(receiverName, senderName, chatRoomId string) NotifFields {
+func GetChatNotif(receiverName, senderName, chatRoomId string) ChatNotifcationFields {
 	db := OpenDB()
-	var chatNotif NotifFields
-	n := fmt.Sprintf(`SELECT * FROM notifications WHERE receiver = '%v' AND sender ='%v' AND chatId ='%v'`, receiverName, senderName, chatRoomId)
+	var chatNotif ChatNotifcationFields
+	n := fmt.Sprintf(`SELECT * FROM chatNotification WHERE receiver = '%v' AND sender ='%v' AND chatId ='%v'`, receiverName, senderName, chatRoomId)
 	rows, err := db.Query(n)
 	var sender, receiver, chatId string
 	var notifNum, date int
 	if err != nil {
-		fmt.Println(err, "error finding notifications in table.")
+		fmt.Println(err, "error finding chatNotification in table.")
 		return chatNotif
 	}
 	defer rows.Close()
 	for rows.Next() {
 		err := rows.Scan(&sender, &receiver, &chatId, &notifNum, &date)
 		if err != nil {
-			fmt.Println("error finding notifications", err)
+			fmt.Println("error finding chatNotification", err)
 		}
-		chatNotif = NotifFields{
+		chatNotif = ChatNotifcationFields{
 			ChatId:        chatId,
 			Sender:        sender,
 			Receiver:      receiver,
@@ -1128,24 +1128,24 @@ func GetChatNotif(receiverName, senderName, chatRoomId string) NotifFields {
 	return chatNotif
 }
 
-func GetChatNotifications(receiverName, chatRoomId string) []NotifFields {
+func GetChatNotifications(receiverName, chatRoomId string) []ChatNotifcationFields {
 	db := OpenDB()
-	var sliceOfNotification []NotifFields
-	n := fmt.Sprintf(`SELECT * FROM notifications WHERE receiver = '%v' AND chatId ='%v'`, receiverName, chatRoomId)
+	var sliceOfNotification []ChatNotifcationFields
+	n := fmt.Sprintf(`SELECT * FROM chatNotification WHERE receiver = '%v' AND chatId ='%v'`, receiverName, chatRoomId)
 	rows, err := db.Query(n)
 	var sender, receiver, chatId string
 	var notifNum, date int
 	if err != nil {
-		fmt.Println(err, "error finding notifications in table.")
+		fmt.Println(err, "error finding chatNotification in table.")
 		return nil
 	}
 	defer rows.Close()
 	for rows.Next() {
 		err := rows.Scan(&sender, &receiver, &chatId, &notifNum, &date)
 		if err != nil {
-			fmt.Println("error finding notifications", err)
+			fmt.Println("error finding chatNotification", err)
 		}
-		chatNotif := NotifFields{
+		chatNotif := ChatNotifcationFields{
 			ChatId:        chatId,
 			Sender:        sender,
 			Receiver:      receiver,
@@ -1157,10 +1157,10 @@ func GetChatNotifications(receiverName, chatRoomId string) []NotifFields {
 	return sliceOfNotification
 }
 
-func GetTotalNotifs(user string) int {
+func GetTotalChatNotifs(user string) int {
 	db := OpenDB()
-	sliceOfNotifFields := []NotifFields{}
-	n := fmt.Sprintf(`SELECT * FROM notifications WHERE receiver = '%v'`, user)
+	sliceOfNotifFields := []ChatNotifcationFields{}
+	n := fmt.Sprintf(`SELECT * FROM chatNotification WHERE receiver = '%v'`, user)
 	rows, err := db.Query(n)
 	var sender, receiver, chatId string
 	var notifNum, date int
@@ -1170,7 +1170,7 @@ func GetTotalNotifs(user string) int {
 
 	for rows.Next() {
 		rows.Scan(&sender, &receiver, &chatId, &notifNum, &date)
-		notifTableRows := NotifFields{
+		notifTableRows := ChatNotifcationFields{
 			ChatId:        chatId,
 			Sender:        sender,
 			Receiver:      receiver,
@@ -1188,10 +1188,10 @@ func GetTotalNotifs(user string) int {
 	return totalNotifsCounter
 }
 
-func GetAllNotifs(user string) []NotifFields {
+func GetAllChatNotifs(user string) []ChatNotifcationFields {
 	db := OpenDB()
-	sliceOfNotifFields := []NotifFields{}
-	n := fmt.Sprintf(`SELECT * FROM notifications WHERE receiver = '%v'`, user)
+	sliceOfNotifFields := []ChatNotifcationFields{}
+	n := fmt.Sprintf(`SELECT * FROM chatNotification WHERE receiver = '%v'`, user)
 	rows, err := db.Query(n)
 	var sender, receiver, chatId string
 	var notifNum, date int
@@ -1202,7 +1202,7 @@ func GetAllNotifs(user string) []NotifFields {
 	for rows.Next() {
 		rows.Scan(&sender, &receiver, &chatId, &notifNum, &date)
 		if notifNum > 0 {
-			notifTableRows := NotifFields{
+			notifTableRows := ChatNotifcationFields{
 				ChatId:        chatId,
 				Sender:        sender,
 				Receiver:      receiver,
@@ -1216,13 +1216,13 @@ func GetAllNotifs(user string) []NotifFields {
 	return sliceOfNotifFields
 }
 
-func UpdateNotif(item NotifFields) {
+func UpdateNotif(item ChatNotifcationFields) {
 	db := OpenDB()
-	stmt, _ := db.Prepare("UPDATE notifications SET numOfMessages = ?, date = ? WHERE sender = ? AND receiver = ? AND chatId = ?")
+	stmt, _ := db.Prepare("UPDATE chatNotification SET numOfMessages = ?, date = ? WHERE sender = ? AND receiver = ? AND chatId = ?")
 	defer stmt.Close()
 	_, err := stmt.Exec(item.NumOfMessages, item.Date, item.Sender, item.Receiver, item.ChatId)
 	if err != nil {
-		fmt.Println(err, "error executing update notifications.")
+		fmt.Println(err, "error executing update chatNotification.")
 	}
 }
 
@@ -1284,9 +1284,13 @@ func CreateSqlTables() {
 	var _, followErr = db.Exec("CREATE TABLE IF NOT EXISTS `followers` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `follower` VARCHAR(64), `followee` VARCHAR(64))")
 	CheckErr(followErr, "-------Error creating table")
 
-	//Create notifications table if not exists
-	var _, notifErr = db.Exec("CREATE TABLE IF NOT EXISTS `notifications` (`sender` TEXT NOT NULL, `receiver` TEXT NOT NULL, `chatId` TEXT NOT NULL, `numOfMessages` NUMBER, `date` NUMBER)")
-	CheckErr(notifErr, "-------Error creating table")
+	//Create chat notifications table if not exists
+	var _, chatNotifErr = db.Exec("CREATE TABLE IF NOT EXISTS `chatNotification` (`sender` TEXT NOT NULL, `receiver` TEXT NOT NULL, `chatId` TEXT NOT NULL, `numOfMessages` NUMBER, `date` NUMBER)")
+	CheckErr(chatNotifErr, "-------Error creating table")
+
+	//Create  request-notifications table if not exists
+	var _, requestNotifErr = db.Exec("CREATE TABLE IF NOT EXISTS `requestNoitifcation` (`sender` TEXT NOT NULL, `receiver` TEXT NOT NULL, `type` TEXT NOT NULL)")
+	CheckErr(requestNotifErr, "-------Error creating table")
 
 	//Create Groups table if not exists
 	var _, GroupTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `groups` (`id` TEXT NOT NULL, `name` TEXT, `description` TEXT, `users` VARCHAR(255) NOT NULL,`admin` TEXT NOT NULL, avatar TEXT)")
