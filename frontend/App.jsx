@@ -29,24 +29,33 @@ function App() {
   // All users state vars
   const [users, setUsers] = useState([]);
 
-  const RequestNotify = ({ accepted, rejected }) => {
+  const [groupArr, setGroupArr] = useState([])
+
+  const RequestNotify = ({ type, accepted, rejected }) => {
+    const [message, setMessage] = useState("")
     const handleAccepted = () => {
       accepted();
     }
     const handleRejected = () => {
       rejected();
     }
+    useEffect(() => {
+      if (type.hasOwnProperty("group-id")) {
+        let str = `${type["admin"]}` + " Would Like You To Join " + `${type["group-name"]}`
+        setMessage(str)
+      }
+    }, [type])
+
     return (
       <div>
-        <h3>
-          <button onClick={handleAccepted}>Accept</button>
-          <button onClick={handleRejected}>Reject</button>
-        </h3>
+        <p>{message}</p>
+        <button className="button-85" onClick={handleAccepted}>Accept</button>
+        {/* <button className="button-85" onClick={handleRejected}>Reject</button> */}
       </div>
     )
   }
 
-  const chatNotify = (obj) => {
+  const notify = (obj) => {
     if (obj["notification-sender"] != "" && obj["notification-sender"] != undefined) {
       toast('🦄 message from: ' + `${obj["notification-sender"]}`, {
         autoClose: false,
@@ -57,9 +66,9 @@ function App() {
         progress: undefined,
         theme: "dark"
       });
-    }else if(obj["notification-followRequest"] !== null && obj["notification-followRequest"] !== undefined){
+    } else if (obj["notification-followRequest"]["followRequest"] !== "" && obj["notification-followRequest"] !== undefined) {
       //inside the accepted function send the follow or group message to websocket.
-        toast(<RequestNotify accepted={()=>{console.log('accepted.')}} rejected={()=>console.log('rejected')}/>,{
+      toast(<RequestNotify accepted={() => { console.log('accepted.') }} rejected={() => console.log('rejected')} />, {
         autoClose: false,
         hideProgressBar: false,
         closeOnClick: true,
@@ -67,9 +76,31 @@ function App() {
         draggable: true,
         progress: undefined,
         theme: "dark"
+      })
+    } else if (obj["notification-groupRequest"]["group-id"] !== "" && obj["notification-groupRequest"] !== undefined) {
+      toast(<RequestNotify type={obj["notification-groupRequest"]} accepted={() => {
+        fetch("http://localhost:8080/add-group-member", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: obj["notification-groupRequest"]["group-id"]
         })
-    }else if(obj["notification-groupRequest"] !== null && obj["notification-groupRequest"] !== undefined){
-      toast(<RequestNotify accepted={()=>console.log('accepted.')} rejected={()=>console.log('rejected')}/>,{
+          .then(response => response.text())
+          .then(response => {
+            console.log(response)
+            if (response === "accepted") {
+              console.log("should add", obj["notification-groupRequest"])
+              setGroupArr(groupRooms => {
+                if (Array.isArray(groupRooms) && groupRooms.length === 0) {
+                  return [obj["notification-groupRequest"]]
+                } else {
+                  return [...groupRooms, obj["notification-groupRequest"]]
+                }
+              });
+            } else {
+              console.log(response)
+            }
+          })
+      }} rejected={() => console.log('rejected')} />, {
         autoClose: false,
         hideProgressBar: false,
         closeOnClick: true,
@@ -79,7 +110,7 @@ function App() {
         theme: "dark"
       })
     }
-}
+  }
 
   const openConnection = (name, usr) => {
     if (websocket.current === null && name !== undefined && name !== "") {
@@ -94,10 +125,10 @@ function App() {
         console.log(msg, 'this is msg.')
         if (Array.isArray(msg)) {
           msg.map((notif) => {
-            chatNotify(notif)
+            notify(notif)
           })
         } else {
-          chatNotify(msg)
+          notify(msg)
         }
         if (msg.toFollow === usr.email) {
           // Send message to relevant user according to isFollowing true or false.
@@ -124,6 +155,7 @@ function App() {
         fetchUsersData();
       };
     }
+
   };
 
   const closeConnection = () => {
@@ -138,6 +170,12 @@ function App() {
 
   useEffect(() => {
     window.addEventListener("beforeunload", closeConnection);
+    fetch('http://localhost:8080/create-group')
+      .then(response => response.json())
+      .then(data => {
+        if (data != null && data != undefined)
+          setGroupArr(data)
+      })
     return () => {
       window.removeEventListener("beforeunload", closeConnection);
     };
@@ -176,6 +214,16 @@ function App() {
   useEffect(() => {
     fetchData();
   }, [name, users]); // fetch users data again when users have been updated, after follow. name var is for login.
+
+  useEffect(() => {
+    fetch('http://localhost:8080/create-group')
+      .then(response => response.json())
+      .then(data => {
+        console.log("groups", data)
+        if (data != null && data != undefined)
+          setGroupArr(data)
+      })
+  }, [name])
 
   const handleWSocket = (usr) => {
     if (wSocket === null) {
@@ -246,7 +294,8 @@ function App() {
               avatar={avatar}
               user={user}
               fetchUsersData={fetchUsersData}
-
+              groups={groupArr}
+              socket={websocket.current}
             />
           }
         />
