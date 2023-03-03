@@ -119,8 +119,6 @@ export const CreateGroupButton = (newGroup) => {
         <>
             {visible &&
                 <div className="create-post-container">
-                    <div className="create-group-posts-form-container">
-
                         <form onSubmit={handleGroupPostSubmit} className="create-group-form">
                             <div className="create-group-posts-close-container">
                                 <button className="close-button" type="button" onClick={closeForm}>
@@ -201,7 +199,6 @@ export const CreateGroupButton = (newGroup) => {
                                 <input className="create-chat-submit-button" type="submit" value="Submit" />
                             </div>
                         </form>
-                    </div>
                 </div>
             }
             <button type="button" className="create-group-post-button" onClick={openForm} >

@@ -139,7 +139,7 @@ func (h *hub) Run() {
 
 type sqlExecute struct {
 	chatData  chan ChatFields
-	notifData chan NotifFields
+	notifData chan ChatNotifcationFields
 	//notifications chan NotifcationFields
 
 	//followers chan FollowersFields
@@ -151,7 +151,7 @@ type sqlExecute struct {
 
 var SqlExec = sqlExecute{
 	chatData:  make(chan ChatFields),
-	notifData: make(chan NotifFields),
+	notifData: make(chan ChatNotifcationFields),
 }
 
 func (d *sqlExecute) ExecuteStatements() {
@@ -162,15 +162,15 @@ func (d *sqlExecute) ExecuteStatements() {
 		case notif := <-SqlExec.notifData:
 			wg.Add(1)
 			checkIfNotifExists := GetChatNotif(notif.Receiver, notif.Sender, notif.ChatId)
-			if notif.Sender != "" && checkIfNotifExists == (NotifFields{}) {
-				fmt.Println(notif.Receiver, "this is the notif added to table.")
+			if notif.Sender != "" && checkIfNotifExists == (ChatNotifcationFields{}) {
+				fmt.Println(notif.Receiver, "this is the chatNotification added to table.")
 				AddNotif(notif)
 				wg.Done()
-				fmt.Println("added new notifications to table")
+				fmt.Println("added new chatNotification to table")
 			} else {
 				UpdateNotif(notif)
 				wg.Done()
-				fmt.Println("updated Notification")
+				fmt.Println("updated chatNotification")
 			}
 		}
 	}

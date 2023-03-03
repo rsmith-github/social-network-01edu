@@ -37,11 +37,11 @@ func (data *message) setFieldType(dataFromWs []byte) error {
 		return nil
 	}
 	//notification data
-	var notifFields NotifFields
+	var notifFields ChatNotifcationFields
 	errReadingNotif := json.Unmarshal(dataFromWs, &notifFields)
 	if errReadingNotif != nil {
 		return errReadingNotif
-	} else if notifFields != (NotifFields{}) {
+	} else if notifFields != (ChatNotifcationFields{}) {
 		data.incomingData = notifFields
 		return nil
 	}
@@ -95,7 +95,7 @@ func (s *subscription) readPump() {
 						if loggedInUsers != chatSubs.name && len(usersInChat)+1 > len(H.rooms[s.room]) {
 							for userSub := range H.user[loggedInUsers] {
 								checkIfNotifExists := GetChatNotif(userSub.name, chatData.Sender, s.room)
-								if checkIfNotifExists != (NotifFields{}) {
+								if checkIfNotifExists != (ChatNotifcationFields{}) {
 									checkIfNotifExists.NumOfMessages++
 									checkIfNotifExists.Date = chatData.Date
 									SqlExec.notifData <- checkIfNotifExists
@@ -104,7 +104,7 @@ func (s *subscription) readPump() {
 									notifSent[userSub.name] = true
 									fmt.Println("sending an exsisting notification in db")
 								} else {
-									newNotification := NotifFields{
+									newNotification := ChatNotifcationFields{
 										ChatId:        chatData.Id,
 										Sender:        chatData.Sender,
 										Date:          chatData.Date,
@@ -129,12 +129,12 @@ func (s *subscription) readPump() {
 				for _, users := range usersInChat {
 					if !notifSent[users] {
 						checkIfNotifExists := GetChatNotif(users, chatData.Sender, s.room)
-						if checkIfNotifExists != (NotifFields{}) {
+						if checkIfNotifExists != (ChatNotifcationFields{}) {
 							checkIfNotifExists.NumOfMessages++
 							checkIfNotifExists.Date = chatData.Date
 							SqlExec.notifData <- checkIfNotifExists
 						} else {
-							newNotification := NotifFields{
+							newNotification := ChatNotifcationFields{
 								ChatId:        chatData.Id,
 								Sender:        chatData.Sender,
 								Date:          chatData.Date,
@@ -151,9 +151,9 @@ func (s *subscription) readPump() {
 			data.incomingData = chatData
 			H.broadcast <- data
 			SqlExec.chatData <- chatData
-		case NotifFields:
+		case ChatNotifcationFields:
 			//update notification because user opened chat
-			notifData := data.incomingData.(NotifFields)
+			notifData := data.incomingData.(ChatNotifcationFields)
 			sliceOfNotifications := GetChatNotifications(notifData.Receiver, notifData.ChatId)
 			for _, resetNotification := range sliceOfNotifications {
 				resetNotification.NumOfMessages = 0
@@ -184,21 +184,21 @@ func (s *subscription) writePump() {
 				fmt.Println("error writing to websocket:", err)
 				return
 			}
-		case NotifFields:
+		case ChatNotifcationFields:
 			//wait for sql to execute functions...
 			wg.Wait()
-			notif := message.incomingData.(NotifFields)
-			notif.TotalNumber = GetTotalNotifs(s.name)
+			notif := message.incomingData.(ChatNotifcationFields)
+			notif.TotalNumber = GetTotalChatNotifs(s.name)
 			fmt.Println("wrote notification", notif, s.name)
 			err := c.ws.WriteJSON(notif)
 			if err != nil {
 				fmt.Println("error writing to websocket:", err)
 				return
 			}
-		case []NotifFields:
-			notifications := message.incomingData.([]NotifFields)
+		case []ChatNotifcationFields:
+			notifications := message.incomingData.([]ChatNotifcationFields)
 			for i := range notifications {
-				notifications[i].TotalNumber = GetTotalNotifs(s.name)
+				notifications[i].TotalNumber = GetTotalChatNotifs(s.name)
 			}
 			err := c.ws.WriteJSON(notifications)
 			if err != nil {
@@ -206,7 +206,6 @@ func (s *subscription) writePump() {
 			}
 			fmt.Println("notifications exist for user", notifications)
 		case followMessage:
-			// Unmarshal message received from front end.
 			followMessage := message.incomingData.(followMessage)
 			if err := c.ws.WriteJSON(followMessage); err != nil {
 				log.Printf("error sending follow message: %v", err)
@@ -225,7 +224,7 @@ func (s *subscription) writePump() {
 func ServeWs(w http.ResponseWriter, r *http.Request) {
 	var id string
 	var user string
-	var notifExists []NotifFields
+	var notifExists []ChatNotifcationFields
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err.Error())
@@ -238,7 +237,7 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 	} else {
 		id = ""
 		user = LoggedInUser(r).Nickname
-		notifExists = GetAllNotifs(user)
+		notifExists = GetAllChatNotifs(user)
 	}
 	c := &connection{send: make(chan message), ws: ws}
 	s := subscription{c, id, user, cookie.Value}
