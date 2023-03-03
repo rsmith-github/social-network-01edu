@@ -671,7 +671,6 @@ func GroupPosts(w http.ResponseWriter, r *http.Request) {
 	groupId := string(body)
 	user := LoggedInUser(r).Nickname
 	groupPosts := GetGroupPosts(user, groupId)
-	fmt.Println("get groups", groupPosts)
 	content, _ := json.Marshal(groupPosts)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(content)
@@ -706,21 +705,29 @@ func CreateGroupPost(w http.ResponseWriter, r *http.Request) {
 		} else {
 			postData.PostId = Generate()
 			postData.Author = user
+
 			fmt.Println("post", postData)
-			err := AddGroupPost(postData)
-			if err != nil {
-				postData.Error = "Could Not Add Post, Please Try Again Later"
-				content, _ := json.Marshal(postData)
-				w.Header().Set("Content-Type", "application/json")
-				w.Write(content)
-			} else {
-				// get all posts and return
-				fmt.Println("post added to", postData.Id)
-				allPosts := GetGroupPosts(user, postData.Id)
-				fmt.Println("all Posts", allPosts)
-				content, _ := json.Marshal(allPosts)
-				w.Header().Set("Content-Type", "application/json")
-				w.Write(content)
+			if ConfirmGroupMember(user, postData.Id) {
+				err := AddGroupPost(postData)
+				if err != nil {
+					postData.Error = "Could Not Add Post, Please Try Again Later"
+					content, _ := json.Marshal(postData)
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(content)
+				} else {
+					// get all posts and return
+					fmt.Println("post added to", postData.Id)
+					allPosts := GetGroupPosts(user, postData.Id)
+					fmt.Println("all Posts", allPosts)
+					content, _ := json.Marshal(allPosts)
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(content)
+				}
+			}else{
+				postData.Error = "You Are Not A Member Of This Group"
+					content, _ := json.Marshal(postData)
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(content)
 			}
 
 		}

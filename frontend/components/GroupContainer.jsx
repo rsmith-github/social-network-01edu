@@ -2,22 +2,14 @@ import React, { useState, useEffect } from "react"
 import { CreateGroupButton } from "./CreateGroupButton"
 import { GroupButton } from "./GroupButton"
 
-export const GroupContainer = () => {
-    const [groupArr, setGroupArr] = useState([])
+export const GroupContainer = (props) => {
     const [loaded, setLoaded] = useState(false)
-
+    const [groupArr, setGroupArr] = useState([])
     useEffect(() => {
-        if (!loaded) {
-            fetch('http://localhost:8080/create-group')
-                .then(response => response.json())
-                .then(data => {
-                    console.log("groups", data)
-                    setGroupArr(data)
-                    setLoaded(true)
-                })
-        }
+        console.log(props["groups"], "here")
+        setGroupArr(props["groups"])
+        setLoaded(true)
     }, [loaded])
-
 
     const newGroupCreated = (groupInfo) => {
         setGroupArr(groupRooms => {
@@ -32,11 +24,15 @@ export const GroupContainer = () => {
     return (
         <div className="group-posts-container">
             <div className="group-post-rooms">
-                {groupArr.map((group, i) => (
+                {groupArr.length > 0 &&
                     <>
-                        <GroupButton index={i} group={group} />
+                        {groupArr.map((group, i) => (
+                            <>
+                                <GroupButton index={i} group={group} socket={props.socket} />
+                            </>
+                        ))}
                     </>
-                ))}
+                }
             </div>
             <div>
                 <CreateGroupButton onSubmit={newGroupCreated} />

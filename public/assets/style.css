@@ -1286,7 +1286,7 @@ main {
 .group-post-rooms {
   display: flex;
   align-items: center;
-  max-width: 80%;
+  max-width: 90%;
   justify-content: space-between;
   overflow-x: auto;
 }
@@ -1429,4 +1429,11 @@ main {
 .Toastify__toast-container--top-center {
   top: none;
   left: none;
+}
+.search-friends {
+  width: 50%;
+  height: 30px;
+  border: none;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }

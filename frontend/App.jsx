@@ -1,5 +1,5 @@
 import React, { useState, useEffect, StrictMode, useRef } from "react";
-import {toast} from 'react-toastify';
+import { toast } from 'react-toastify';
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, json } from "react-router-dom";
 import Home from "./pages/Home";
@@ -29,8 +29,10 @@ function App() {
   // All users state vars
   const [users, setUsers] = useState([]);
 
-  const notify = (obj)=>{
-    if (obj["notification-sender"]!= "" && obj["notification-sender"] != undefined){
+  const [groupArr, setGroupArr] = useState([])
+
+  const notify = (obj) => {
+    if (obj["notification-sender"] != "" && obj["notification-sender"] != undefined) {
       toast('🦄 message from: ' + `${obj["notification-sender"]}`, {
         autoClose: false,
         hideProgressBar: false,
@@ -39,9 +41,9 @@ function App() {
         draggable: true,
         progress: undefined,
         theme: "dark"
-  });
-}
-}
+      });
+    }
+  }
 
   const openConnection = (name, usr) => {
     if (websocket.current === null && name !== undefined && name !== "") {
@@ -53,12 +55,12 @@ function App() {
       };
       websocket.current.onmessage = (event) => {
         let msg = JSON.parse(event.data);
-        console.log(msg,'this is msg.')
-        if (Array.isArray(msg)){
-          msg.map((notif)=>{
+        console.log(msg, 'this is msg.')
+        if (Array.isArray(msg)) {
+          msg.map((notif) => {
             notify(notif)
-        })
-        }else{
+          })
+        } else {
           notify(msg)
         }
         if (msg.toFollow === usr.email) {
@@ -82,10 +84,11 @@ function App() {
             });
           }
         }
-         // fetch user data
-         fetchUsersData();
+        // fetch user data
+        fetchUsersData();
       };
     }
+
   };
 
   const closeConnection = () => {
@@ -100,6 +103,12 @@ function App() {
 
   useEffect(() => {
     window.addEventListener("beforeunload", closeConnection);
+    fetch('http://localhost:8080/create-group')
+      .then(response => response.json())
+      .then(data => {
+        console.log("groups", data)
+        setGroupArr(data)
+      })
     return () => {
       window.removeEventListener("beforeunload", closeConnection);
     };
@@ -138,6 +147,15 @@ function App() {
   useEffect(() => {
     fetchData();
   }, [name, users]); // fetch users data again when users have been updated, after follow. name var is for login.
+
+  useEffect(() => {
+    fetch('http://localhost:8080/create-group')
+      .then(response => response.json())
+      .then(data => {
+        console.log("groups", data)
+        setGroupArr(data)
+      })
+  }, [name])
 
   const handleWSocket = (usr) => {
     if (wSocket === null) {
@@ -208,7 +226,8 @@ function App() {
               avatar={avatar}
               user={user}
               fetchUsersData={fetchUsersData}
-
+              groups={groupArr}
+              socket={websocket.current}
             />
           }
         />

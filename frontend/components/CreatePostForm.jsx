@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 export const CreatePost = (newPost) => {
     const [urlImage, setUrlImage] = useState("")
     const [selectedImage, setSelectedImage] = useState(null)
@@ -9,7 +9,37 @@ export const CreatePost = (newPost) => {
     const [threadArr, setThreadArr] = useState([])
     const [visible, setVisible] = useState(false)
     const [local, setLocal] = useState(false)
+    const [almostPrivate, setAlmostPrivate] = useState(false)
+    const [searchInput, setSearchInput] = useState("");
+    const [friends, setFriends] = useState([])
+    const [user, setUser] = useState('')
+    useEffect(() => {
+        fetch('http://localhost:8080/api/user')
+            .then(response => response.json())
+            .then(data => {
 
+                setUser(data["nickname"])
+            })
+    }, [visible])
+
+    useEffect(() => {
+        const fetchUsersData = async () => {
+            // Fetch users from "all users" api
+            const usersPromise = await fetch("http://localhost:8080/api/users", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+            });
+            const usersJson = await usersPromise.json(); //getting current user.
+            let potentialMembers = []
+            usersJson.map(receivedUser => potentialMembers.push({ name: receivedUser["nickname"], selected: false }))
+            setFriends(potentialMembers);
+        };
+        fetchUsersData()
+    }, [visible])
+
+    const filteredFriends = friends.filter((checkbox) =>
+        checkbox.name.toLowerCase().includes(searchInput.toLowerCase()))
+    console.log(filteredFriends);
 
     const closePostForm = () => {
         setVisible((prev) => !prev)
@@ -25,6 +55,15 @@ export const CreatePost = (newPost) => {
             setLocal(true)
         } else {
             setLocal(false)
+        }
+
+    }
+    const handleAlmostPrivate = (privacy) => {
+        console.log({ privacy })
+        if (privacy) {
+            setAlmostPrivate(true)
+        } else {
+            setAlmostPrivate(false)
         }
 
     }
@@ -106,11 +145,11 @@ export const CreatePost = (newPost) => {
                         <div className="image-location">
                             <div>
                                 <input type="radio" id="Url" name="img-location" value="Url" onChange={() => handleLocalChange(false)} defaultChecked />
-                                <label htmlFor="Url">Online</label>
+                                <label htmlFor="Url">Add Online Image</label>
                             </div>
                             <div>
                                 <input type="radio" id="local" name="img-location" value="local" onChange={() => handleLocalChange(true)} />
-                                <label htmlFor="local">Local</label>
+                                <label htmlFor="local">Add Local Image</label>
                             </div>
                         </div>
                         {local ? (
@@ -167,6 +206,38 @@ export const CreatePost = (newPost) => {
                                         <p key={index} className="added-thread" onClick={() => removeThread(index)}>{t}</p>
                                     )
                                     }
+                                </div>
+                            </>
+                        }
+                        <div className="image-location">
+                            <div>
+                                <input type="radio" id="local" name="privacy" value="public" onChange={() => handleAlmostPrivate(false)} defaultChecked />
+                                <label htmlFor="Url">Public</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="local" name="privacy" value="private" onChange={() => handleAlmostPrivate(false)} />
+                                <label htmlFor="local">Private</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="local" name="privacy" value="almost-private" onChange={() => handleAlmostPrivate(true)} />
+                                <label htmlFor="local">Almost Private</label>
+                            </div>
+                        </div>
+                        {almostPrivate &&
+                            <>
+                                <input type="text" className="search-friends" placeholder="Find Your Friends" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
+                                <div className="create-chat-followers">
+                                    {filteredFriends.map(friend => {
+                                        if (friend.name != user) {
+                                            return (
+                                                <div>
+                                                    <input type="checkbox" className="friend-info" id={friend.name} checked={friend.selected} onChange={() => handleFriendClick(friend.name)} />
+                                                    <label htmlFor={friend.name}>{friend.name}</label>
+                                                </div>
+                                            )
+                                        }
+                                    }
+                                    )}
                                 </div>
                             </>
                         }

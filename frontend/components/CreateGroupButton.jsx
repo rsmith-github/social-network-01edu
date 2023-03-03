@@ -12,6 +12,7 @@ export const CreateGroupButton = (newGroup) => {
     const [localImage, setLocalImage] = useState("")
     const [local, setLocal] = useState(false)
     const [errorMes, setErrorMes] = useState("")
+    const [searchInput, setSearchInput] = useState("");
 
     useEffect(() => {
         fetch('http://localhost:8080/api/user')
@@ -26,13 +27,14 @@ export const CreateGroupButton = (newGroup) => {
         fetch('http://localhost:8080/get-friends')
             .then(response => response.json())
             .then(data => {
-                console.log({ data })
                 let friends = []
                 data.map(friend => friends.push({ name: friend, selected: false }))
-                console.log({ friends })
                 setFriends(friends)
             })
     }, [visible])
+
+    const filteredFriends = friends.filter((checkbox) =>
+        checkbox.name.toLowerCase().includes(searchInput.toLowerCase()))
 
     const openForm = () => {
         setVisible((prev) => !prev)
@@ -119,89 +121,87 @@ export const CreateGroupButton = (newGroup) => {
         <>
             {visible &&
                 <div className="create-post-container">
-                    <div className="create-group-posts-form-container">
-
-                        <form onSubmit={handleGroupPostSubmit} className="create-group-form">
-                            <div className="create-group-posts-close-container">
-                                <button className="close-button" type="button" onClick={closeForm}>
-                                    <span>&times;</span>
-                                </button>
-                                <h1>Create Group</h1>
+                    <form onSubmit={handleGroupPostSubmit} className="create-group-form">
+                        <div className="create-group-posts-close-container">
+                            <button className="close-button" type="button" onClick={closeForm}>
+                                <span>&times;</span>
+                            </button>
+                            <h1>Create Group</h1>
+                        </div>
+                        <div className="image-location">
+                            <div>
+                                <input type="radio" id="Url" name="img-location" value="Url" onChange={() => handleLocalChange(false)} defaultChecked />
+                                <label htmlFor="Url">Online</label>
                             </div>
-                            <div className="image-location">
-                                <div>
-                                    <input type="radio" id="Url" name="img-location" value="Url" onChange={() => handleLocalChange(false)} defaultChecked />
-                                    <label htmlFor="Url">Online</label>
-                                </div>
-                                <div>
-                                    <input type="radio" id="local" name="img-location" value="local" onChange={() => handleLocalChange(true)} />
-                                    <label htmlFor="local">Local</label>
-                                </div>
+                            <div>
+                                <input type="radio" id="local" name="img-location" value="local" onChange={() => handleLocalChange(true)} />
+                                <label htmlFor="local">Local</label>
                             </div>
-                            {local ? (
-                                <>
-                                    {selectedImage &&
-                                        <div className="create-chat-image-container">
-                                            <img src={URL.createObjectURL(selectedImage)} alt="" onClick={() => {
-                                                document.querySelector(".create-chat-image").value = ""
-                                                setLocalImage("")
-                                                setSelectedImage(null)
-                                            }} />
-                                        </div>}
-                                    <div className="add-chat-image">
-                                        <input type="file" className="create-chat-image" onChange={(e) => {
-                                            if (e.target.files[0].size < 20000000) {
-                                                setSelectedImage(e.target.files[0])
-                                                const fileReader = new FileReader();
-                                                fileReader.onload = function (e) {
-                                                    setLocalImage(e.target.result);
-                                                };
-                                                fileReader.readAsDataURL(e.target.files[0]);
-                                            }
-                                            ;
+                        </div>
+                        {local ? (
+                            <>
+                                {selectedImage &&
+                                    <div className="create-group-image-container">
+                                        <img src={URL.createObjectURL(selectedImage)} alt="" onClick={() => {
+                                            document.querySelector(".create-group-image").value = ""
+                                            setLocalImage("")
+                                            setSelectedImage(null)
                                         }} />
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    {urlImage &&
-                                        <div className="create-chat-image-container">
-                                            <img src={urlImage} alt="" onClick={() => {
-                                                document.querySelector(".create-chat-image").value = ""
-                                                setUrlImage("")
-                                            }} />
-                                        </div>}
-                                    <div className="add-chat-image">
-                                        <input type="text" className="create-chat-image" id="create-chat-image" placeholder="https://..."
-                                            onChange={(e) => setUrlImage(e.target.value)}
-                                        />
-                                    </div>
-                                </>
-                            )}
-                            <p className="chat-image-message">File Must Not Exceed 20MB</p>
-                            <input type="text" name="group-name" id="chat-name" placeholder="Enter Group Name Here" onChange={(e) => setName(e.target.value)} disabled={loading} value={name} required />
-                            <textarea name="group-description" id="chat-description" placeholder="Description" onChange={(e) => setDescription(e.target.value)} disabled={loading} value={description} />
-                            <div className="create-chat-followers">
-                                {friends.map(friend => {
-                                    if (friend.name != user) {
-                                        return (
-                                            <div>
-                                                <input type="checkbox" className="friend-info" id={friend.name} checked={friend.selected} onChange={() => handleFriendClick(friend.name)} />
-                                                <label htmlFor={friend.name}>{friend.name}</label>
-                                            </div>
-                                        )
-                                    }
+                                    </div>}
+                                <div className="add-post-image">
+                                    <input type="file" className="create-group-image" onChange={(e) => {
+                                        if (e.target.files[0].size < 20000000) {
+                                            setSelectedImage(e.target.files[0])
+                                            const fileReader = new FileReader();
+                                            fileReader.onload = function (e) {
+                                                setLocalImage(e.target.result);
+                                            };
+                                            fileReader.readAsDataURL(e.target.files[0]);
+                                        }
+                                        ;
+                                    }} />
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {urlImage &&
+                                    <div className="create-chat-image-container">
+                                        <img src={urlImage} alt="" onClick={() => {
+                                            document.querySelector(".create-group-image").value = ""
+                                            setUrlImage("")
+                                        }} />
+                                    </div>}
+                                <div className="add-post-image">
+                                    <input type="text" className="create-group-image" id="create-group-image" placeholder="https://..."
+                                        onChange={(e) => setUrlImage(e.target.value)}
+                                    />
+                                </div>
+                            </>
+                        )}
+                        <p className="chat-image-message">File Must Not Exceed 20MB</p>
+                        <input type="text" name="group-name" className="post-text-content" placeholder="Enter Group Name Here" onChange={(e) => setName(e.target.value)} disabled={loading} value={name} required />
+                        <textarea name="group-description" className="post-text-content" placeholder="Description" onChange={(e) => setDescription(e.target.value)} disabled={loading} value={description} />
+                        <input type="text" className="search-friends" placeholder="Find Your Friends" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
+                        <div className="create-chat-followers">
+                            {filteredFriends.map(friend => {
+                                if (friend.name != user) {
+                                    return (
+                                        <div>
+                                            <input type="checkbox" className="friend-info" id={friend.name} checked={friend.selected} onChange={() => handleFriendClick(friend.name)} />
+                                            <label htmlFor={friend.name}>{friend.name}</label>
+                                        </div>
+                                    )
                                 }
-                                )}
-                            </div>
-                            {errorMes &&
-                                <p className="error-message">{errorMes}</p>
                             }
-                            <div className="create-chat-submit-container">
-                                <input className="create-chat-submit-button" type="submit" value="Submit" />
-                            </div>
-                        </form>
-                    </div>
+                            )}
+                        </div>
+                        {errorMes &&
+                            <p className="error-message">{errorMes}</p>
+                        }
+                        <div className="create-chat-submit-container">
+                            <input className="create-chat-submit-button" type="submit" value="Submit" />
+                        </div>
+                    </form>
                 </div>
             }
             <button type="button" className="create-group-post-button" onClick={openForm} >

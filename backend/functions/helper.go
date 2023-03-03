@@ -152,6 +152,27 @@ func GetUserGroups(username string) []GroupFields {
 	return involvedGroups
 }
 
+func ConfirmGroupMember(username, groupId string) bool {
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT users FROM groups WHERE id = '%v'", groupId)
+	row, err := db.Query(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var sliceOfUsers []string
+	var users string
+	for row.Next() { // Iterate and fetch the records from result cursor
+		row.Scan(&users)
+		group := GroupFields{
+			Users: users,
+		}
+		sliceOfUsers = strings.Split(group.Users, ",")
+
+	}
+	row.Close()
+	return Contains(sliceOfUsers, username)
+}
+
 func UpdateGroup(groupRoom GroupFields, action string, user string) GroupFields {
 	db := OpenDB()
 	users := strings.Split(groupRoom.Users, ",")
@@ -210,7 +231,7 @@ func UpdateGroupPost(postFields GroupPostFields) error {
 
 func RemoveGroupPost(id string) error {
 	db := OpenDB()
-	stmt, err := db.Prepare("DELETE FROM 'groupposts' WHERE 'postid' = ?")
+	stmt, err := db.Prepare("DELETE FROM groupposts WHERE postid = ?")
 	if err != nil {
 		fmt.Println("error removing post from posts table", err)
 	}
@@ -1264,7 +1285,7 @@ func CreateSqlTables() {
 	var _, messagesTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `messages` ( `id` TEXT NOT NULL, `sender` VARCHAR(255) NOT NULL, `messageId` TEXT NOT NULL UNIQUE, `message` TEXT COLLATE NOCASE, `date` NUMBER)")
 	CheckErr(messagesTblErr, "-------Error creating table")
 
-	// Create posts table if doesn't exist.
+	// Create posts table if doesn't exist. , `privacy` TEXT NOT NULL, `viewers` TEXT
 	var _, postTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `posts` ( `id` TEXT NOT NULL UNIQUE, `author` TEXT NOT NULL, `image` TEXT,`text` TEXT,`thread` TEXT, `time` NUMBER)")
 	CheckErr(postTblErr, "-------Error creating table")
 

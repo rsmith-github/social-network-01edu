@@ -1513,7 +1513,7 @@ main {
 .group-post-rooms {
     display: flex;
     align-items: center;
-    max-width: 80%;
+    max-width: 90%;
     justify-content: space-between;
     overflow-x: auto;
 }
@@ -1605,7 +1605,9 @@ main {
     color: red;
 }
 
-
+/*  */
+/* MISC */
+/*  */
 .create-chat-followers::-webkit-scrollbar,
 .chatrooms::-webkit-scrollbar,
 .message-text-input::-webkit-scrollbar,
@@ -1681,7 +1683,14 @@ main {
 .Toastify__toast-container--top-center {
     top: none;
     left: none;
-    /* transform: translateX(-50%); */
+}
+
+.search-friends{
+    width: 50%;
+    height: 30px;
+    border: none;
+    margin-top:10px;
+    margin-bottom:10px;
 }
 
 

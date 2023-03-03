@@ -17,7 +17,6 @@ export const GroupButton = (groupInfo) => {
         fetch("http://localhost:8080/api/user")
             .then(response => response.json())
             .then(response => {
-                console.log("user for group admin", response)
                 setUser(response["nickname"])
             })
     }, [visible])
@@ -90,13 +89,13 @@ export const GroupButton = (groupInfo) => {
             edited["post-likes"] = formatNumber(edited["post-likes"])
             edited["post-dislikes"] = formatNumber(edited["post-dislikes"])
             newPost[index] = edited
-            return newPost.reverse()
+            return newPost
         })
     }
 
     const handleDeletePost = (deletePost) => {
         const updatedPosts = groupPosts.filter((post) => post["post-id"] !== deletePost);
-        setGroupPosts(updatedPosts.reverse());
+        setGroupPosts(updatedPosts);
     }
 
     const openMembersForm = () => {
