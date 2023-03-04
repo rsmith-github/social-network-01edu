@@ -44,6 +44,11 @@ func main() {
 	http.HandleFunc("/post-interactions", functions.PostInteractions)
 	http.HandleFunc("/create-comment", functions.CreateComment)
 	http.HandleFunc("/comment-interactions", functions.CommentInteractions)
+	http.HandleFunc("/create-group-post", functions.CreateGroupPost)
+	http.HandleFunc("/edit-group-post", functions.EditGroupPost)
+	http.HandleFunc("/group-post-interactions", functions.GroupPostInteractions)
+	http.HandleFunc("/get-group-posts", functions.GroupPosts)
+	http.HandleFunc("/create-group", functions.CreateGroup)
 
 	go functions.H.Run()
 	go functions.SqlExec.ExecuteStatements()

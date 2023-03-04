@@ -37,11 +37,11 @@ func (data *message) setFieldType(dataFromWs []byte) error {
 		return nil
 	}
 	//notification data
-	var notifFields NotifFields
+	var notifFields ChatNotifcationFields
 	errReadingNotif := json.Unmarshal(dataFromWs, &notifFields)
 	if errReadingNotif != nil {
 		return errReadingNotif
-	} else if notifFields != (NotifFields{}) {
+	} else if notifFields != (ChatNotifcationFields{}) {
 		data.incomingData = notifFields
 		return nil
 	}
@@ -84,28 +84,27 @@ func (s *subscription) readPump() {
 			chatData.Id = s.room
 			chatData.MessageId = Generate()
 
-			//notify users
+			//send notifications to online users
 			chatRoom := GetChatRoom(s.room, s.name)
 			usersInChat := strings.Split(chatRoom.Users, ",")
 			notifSent := make(map[string]bool)
-			//+1 because the client's name is removed from the button
 			for loggedInUsers := range H.user {
 				for chatSubs := range H.rooms[s.room] {
-					fmt.Println(loggedInUsers)
 					if Contains(usersInChat, loggedInUsers) {
+						//+1 because the client's name is removed from the button
 						if loggedInUsers != chatSubs.name && len(usersInChat)+1 > len(H.rooms[s.room]) {
-							fmt.Println("users aren't in chat.")
 							for userSub := range H.user[loggedInUsers] {
 								checkIfNotifExists := GetChatNotif(userSub.name, chatData.Sender, s.room)
-								if checkIfNotifExists != (NotifFields{}) {
+								if checkIfNotifExists != (ChatNotifcationFields{}) {
 									checkIfNotifExists.NumOfMessages++
+									checkIfNotifExists.Date = chatData.Date
 									SqlExec.notifData <- checkIfNotifExists
 									sendNotif := message{incomingData: checkIfNotifExists}
 									userSub.conn.send <- sendNotif
 									notifSent[userSub.name] = true
 									fmt.Println("sending an exsisting notification in db")
 								} else {
-									newNotification := NotifFields{
+									newNotification := ChatNotifcationFields{
 										ChatId:        chatData.Id,
 										Sender:        chatData.Sender,
 										Date:          chatData.Date,
@@ -125,27 +124,24 @@ func (s *subscription) readPump() {
 				}
 			}
 
+			//send notifications to sql table if user is offline
 			if len(usersInChat)+1 > len(H.rooms[s.room]) {
 				for _, users := range usersInChat {
 					if !notifSent[users] {
-						notifSent[users] = false
-					}
-					for username, sent := range notifSent {
-						if username == users && !sent {
-							checkIfNotifExists := GetChatNotif(users, chatData.Sender, s.room)
-							if checkIfNotifExists != (NotifFields{}) {
-								checkIfNotifExists.NumOfMessages++
-								SqlExec.notifData <- checkIfNotifExists
-							} else {
-								newNotification := NotifFields{
-									ChatId:        chatData.Id,
-									Sender:        chatData.Sender,
-									Date:          chatData.Date,
-									Receiver:      users,
-									NumOfMessages: 1,
-								}
-								SqlExec.notifData <- newNotification
+						checkIfNotifExists := GetChatNotif(users, chatData.Sender, s.room)
+						if checkIfNotifExists != (ChatNotifcationFields{}) {
+							checkIfNotifExists.NumOfMessages++
+							checkIfNotifExists.Date = chatData.Date
+							SqlExec.notifData <- checkIfNotifExists
+						} else {
+							newNotification := ChatNotifcationFields{
+								ChatId:        chatData.Id,
+								Sender:        chatData.Sender,
+								Date:          chatData.Date,
+								Receiver:      users,
+								NumOfMessages: 1,
 							}
+							SqlExec.notifData <- newNotification
 						}
 					}
 				}
@@ -155,19 +151,17 @@ func (s *subscription) readPump() {
 			data.incomingData = chatData
 			H.broadcast <- data
 			SqlExec.chatData <- chatData
-		case NotifFields:
+		case ChatNotifcationFields:
 			//update notification because user opened chat
-			notifData := data.incomingData.(NotifFields)
-			sliceOfNotifications := GetChatNotifForAll(notifData.Receiver, notifData.ChatId)
+			notifData := data.incomingData.(ChatNotifcationFields)
+			sliceOfNotifications := GetChatNotifications(notifData.Receiver, notifData.ChatId)
 			for _, resetNotification := range sliceOfNotifications {
 				resetNotification.NumOfMessages = 0
 				SqlExec.notifData <- resetNotification
 			}
 		case followMessage:
-			fmt.Println(data.incomingData, "data is sent thru....")
 			H.broadcast <- data
 		}
-
 	}
 }
 
@@ -190,34 +184,35 @@ func (s *subscription) writePump() {
 				fmt.Println("error writing to websocket:", err)
 				return
 			}
-		case NotifFields:
+		case ChatNotifcationFields:
 			//wait for sql to execute functions...
 			wg.Wait()
-			notif := message.incomingData.(NotifFields)
-			notif.TotalNumber = GetTotalNotifs(s.name)
+			notif := message.incomingData.(ChatNotifcationFields)
+			notif.TotalNumber = GetTotalChatNotifs(s.name)
 			fmt.Println("wrote notification", notif, s.name)
 			err := c.ws.WriteJSON(notif)
 			if err != nil {
 				fmt.Println("error writing to websocket:", err)
 				return
 			}
-		case []NotifFields:
-			fmt.Println("notifications exist for user", message.incomingData)
-		case followMessage:
-			// Unmarshal message received from front end.
-			followMessage := message.incomingData.(followMessage)
-			// Update the follower count
-			followeeFollowerCount, followerFollwingCount, err := updateFollowerCount(followMessage.FollowRequest, followMessage.ToFollow, followMessage.IsFollowing)
+		case []ChatNotifcationFields:
+			notifications := message.incomingData.([]ChatNotifcationFields)
+			for i := range notifications {
+				notifications[i].TotalNumber = GetTotalChatNotifs(s.name)
+			}
+			err := c.ws.WriteJSON(notifications)
 			if err != nil {
-				log.Printf("error updating follower count: %v", err)
+				fmt.Println("error writing to notifications to websocket:", err)
 			}
-			followMessage.Total = GetTotalFollowers(followMessage.ToFollow)
-			// Send an update message to the client with the new follower count
-			updateMsg := followNotification{UpdateUser: followMessage.ToFollow, Followers: *&followeeFollowerCount, FollowerFollowingCount: followerFollwingCount}
-			if err2 := c.ws.WriteJSON(followMessage); err2 != nil {
-				log.Printf("error sending follower message: %v", err2)
+			fmt.Println("notifications exist for user", notifications)
+		case followMessage:
+			followMessage := message.incomingData.(followMessage)
+			if err := c.ws.WriteJSON(followMessage); err != nil {
+				log.Printf("error sending follow message: %v", err)
 			}
-			if err := c.ws.WriteJSON(updateMsg); err != nil {
+		case followNotification:
+			followNotification := message.incomingData.(followNotification)
+			if err := c.ws.WriteJSON(followNotification); err != nil {
 				log.Printf("error sending update message: %v", err)
 			}
 		}
@@ -229,6 +224,7 @@ func (s *subscription) writePump() {
 func ServeWs(w http.ResponseWriter, r *http.Request) {
 	var id string
 	var user string
+	var notifExists []ChatNotifcationFields
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err.Error())
@@ -241,20 +237,15 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 	} else {
 		id = ""
 		user = LoggedInUser(r).Nickname
+		notifExists = GetAllChatNotifs(user)
 	}
-	fmt.Println("ws id", id)
-	fmt.Println("ws opened", user)
 	c := &connection{send: make(chan message), ws: ws}
 	s := subscription{c, id, user, cookie.Value}
 	H.register <- &s
 	go s.writePump()
 	go s.readPump()
-	if r.URL.Path == "ws/user" {
-		allNotifs := GetAllNotifs(user)
-		notifExsist := len(allNotifs) > 0
-		if notifExsist {
-			message := message{incomingData: allNotifs}
-			c.send <- message
-		}
+	if len(notifExists) > 0 {
+		message := message{incomingData: notifExists}
+		c.send <- message
 	}
 }

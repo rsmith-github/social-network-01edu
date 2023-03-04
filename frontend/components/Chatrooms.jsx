@@ -13,6 +13,10 @@ export const GetChat = () => {
             fetch('http://localhost:8080/get-chat')
                 .then(response => response.json())
                 .then(data => {
+                    //sort here 
+                    data["private-chatrooms"].map((chat)=>{
+                        console.log({chat},chat["last-message-date"])
+                    })
                     setChats(data)
                 })
             setIsPrivate(true);
@@ -21,6 +25,7 @@ export const GetChat = () => {
             fetch('http://localhost:8080/get-chat')
                 .then(response => response.json())
                 .then(data => {
+                    //sort here 
                     setChats(data)
                 })
             setIsPrivate(false);
@@ -61,6 +66,7 @@ export const GetChat = () => {
         fetch('http://localhost:8080/get-chat')
             .then(response => response.json())
             .then(data => {
+                
                 setChats(data)
             })
     }
@@ -122,7 +128,7 @@ export const GetChat = () => {
             }
 
             <button id="open-chat-button">
-                <img src="../../public/assets/img/chats-icon.png" onClick={openChatRooms} alt="" />
+                <img src="https://cdn-icons-png.flaticon.com/512/5780/5780993.png" onClick={openChatRooms} alt="" />
             </button>
         </>
     )
