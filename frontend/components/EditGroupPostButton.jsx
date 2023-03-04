@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 
-export const EditButton = (editedPost) => {
+export const EditGroupPostButton = (editedPost) => {
     let editPost = editedPost
 
     let editedPostThreads = editPost["post"]["post-threads"].split("#").map((thread, i) => {
@@ -87,7 +87,7 @@ export const EditButton = (editedPost) => {
         }
 
 
-        fetch("http://localhost:8080/edit-post", {
+        fetch("http://localhost:8080/edit-group-post", {
             method: "POST",
             headers: {
                 'Content-Type': "multipart/form-data"
@@ -192,7 +192,6 @@ export const EditButton = (editedPost) => {
                                             <input type="text" className="create-post-image" id="create-post-image" placeholder="https://..."
                                                 onChange={(e) => setUrlImage(e.target.value)}
                                             />
-                                            <label htmlFor="create-post-image">Add Image</label>
                                         </div>
                                     </>
                                 )}
@@ -205,21 +204,21 @@ export const EditButton = (editedPost) => {
                             <button className="add-thread-button" type="button" onClick={addThread}>+</button>
                         </div>
                         <p>Click the # to remove</p>
-                            {threadArr &&
-                                <>
-                                    <div className="thread-container">
-                                        {threadArr.map((t, index) => {
-                                            if (index === 0) {
-                                                return <p key={index} className="added-thread" onClick={() => removeThread(index)}>#{t}</p>
-                                            } else {
-                                                return <p key={index} className="added-thread" onClick={() => removeThread(index)}>{t}</p>
-                                            }
+                        {threadArr &&
+                            <>
+                                <div className="thread-container">
+                                    {threadArr.map((t, index) => {
+                                        if (index === 0) {
+                                            return <p key={index} className="added-thread" onClick={() => removeThread(index)}>#{t}</p>
+                                        } else {
+                                            return <p key={index} className="added-thread" onClick={() => removeThread(index)}>{t}</p>
                                         }
-                                        )
-                                        }
-                                    </div>
-                                </>
-                            }
+                                    }
+                                    )
+                                    }
+                                </div>
+                            </>
+                        }
 
                         {errorMes &&
                             <p className="error-message">{errorMes}</p>

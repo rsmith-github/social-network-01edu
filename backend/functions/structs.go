@@ -29,6 +29,7 @@ type ChatRoomFields struct {
 	Users       string `json:"users"`
 	Admin       string `json:"admin"`
 	Action      string `json:"action"`
+	Date        int    `json:"last-message-date"`
 }
 
 type ChatroomType struct {
@@ -54,7 +55,6 @@ type followMessage struct {
 	ToFollow      string `json:"toFollow"`
 	IsFollowing   bool   `json:"isFollowing"`
 	Followers     int    `json:"followers"`
-	Total         int    `json:"totalFollowers"`
 }
 
 type followNotification struct {
@@ -63,18 +63,17 @@ type followNotification struct {
 	FollowerFollowingCount int    `json:"followerFollowingCount"`
 }
 
-type NotifFields struct {
+type RequestNotifcationFields struct {
+	FollowRequest followMessage `json:"notification-followRequest"`
+	GroupRequest  GroupFields   `json:"notification-groupRequest"`
+}
+type ChatNotifcationFields struct {
 	ChatId        string `json:"notification-chatId"`
 	Sender        string `json:"notification-sender"`
 	Receiver      string `json:"notification-receiver"`
 	NumOfMessages int    `json:"notification-numOfMessages"`
 	Date          int    `json:"notification-date"`
 	TotalNumber   int    `json:"notification-totalNotifs"`
-}
-
-type NotifType struct {
-	Type       string `json:"notification-type"`
-	FriendName string `json:"friend-name"`
 }
 
 type OpenChatInfo struct {
@@ -134,4 +133,38 @@ type CommentsAndLikesFields struct {
 	Username  string `json:"username"`
 	Like      string `json:"like"`
 	Type      string `json:"type"`
+}
+
+type GroupFields struct {
+	Id          string `json:"group-id"`
+	Avatar      string `json:"group-avatar"`
+	Name        string `json:"group-name"`
+	Description string `json:"group-description"`
+	Users       string `json:"users"`
+	Admin       string `json:"admin"`
+	Action      string `json:"action"`
+}
+
+type GroupPostFields struct {
+	Id           string `json:"group-id"`
+	PostId       string `json:"post-id"`
+	Author       string `json:"author"`
+	AuthorImg    string `json:"author-img"`
+	Image        string `json:"post-image"`
+	Text         string `json:"post-text-content"`
+	Thread       string `json:"post-threads"`
+	Likes        int    `json:"post-likes"`
+	PostLiked    bool   `json:"post-liked"`
+	Dislikes     int    `json:"post-dislikes"`
+	PostDisliked bool   `json:"post-disliked"`
+	PostAuthor   bool   `json:"post-author"`
+	Time         int    `json:"post-time"`
+	Error        string `json:"error"`
+}
+
+type GroupsAndLikesFields struct {
+	PostId   string `json:"post-id"`
+	Username string `json:"username"`
+	Like     string `json:"like"`
+	Type     string `json:"type"`
 }
