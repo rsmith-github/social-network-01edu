@@ -3,6 +3,7 @@ package functions
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
 type message struct {
@@ -132,6 +133,18 @@ func (h *hub) Run() {
 					s.conn.send <- message{incomingData: updateMsg}
 					s.conn.send <- m
 				}
+			case GroupFields:
+				groupFieldsData := m.incomingData.(GroupFields)
+				potentialMember := strings.Split(groupFieldsData.Users, ",")
+				for _, member := range potentialMember {
+					AddRequestNotif(groupFieldsData.Admin, member, "group")
+					loggedInMember := h.user[member]
+					for userSub, _ := range loggedInMember {
+						userSub.conn.send <- message{incomingData: RequestNotifcationFields{
+							GroupRequest: groupFieldsData,
+						}}
+					}
+				}
 			}
 		}
 	}
@@ -164,7 +177,7 @@ func (d *sqlExecute) ExecuteStatements() {
 			checkIfNotifExists := GetChatNotif(notif.Receiver, notif.Sender, notif.ChatId)
 			if notif.Sender != "" && checkIfNotifExists == (ChatNotifcationFields{}) {
 				fmt.Println(notif.Receiver, "this is the chatNotification added to table.")
-				AddNotif(notif)
+				AddChatNotif(notif)
 				wg.Done()
 				fmt.Println("added new chatNotification to table")
 			} else {

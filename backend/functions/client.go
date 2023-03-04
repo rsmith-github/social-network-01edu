@@ -53,6 +53,14 @@ func (data *message) setFieldType(dataFromWs []byte) error {
 		data.incomingData = followFields
 		return nil
 	}
+	var groupFields GroupFields
+	errReadingGroup := json.Unmarshal(dataFromWs, &groupFields)
+	if errReadingGroup != nil {
+		return errReadingGroup
+	} else if groupFields != (GroupFields{}) {
+		data.incomingData = groupFields
+		return nil
+	}
 	//add else if conditions for other fields like notification, followers etc...
 	return nil
 }
@@ -161,7 +169,11 @@ func (s *subscription) readPump() {
 			}
 		case followMessage:
 			H.broadcast <- data
+		case GroupFields:
+			fmt.Println(data)
+			H.broadcast <- data
 		}
+
 	}
 }
 
@@ -213,6 +225,11 @@ func (s *subscription) writePump() {
 		case followNotification:
 			followNotification := message.incomingData.(followNotification)
 			if err := c.ws.WriteJSON(followNotification); err != nil {
+				log.Printf("error sending update message: %v", err)
+			}
+		case RequestNotifcationFields:
+			request := message.incomingData.(RequestNotifcationFields)
+			if err := c.ws.WriteJSON(request); err != nil {
 				log.Printf("error sending update message: %v", err)
 			}
 		}
