@@ -61,6 +61,14 @@ func (data *message) setFieldType(dataFromWs []byte) error {
 		data.incomingData = groupFields
 		return nil
 	}
+	var resetRequest RequestNotifcationFields
+	errReadingResetRequest := json.Unmarshal(dataFromWs, &resetRequest)
+	if errReadingResetRequest != nil {
+		return errReadingResetRequest
+	} else if resetRequest != (RequestNotifcationFields{}) {
+		data.incomingData = resetRequest
+		return nil
+	}
 	//add else if conditions for other fields like notification, followers etc...
 	return nil
 }
@@ -106,7 +114,7 @@ func (s *subscription) readPump() {
 								if checkIfNotifExists != (ChatNotifcationFields{}) {
 									checkIfNotifExists.NumOfMessages++
 									checkIfNotifExists.Date = chatData.Date
-									SqlExec.notifData <- checkIfNotifExists
+									SqlExec.chatNotifData <- checkIfNotifExists
 									sendNotif := message{incomingData: checkIfNotifExists}
 									userSub.conn.send <- sendNotif
 									notifSent[userSub.name] = true
@@ -119,7 +127,7 @@ func (s *subscription) readPump() {
 										Receiver:      userSub.name,
 										NumOfMessages: 1,
 									}
-									SqlExec.notifData <- newNotification
+									SqlExec.chatNotifData <- newNotification
 									sendNotif := message{incomingData: newNotification}
 									userSub.conn.send <- sendNotif
 									notifSent[userSub.name] = true
@@ -140,7 +148,7 @@ func (s *subscription) readPump() {
 						if checkIfNotifExists != (ChatNotifcationFields{}) {
 							checkIfNotifExists.NumOfMessages++
 							checkIfNotifExists.Date = chatData.Date
-							SqlExec.notifData <- checkIfNotifExists
+							SqlExec.chatNotifData <- checkIfNotifExists
 						} else {
 							newNotification := ChatNotifcationFields{
 								ChatId:        chatData.Id,
@@ -149,7 +157,7 @@ func (s *subscription) readPump() {
 								Receiver:      users,
 								NumOfMessages: 1,
 							}
-							SqlExec.notifData <- newNotification
+							SqlExec.chatNotifData <- newNotification
 						}
 					}
 				}
@@ -165,13 +173,36 @@ func (s *subscription) readPump() {
 			sliceOfNotifications := GetChatNotifications(notifData.Receiver, notifData.ChatId)
 			for _, resetNotification := range sliceOfNotifications {
 				resetNotification.NumOfMessages = 0
-				SqlExec.notifData <- resetNotification
+				SqlExec.chatNotifData <- resetNotification
 			}
 		case followMessage:
-			H.broadcast <- data
+			//use the followMessage's data to go into SQL table of users and check if user is private.
+			//if the user is private then send a request notification directly to their ws by accessing their subscription from H.user[toFollow]
+			followData := data.incomingData.(followMessage)
+			sender := GetUserFromFollowMessage(followData.FollowRequest)
+			user := GetUserFromFollowMessage(followData.ToFollow)
+			followData.FollowRequestUsername = sender.Nickname
+			followData.FolloweeUsername = user.Nickname
+			data.incomingData = followData
+			if user.Status == "private" && !followData.FollowRequestAccepted {
+				userSub := H.user[user.Nickname]
+				for s, online := range userSub {
+					if !online {
+						SqlExec.followMessageData <- followData
+					} else {
+						SqlExec.followMessageData <- followData
+						s.conn.send <- message{incomingData: RequestNotifcationFields{FollowRequest: followData}}
+					}
+				}
+			} else {
+				H.broadcast <- data
+			}
 		case GroupFields:
-			fmt.Println(data)
 			H.broadcast <- data
+		case RequestNotifcationFields:
+			//delete request notifications.
+			requestNotifcationFields := data.incomingData.(RequestNotifcationFields)
+			SqlExec.RequestNotificationData <- requestNotifcationFields
 		}
 
 	}
@@ -241,7 +272,8 @@ func (s *subscription) writePump() {
 func ServeWs(w http.ResponseWriter, r *http.Request) {
 	var id string
 	var user string
-	var notifExists []ChatNotifcationFields
+	var chatNotifExist []ChatNotifcationFields
+	var requestNotifExist []RequestNotifcationFields
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err.Error())
@@ -254,15 +286,36 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 	} else {
 		id = ""
 		user = LoggedInUser(r).Nickname
-		notifExists = GetAllChatNotifs(user)
+		chatNotifExist = GetAllChatNotifs(user)
+		requestNotifExist = GetAllRequestNotifs(user)
 	}
 	c := &connection{send: make(chan message), ws: ws}
 	s := subscription{c, id, user, cookie.Value}
 	H.register <- &s
 	go s.writePump()
 	go s.readPump()
-	if len(notifExists) > 0 {
-		message := message{incomingData: notifExists}
+	if len(chatNotifExist) > 0 {
+		message := message{incomingData: chatNotifExist}
 		c.send <- message
+	}
+	if len(requestNotifExist) > 0 {
+		for _, requestNotif := range requestNotifExist {
+			fmt.Println(requestNotif.GroupId)
+			if requestNotif.GroupId == "" {
+				//get the follower's email
+				db := OpenDB()
+				row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", requestNotif.Sender, db, "GetUserFromFollowers")
+				//...
+				senderEmail := QueryUser(row, err).Email
+				userEmail := LoggedInUser(r).Email
+				followMessage := followMessage{ToFollow: userEmail, FollowRequest: senderEmail, IsFollowing: false, Followers: GetTotalFollowers(userEmail)}
+				message := message{incomingData: RequestNotifcationFields{FollowRequest: followMessage}}
+				c.send <- message
+			} else {
+				groupFields := GetGroupFromId(requestNotif.GroupId)
+				message := message{incomingData: RequestNotifcationFields{GroupRequest: groupFields}}
+				c.send <- message
+			}
+		}
 	}
 }

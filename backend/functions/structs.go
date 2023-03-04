@@ -12,6 +12,7 @@ type User struct {
 	Aboutme   string `json:"about"`
 	Followers int    `json:"followers"`
 	Following int    `json:"following"`
+	Status    string `json:"status"`
 }
 
 type Session struct {
@@ -51,10 +52,13 @@ type Follow struct {
 }
 
 type followMessage struct {
-	FollowRequest string `json:"followRequest"`
-	ToFollow      string `json:"toFollow"`
-	IsFollowing   bool   `json:"isFollowing"`
-	Followers     int    `json:"followers"`
+	FollowRequest         string `json:"followRequest"`
+	ToFollow              string `json:"toFollow"`
+	IsFollowing           bool   `json:"isFollowing"`
+	Followers             int    `json:"followers"`
+	FollowRequestUsername string `json:"followRequest-username"`
+	FolloweeUsername      string `json:"toFollow-username"`
+	FollowRequestAccepted bool   `json:"followRequest-accepted"`
 }
 
 type followNotification struct {
@@ -66,6 +70,9 @@ type followNotification struct {
 type RequestNotifcationFields struct {
 	FollowRequest followMessage `json:"notification-followRequest"`
 	GroupRequest  GroupFields   `json:"notification-groupRequest"`
+	Sender        string        `json:"remove-sender"`
+	Receiver      string        `json:"remove-receiver"`
+	GroupId       string        `json:"remove-groupId"`
 }
 type ChatNotifcationFields struct {
 	ChatId        string `json:"notification-chatId"`

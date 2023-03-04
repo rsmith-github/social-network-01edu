@@ -11,6 +11,7 @@ export default function Register() {
   const [avatar, setAvatar] = useState("");
   const [nickname, setNickname] = useState("");
   const [about, setAbout] = useState("");
+  const [status, setStatus] = useState("");
   const [redirectVar, setRedirectVar] = useState(false);
 
   // Redirect
@@ -29,6 +30,7 @@ export default function Register() {
       avatar,
       nickname,
       about,
+      status,
     };
 
     // Send user data to golang register function.
@@ -129,7 +131,24 @@ export default function Register() {
             />
             <label htmlFor="nickname">Nickname</label>
           </div>
-          <div className="form-floating">
+            <input
+              required
+              type="radio"
+              id="private-status"
+              value={"private"}
+              name="status"
+              onClick={(e) => setStatus(e.target.value)}
+            />
+            <label htmlFor="public-status">Private</label>
+            <input
+              required
+              type="radio"
+              id="public-status"
+              value={"public"}
+              name="status"
+              onClick={(e) => setStatus(e.target.value)}
+            />
+            <label htmlFor="public-status">Public</label>
             <input
               className="form-control"
               name="aboutme"
@@ -139,7 +158,6 @@ export default function Register() {
               onChange={(e) => setAbout(e.target.value)}
             ></input>
             <label htmlFor="about">About me</label>
-          </div>
           <button className="w-100 btn btn-lg btn-primary" type="submit">
             Register
           </button>

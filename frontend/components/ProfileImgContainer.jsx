@@ -24,6 +24,7 @@ export default function ProfileImgContainer(props) {
       });
 
       let result = await response.json();
+      console.log(result, "result of follow...")
 
       // if (result === null) {
       // } else {
@@ -36,18 +37,26 @@ export default function ProfileImgContainer(props) {
 
   // Follow button handler
   const followHandler = () => {
-    const newIsFollowing = !isFollowing;
+    let newIsFollowing = !isFollowing;
     setIsFollowing(newIsFollowing);
-
     // Send follow request through the backend via websocket.
-    const follow = JSON.stringify({
+    
+    let follow = JSON.stringify({
       followRequest: props.currentUser.email,
       toFollow: props.user.email,
       isFollowing: newIsFollowing,
       followers: props.user.followers,
     });
+    if (newIsFollowing === false){
+      follow = JSON.stringify({
+        followRequest: props.currentUser.email,
+        toFollow: props.user.email,
+        isFollowing: newIsFollowing,
+        followers: props.user.followers,
+        "followRequest-accepted":true,
+      });
+    }
     props.socket.send(follow);
-
     props.fetchUsersData();
   };
 

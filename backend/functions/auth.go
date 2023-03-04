@@ -189,7 +189,7 @@ func CreateUser(newUser User) error {
 	newUser.Password = passwordHash
 
 	// Try to insert user into database.
-	_, err2 := db.Exec("INSERT INTO users(email, password, firstname, lastname, dob, avatar, nickname, aboutme) values(?,?,?,?,?,?,?,?)", newUser.Email, newUser.Password, newUser.Firstname, newUser.Lastname, newUser.DOB, newUser.Avatar, newUser.Nickname, newUser.Aboutme)
+	_, err2 := db.Exec("INSERT INTO users(email, password, firstname, lastname, dob, avatar, nickname, aboutme, status) values(?,?,?,?,?,?,?,?,?)", newUser.Email, newUser.Password, newUser.Firstname, newUser.Lastname, newUser.DOB, newUser.Avatar, newUser.Nickname, newUser.Aboutme, newUser.Status)
 
 	CheckErr(err2, "-------LINE 58  ") // check line
 	if err2 != nil {
