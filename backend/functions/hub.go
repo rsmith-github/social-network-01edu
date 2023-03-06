@@ -131,17 +131,26 @@ func (h *hub) Run() {
 				}
 			case GroupFields:
 				groupFieldsData := m.incomingData.(GroupFields)
-				potentialMember := strings.Split(groupFieldsData.Users, ",")
-				for _, member := range potentialMember {
+				potentialMembers := strings.Split(groupFieldsData.Users, ",")
+				for _, member := range potentialMembers {
+					groupRequestInTable := GetRequestNotifByType(member, groupFieldsData.Admin, "groupRequest")
+					var groupRequestExists bool
+					for i := 0; i < len(groupRequestInTable); i++ {
+						if groupRequestInTable[i].GroupId == groupFieldsData.Id {
+							groupRequestExists = true
+						}
+					}
 					loggedInMember := h.user[member]
 					for userSub, online := range loggedInMember {
-						if !online {
+						if !online && !groupRequestExists {
 							notifyMemberWithGroupFieldData := groupFieldsData
 							notifyMemberWithGroupFieldData.Users = member
 							SqlExec.GroupFieldsData <- notifyMemberWithGroupFieldData
 						} else {
-							SqlExec.GroupFieldsData <- groupFieldsData
-							userSub.conn.send <- message{incomingData: RequestNotifcationFields{GroupRequest: groupFieldsData}}
+							if !groupRequestExists {
+								SqlExec.GroupFieldsData <- groupFieldsData
+								userSub.conn.send <- message{incomingData: RequestNotifcationFields{GroupRequest: groupFieldsData}}
+							}
 						}
 					}
 				}

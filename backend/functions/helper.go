@@ -1384,6 +1384,28 @@ func GetAllRequestNotifs(user string) []RequestNotifcationFields {
 	return sliceOfRequestFields
 }
 
+func GetRequestNotifByType(receiverName, senderName, requestType string) []RequestNotifcationFields {
+	db := OpenDB()
+	sliceOfrequestNotif := []RequestNotifcationFields{}
+	n := fmt.Sprintf(`SELECT * FROM requestNotification WHERE receiver = '%v' AND sender ='%v' AND typeOfRequest ='%v'`, receiverName, senderName, requestType)
+	rows, err := db.Query(n)
+	var sender, receiver, typeOfRequest, groupId string
+	if err != nil {
+		fmt.Println(err, "error getting follow request")
+	}
+	for rows.Next() {
+		rows.Scan(&sender, &receiver, &typeOfRequest, &groupId)
+		requestNotif := RequestNotifcationFields{
+			Sender:   sender,
+			Receiver: receiver,
+			GroupId:  groupId,
+		}
+		sliceOfrequestNotif = append(sliceOfrequestNotif, requestNotif)
+	}
+	rows.Close()
+	return sliceOfrequestNotif
+}
+
 //
 // DB
 //
@@ -1402,7 +1424,7 @@ func CreateSqlTables() {
 	db := OpenDB()
 
 	// if you need to delete a table rather than delete a whole database
-	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS "requestNoitifcation"`)
+	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS "requestNotification"`)
 	// CheckErr(deleteTblErr, "-------Error deleting table")
 
 	// Create user table if it doen't exist.
