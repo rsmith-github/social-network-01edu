@@ -14,6 +14,7 @@ export default function Profile(props) {
         socket={props.socket}
         currentUser={props.currentUser}
         fetchUsersData={props.fetchUsersData}
+        isFollowing={props.isFollowing}
       />
       <div>
         <p>{props.user.email}</p>

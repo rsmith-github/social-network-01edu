@@ -41,11 +41,12 @@ func QueryUser(rows *sql.Rows, err error) User {
 	var aboutme string
 	var followers int
 	var following int
+	var status string
 
 	var usr User
 	// Scan all the data from that row.
 	for rows.Next() {
-		err = rows.Scan(&id, &email, &password, &firstname, &lastname, &dob, &avatar, &nickname, &aboutme, &followers, &following)
+		err = rows.Scan(&id, &email, &password, &firstname, &lastname, &dob, &avatar, &nickname, &aboutme, &followers, &following, &status)
 		temp := User{
 			Id:        id,
 			Email:     email,
@@ -58,6 +59,7 @@ func QueryUser(rows *sql.Rows, err error) User {
 			Aboutme:   aboutme,
 			Followers: followers,
 			Following: following,
+			Status:    status,
 		}
 		// currentUser = &username
 		CheckErr(err, "-------LINE 56")
@@ -65,6 +67,20 @@ func QueryUser(rows *sql.Rows, err error) User {
 	}
 	rows.Close() //good habit to close
 	return usr
+}
+func UpdateUserPrivacy(user User) error {
+	db := OpenDB()
+	stmt, err := db.Prepare("UPDATE users SET status=? WHERE email=?")
+	if err != nil {
+		fmt.Println(err, "error preparing stmt")
+		return err
+	}
+	_, errExecuting := stmt.Exec(user.Status, user.Email)
+	if errExecuting != nil {
+		fmt.Println(errExecuting, "error cookin stmt")
+		return errExecuting
+	}
+	return nil
 }
 
 func CheckErr(err error, line string) {
@@ -150,6 +166,30 @@ func GetUserGroups(username string) []GroupFields {
 	}
 	row.Close()
 	return involvedGroups
+}
+
+func GetGroupFromId(groupId string) GroupFields {
+	db := OpenDB()
+	row, err := db.Query("SELECT * FROM groups")
+	var group GroupFields
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var id, name, description, users, admin, avatar string
+	for row.Next() { // Iterate and fetch the records from result cursor
+		row.Scan(&id, &name, &description, &users, &admin, &avatar)
+		group = GroupFields{
+			Id:          id,
+			Name:        name,
+			Description: description,
+			Users:       users,
+			Admin:       admin,
+			Avatar:      avatar,
+		}
+	}
+	row.Close()
+	return group
 }
 
 func ConfirmGroupMember(username, groupId string) bool {
@@ -1006,9 +1046,15 @@ func GetCommentLikes(id, l string) []CommentsAndLikesFields {
 	return sliceOfCommentLikesRow
 }
 
-//
 // Followers
-//
+
+func GetUserFromFollowMessage(email string) User {
+	db := OpenDB()
+	//get the users who have interacted
+	row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", email, db, "GetUserFromFollowers")
+	return QueryUser(row, err)
+}
+
 func updateFollowerCount(followerEmail string, followeeEmail string, isFollowing bool) (int, int, error) {
 	// Update the follower count in the database.
 
@@ -1247,22 +1293,95 @@ func UpdateNotif(item ChatNotifcationFields) {
 	}
 }
 
-func AddRequestNotif(senderName, receiverName, requestType string) error {
+//
+// requestNotif
+//
+
+func DeleteRequestNotif(item RequestNotifcationFields) {
 	db := OpenDB()
-	stmt, err := db.Prepare(`
-	INSERT INTO requestNotification (sender,receiver,type) values (?,?,?)
-	`)
-	if err != nil {
-		fmt.Println("error preparing table:", err)
-		return err
+	if item.GroupId == "" {
+		stmt, error2 := db.Prepare("DELETE FROM requestNotification WHERE sender = ? AND receiver = ? AND typeOfRequest = ?")
+		if error2 != nil {
+			fmt.Println(error2)
+			return
+		}
+		_, err := stmt.Exec(item.Sender, item.Receiver, "followRequest")
+		if err != nil {
+			fmt.Println(err, "error executing delete followRequestNotif.")
+			return
+		}
+		fmt.Println("removed follow req")
+		return
+	} else {
+		stmt, error2 := db.Prepare("DELETE FROM requestNotification WHERE sender = ? AND receiver = ? AND groupId = ? AND typeOfRequest = ?")
+		if error2 != nil {
+			fmt.Println(error2)
+			return
+		}
+		_, err := stmt.Exec(item.Sender, item.Receiver, item.GroupId, "groupRequest")
+		if err != nil {
+			fmt.Println(err, "error executing delete groupRequestNotif.")
+			return
+		}
+		fmt.Println("removed group req")
+		return
 	}
-	defer stmt.Close()
-	_, errorWithTable := stmt.Exec(senderName, receiverName, requestType)
-	if errorWithTable != nil {
-		fmt.Println("error adding to table:", errorWithTable)
-		return errorWithTable
+
+}
+
+func AddRequestNotif(senderName, receiverName, requestType, id string) error {
+	db := OpenDB()
+	if id == "" {
+		stmt, err := db.Prepare(`
+		INSERT INTO requestNotification (sender,receiver,typeOfRequest) values (?,?,?)
+		`)
+		if err != nil {
+			fmt.Println("error preparing table:", err)
+			return err
+		}
+		_, errorWithTable := stmt.Exec(senderName, receiverName, requestType)
+		if errorWithTable != nil {
+			fmt.Println("error adding to table:", errorWithTable)
+			return errorWithTable
+		}
+		return nil
+	} else {
+		stmt, err := db.Prepare(`
+	INSERT INTO requestNotification (sender,receiver,typeOfRequest, groupId) values (?,?,?,?)
+	`)
+		if err != nil {
+			fmt.Println("error preparing table:", err)
+			return err
+		}
+		_, errorWithTable := stmt.Exec(senderName, receiverName, requestType, id)
+		if errorWithTable != nil {
+			fmt.Println("error adding to table:", errorWithTable)
+			return errorWithTable
+		}
 	}
 	return nil
+}
+
+func GetAllRequestNotifs(user string) []RequestNotifcationFields {
+	db := OpenDB()
+	sliceOfRequestFields := []RequestNotifcationFields{}
+	n := fmt.Sprintf(`SELECT * FROM requestNotification WHERE receiver = '%v'`, user)
+	rows, err := db.Query(n)
+	var sender, receiver, typeOfRequest, groupId string
+	if err != nil {
+		fmt.Println(err, "error getting TotalRequestNotifciations")
+	}
+	for rows.Next() {
+		rows.Scan(&sender, &receiver, &typeOfRequest, &groupId)
+		requestTableRows := RequestNotifcationFields{
+			Sender:   sender,
+			Receiver: receiver,
+			GroupId:  groupId,
+		}
+		sliceOfRequestFields = append(sliceOfRequestFields, requestTableRows)
+	}
+	rows.Close()
+	return sliceOfRequestFields
 }
 
 //
@@ -1287,7 +1406,7 @@ func CreateSqlTables() {
 	// CheckErr(deleteTblErr, "-------Error deleting table")
 
 	// Create user table if it doen't exist.
-	var _, usrTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `email` VARCHAR(64) NOT NULL UNIQUE, `password` VARCHAR(255) NOT NULL, `firstname` VARCHAR(64) NOT NULL, `lastname` VARCHAR(64) NOT NULL, `dob` VARCHAR(255) NOT NULL, `avatar` VARCHAR(255), `nickname` VARCHAR(64), `aboutme` VARCHAR(255), `followers` INTEGER DEFAULT 0, `following` INTEGER DEFAULT 0)")
+	var _, usrTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `email` VARCHAR(64) NOT NULL UNIQUE, `password` VARCHAR(255) NOT NULL, `firstname` VARCHAR(64) NOT NULL, `lastname` VARCHAR(64) NOT NULL, `dob` VARCHAR(255) NOT NULL, `avatar` VARCHAR(255), `nickname` VARCHAR(64), `aboutme` VARCHAR(255), `followers` INTEGER DEFAULT 0, `following` INTEGER DEFAULT 0, 'status' TEXT)")
 	CheckErr(usrTblErr, "-------Error creating table")
 
 	// Create sessions table if doesn't exist.
@@ -1328,7 +1447,7 @@ func CreateSqlTables() {
 	CheckErr(chatNotifErr, "-------Error creating table")
 
 	//Create  request-notifications table if not exists
-	var _, requestNotifErr = db.Exec("CREATE TABLE IF NOT EXISTS `requestNotification` (`sender` TEXT NOT NULL, `receiver` TEXT NOT NULL, `type` TEXT NOT NULL)")
+	var _, requestNotifErr = db.Exec("CREATE TABLE IF NOT EXISTS `requestNotification` (`sender` TEXT NOT NULL, `receiver` TEXT NOT NULL, `typeOfRequest` TEXT NOT NULL, `groupId` TEXT)")
 	CheckErr(requestNotifErr, "-------Error creating table")
 
 	//Create Groups table if not exists

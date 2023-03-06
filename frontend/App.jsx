@@ -31,6 +31,11 @@ function App() {
 
   const [groupArr, setGroupArr] = useState([])
 
+// Variable to check following status. Set to true if user presses follow or on refreshing the page.
+const isFollowing = useRef(false);
+
+
+
   const RequestNotify = ({ type, accepted, rejected }) => {
     const [message, setMessage] = useState("")
     const handleAccepted = () => {
@@ -42,6 +47,9 @@ function App() {
     useEffect(() => {
       if (type.hasOwnProperty("group-id")) {
         let str = `${type["admin"]}` + " Would Like You To Join " + `${type["group-name"]}`
+        setMessage(str)
+      }else if (type.hasOwnProperty("followRequest")){
+        let str = `${type["followRequest-username"]}` + " Would Like To Follow You" 
         setMessage(str)
       }
     }, [type])
@@ -56,7 +64,7 @@ function App() {
   }
 
   const notify = (obj) => {
-    if (obj["notification-sender"] != "" && obj["notification-sender"] != undefined) {
+    if (obj["notification-sender"] != "" && obj["notification-sender"] !== undefined) {
       toast('🦄 message from: ' + `${obj["notification-sender"]}`, {
         autoClose: false,
         hideProgressBar: false,
@@ -66,18 +74,36 @@ function App() {
         progress: undefined,
         theme: "dark"
       });
-    } else if (obj["notification-followRequest"]["followRequest"] !== "" && obj["notification-followRequest"] !== undefined) {
+      return 
+    } else if (obj["notification-followRequest"] !==undefined && obj["notification-followRequest"]["toFollow"] !== "" && obj["notification-followRequest"]["toFollow"] !== undefined) {
       //inside the accepted function send the follow or group message to websocket.
-      toast(<RequestNotify accepted={() => { console.log('accepted.') }} rejected={() => console.log('rejected')} />, {
-        autoClose: false,
+      toast(<RequestNotify type={obj["notification-followRequest"]} accepted={() => {   
+        let removeRequest = {
+        "remove-sender": `${obj["notification-followRequest"]["followRequest-username"]}`,
+        "remove-receiver": `${obj["notification-followRequest"]["toFollow-username"]}`,
+      }
+      isFollowing.current = true
+      console.log(isFollowing.current,"is following")
+      const follow = {
+        followRequest: `${obj["notification-followRequest"]["followRequest"]}`,
+        toFollow: `${obj["notification-followRequest"]["toFollow"]}`,
+        isFollowing: isFollowing.current,
+        followers: obj["notification-followRequest"]["followers"],
+        "followRequest-accepted":true
+      };
+      websocket.current.send(JSON.stringify(follow))
+      websocket.current.send(JSON.stringify(removeRequest))
+      fetchUsersData();
+    }} 
+        rejected={() => console.log('rejected')} />, 
+        {autoClose: false,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
         progress: undefined,
-        theme: "dark"
-      })
-    } else if (obj["notification-groupRequest"]["group-id"] !== "" && obj["notification-groupRequest"] !== undefined) {
+        theme: "dark"})
+    } else if (obj["notification-groupRequest"] !== undefined && obj["notification-groupRequest"]["group-id"] !== "" && obj["notification-groupRequest"]["group-id"] !== undefined) {
       toast(<RequestNotify type={obj["notification-groupRequest"]} accepted={() => {
         fetch("http://localhost:8080/add-group-member", {
           method: "POST",
@@ -100,6 +126,13 @@ function App() {
               console.log(response)
             }
           })
+          //send to websocket request accepted.
+          let removeRequest = {
+            "remove-sender": `${obj["notification-groupRequest"]["admin"]}`,
+            "remove-receiver": user.nickname,
+            "remove-groupId": `${obj["notification-groupRequest"]["group-id"]}`
+          }
+          websocket.current.send(JSON.stringify(removeRequest))
       }} rejected={() => console.log('rejected')} />, {
         autoClose: false,
         hideProgressBar: false,
@@ -203,6 +236,7 @@ function App() {
       aboutme: content.about,
       followers: content.followers,
       following: content.following,
+      status:content.status
     };
     setUser(user);
 
@@ -321,6 +355,7 @@ function App() {
               // socket={wSocket} // Socket 2
               user={user}
               fetchUsersData={fetchUsersData}
+              isFollowing = {isFollowing}
             />
           }
         />
