@@ -107,7 +107,7 @@ function App() {
 
     // try to connect user to websocket.
     handleWSocket(user); // works here
-    openConnection(name);
+    // openConnection(name);
   };
 
   useEffect(() => {
