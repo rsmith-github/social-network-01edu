@@ -23,30 +23,6 @@ export const AllPosts = () => {
     }
   }, [loaded]);
 
-  const dateFormat = (strDate) => {
-    let date = new Date(strDate);
-    let dd = date.getDate();
-    let mm = date.getMonth() + 1;
-    let yyyy = date.getFullYear().toString().substr(-2);
-    if (dd < 10) {
-      dd = "0" + dd;
-    }
-    if (mm < 10) {
-      mm = "0" + mm;
-    }
-    let hh = date.getHours();
-    let min = date.getMinutes();
-    date = dd + "/" + mm + "/" + yyyy + " " + hh + ":" + min;
-    return date.toString();
-  };
-
-  const handleBrokenAuthImage = (source) => {
-    if (source != "") {
-      return source;
-    } else {
-      return "https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png";
-    }
-  };
 
   var ranges = [
     { divider: 1e18, suffix: "E" },
