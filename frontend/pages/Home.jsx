@@ -17,10 +17,10 @@ export default function Home(props) {
               user={props.user}
               avatar={props.avatar}
             />
-            <GroupContainer />
+            <GroupContainer groups={props.groups} socket={props.socket} />
             <PostForm avatar={props.avatar} />
             <RightSide />
-            <GetChat  />
+            <GetChat />
           </>
         ) : (
           <>

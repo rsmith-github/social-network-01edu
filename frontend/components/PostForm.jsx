@@ -15,8 +15,7 @@ export default function PostForm(props) {
       fetch('http://localhost:8080/create-post')
         .then(response => response.json())
         .then(data => {
-          console.log(data)
-          setPosts(data)
+          setPosts(data.reverse())
           setLoaded(true)
         })
     }
@@ -45,10 +44,8 @@ export default function PostForm(props) {
   }
 
   const handleEditPost = (edited) => {
-    console.log("edited post", { edited })
     setPosts(prevPosts => {
       const index = prevPosts.findIndex(post => post["post-id"] === edited["post-id"])
-      console.log({ index })
       if (index === -1) {
         return prevPosts
       }
@@ -56,19 +53,19 @@ export default function PostForm(props) {
       edited["post-likes"] = formatNumber(edited["post-likes"])
       edited["post-dislikes"] = formatNumber(edited["post-dislikes"])
       newPost[index] = edited
-      return newPost.reverse()
+      return newPost
     })
   }
 
   const handleDeletePost = (deletePost) => {
     const updatedPosts = posts.filter((post) => post["post-id"] !== deletePost);
-    setPosts(updatedPosts.reverse());
+    setPosts(updatedPosts);
   }
 
   const handlePrivatePosts = (friendsList) => {
     const friends = friendsList
     const updatedPosts = posts.filter((post) => friends.includes(post["author"]));
-    setPosts(updatedPosts.reverse());
+    setPosts(updatedPosts);
   }
 
   return (
@@ -85,7 +82,7 @@ export default function PostForm(props) {
       <div className="post-container">
 
 
-        {loaded && posts.reverse().map((post, index) => (
+        {loaded && posts.map((post, index) => (
           <div key={index} className="post">
             <Post post={post} onEdit={handleEditPost} onDelete={handleDeletePost} />
           </div>

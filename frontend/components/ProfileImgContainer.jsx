@@ -2,10 +2,35 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 
+
 // Component that contains image, followers etc.
 export default function ProfileImgContainer(props) {
   // Check if we are at other user's profile. If so, show follow button instead of my profile button.
   const otherUser = window.location.href.split("/").at(-1);
+
+  if (props.user.status === "private"){
+    (async () => {
+      const response = await fetch("http://localhost:8080/api/followers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          follower: props.currentUser ? props.currentUser.email : null,
+          followee: props.user.email,
+        }),
+      });
+
+      let result = await response.json();
+
+      // if (result === null) {
+      // } else {
+      //   setIsFollowing(true);
+      // }
+      // The above is the same as:
+      setIsFollowing(result !== null);
+      return 
+    })();
+  }
 
   // Variable to check following status. Set to true if user presses follow or on refreshing the page.
   const [isFollowing, setIsFollowing] = useState(false);
@@ -36,18 +61,31 @@ export default function ProfileImgContainer(props) {
 
   // Follow button handler
   const followHandler = () => {
-    const newIsFollowing = !isFollowing;
+    let newIsFollowing = !isFollowing;
     setIsFollowing(newIsFollowing);
 
-    // Send follow request through the backend via websocket.
-    const follow = JSON.stringify({
+    //if the user is private then wait for request to be accepted, and set IsFollowing back to false.
+    if(props.user.status === "private" && newIsFollowing === true){
+      setIsFollowing(!newIsFollowing)
+    }
+    
+    let follow = JSON.stringify({
       followRequest: props.currentUser.email,
       toFollow: props.user.email,
       isFollowing: newIsFollowing,
       followers: props.user.followers,
     });
+    if (newIsFollowing === false){
+      follow = JSON.stringify({
+        followRequest: props.currentUser.email,
+        toFollow: props.user.email,
+        isFollowing: newIsFollowing,
+        followers: props.user.followers,
+        //send followRequest-accepted:true so it goes to the else condition in client's followMessage switch case.
+        "followRequest-accepted":true,
+      });
+    }
     props.socket.send(follow);
-
     props.fetchUsersData();
   };
 

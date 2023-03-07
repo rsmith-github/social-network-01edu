@@ -43,7 +43,7 @@ func createApi(table string, w http.ResponseWriter, r *http.Request) {
 	var str string
 	// Build query string
 	if table == "users" {
-		str = "SELECT email, firstname, lastname, dob, avatar, nickname, aboutme, followers, following FROM " + table + ";"
+		str = "SELECT email, firstname, lastname, dob, avatar, nickname, aboutme, followers, following, status FROM " + table + ";"
 	} else {
 		str = "SELECT * FROM " + table + ";"
 	}

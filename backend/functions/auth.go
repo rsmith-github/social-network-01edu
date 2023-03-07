@@ -189,7 +189,7 @@ func CreateUser(newUser User) error {
 	newUser.Password = passwordHash
 
 	// Try to insert user into database.
-	_, err2 := db.Exec("INSERT INTO users(email, password, firstname, lastname, dob, avatar, nickname, aboutme) values(?,?,?,?,?,?,?,?)", newUser.Email, newUser.Password, newUser.Firstname, newUser.Lastname, newUser.DOB, newUser.Avatar, newUser.Nickname, newUser.Aboutme)
+	_, err2 := db.Exec("INSERT INTO users(email, password, firstname, lastname, dob, avatar, nickname, aboutme, status) values(?,?,?,?,?,?,?,?,?)", newUser.Email, newUser.Password, newUser.Firstname, newUser.Lastname, newUser.DOB, newUser.Avatar, newUser.Nickname, newUser.Aboutme, newUser.Status)
 
 	CheckErr(err2, "-------LINE 58  ") // check line
 	if err2 != nil {
@@ -662,6 +662,26 @@ func CreateGroup(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func AddMemberToGroup(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	groupId := string(body)
+	user := LoggedInUser(r).Nickname
+	if !ConfirmGroupMember(user, groupId) {
+		err = AddUserToGroup(groupId, user)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte("error"))
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte("accepted"))
+		}
+	}
+}
+
 func GroupPosts(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -671,7 +691,6 @@ func GroupPosts(w http.ResponseWriter, r *http.Request) {
 	groupId := string(body)
 	user := LoggedInUser(r).Nickname
 	groupPosts := GetGroupPosts(user, groupId)
-	fmt.Println("get groups", groupPosts)
 	content, _ := json.Marshal(groupPosts)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(content)
@@ -706,19 +725,27 @@ func CreateGroupPost(w http.ResponseWriter, r *http.Request) {
 		} else {
 			postData.PostId = Generate()
 			postData.Author = user
+
 			fmt.Println("post", postData)
-			err := AddGroupPost(postData)
-			if err != nil {
-				postData.Error = "Could Not Add Post, Please Try Again Later"
-				content, _ := json.Marshal(postData)
-				w.Header().Set("Content-Type", "application/json")
-				w.Write(content)
+			if ConfirmGroupMember(user, postData.Id) {
+				err := AddGroupPost(postData)
+				if err != nil {
+					postData.Error = "Could Not Add Post, Please Try Again Later"
+					content, _ := json.Marshal(postData)
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(content)
+				} else {
+					// get all posts and return
+					fmt.Println("post added to", postData.Id)
+					allPosts := GetGroupPosts(user, postData.Id)
+					fmt.Println("all Posts", allPosts)
+					content, _ := json.Marshal(allPosts)
+					w.Header().Set("Content-Type", "application/json")
+					w.Write(content)
+				}
 			} else {
-				// get all posts and return
-				fmt.Println("post added to", postData.Id)
-				allPosts := GetGroupPosts(user, postData.Id)
-				fmt.Println("all Posts", allPosts)
-				content, _ := json.Marshal(allPosts)
+				postData.Error = "You Are Not A Member Of This Group"
+				content, _ := json.Marshal(postData)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
 			}
