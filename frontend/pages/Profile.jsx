@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { AllPosts } from "../components/AllPosts";
+
 import ProfileImgContainer from "../components/ProfileImgContainer";
 import RightSide from "../components/RightSide";
+import Swal from "sweetalert2";
 
 export default function Profile(props) {
   return (
@@ -15,12 +18,7 @@ export default function Profile(props) {
         currentUser={props.currentUser}
         fetchUsersData={props.fetchUsersData}
       />
-      <div>
-        <p>{props.user.email}</p>
-        <p>{props.user.nickname}</p>
-        <p>{props.user.last}</p>
-        <p>{props.user.dob}</p>
-      </div>
+      <AllPosts />
     </div>
   );
 }

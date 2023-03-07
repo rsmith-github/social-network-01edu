@@ -1,72 +1,38 @@
-import React, { useState, useEffect } from "react"
-import { CreatePost } from "./CreatePostForm"
+import React, { useState, useEffect } from "react";
+import { CreatePost } from "./CreatePostForm";
+import { PublicPostButton } from "./PublicPostButton";
+import { PrivatePostButton } from "./PrivatePostButton";
 
-import { PublicPostButton } from "./PublicPostButton"
-import { PrivatePostButton } from "./PrivatePostButton"
-import { Post } from "./Post"
+import { AllPosts } from "./AllPosts";
 
 // Post form in the center
 export default function PostForm(props) {
-  const [posts, setPosts] = useState([])
-  const [loaded, setLoaded] = useState(false)
+  const [posts, setPosts] = useState([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!loaded) {
-      fetch('http://localhost:8080/create-post')
-        .then(response => response.json())
-        .then(data => {
-          setPosts(data.reverse())
-          setLoaded(true)
-        })
+      fetch("http://localhost:8080/create-post")
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data);
+          setPosts(data);
+          setLoaded(true);
+        });
     }
-  }, [loaded])
-
-  var ranges = [
-    { divider: 1e18, suffix: 'E' },
-    { divider: 1e15, suffix: 'P' },
-    { divider: 1e12, suffix: 'T' },
-    { divider: 1e9, suffix: 'G' },
-    { divider: 1e6, suffix: 'M' },
-    { divider: 1e3, suffix: 'k' }
-  ];
-
-  function formatNumber(n) {
-    for (var i = 0; i < ranges.length; i++) {
-      if (n >= ranges[i].divider) {
-        return (Math.round((n / ranges[i].divider) * 10) / 10).toString() + ranges[i].suffix;
-      }
-    }
-    return n.toString();
-  }
+  }, [loaded]);
 
   const getAllPost = (response) => {
-    setPosts(response)
-  }
-
-  const handleEditPost = (edited) => {
-    setPosts(prevPosts => {
-      const index = prevPosts.findIndex(post => post["post-id"] === edited["post-id"])
-      if (index === -1) {
-        return prevPosts
-      }
-      const newPost = [...prevPosts]
-      edited["post-likes"] = formatNumber(edited["post-likes"])
-      edited["post-dislikes"] = formatNumber(edited["post-dislikes"])
-      newPost[index] = edited
-      return newPost
-    })
-  }
-
-  const handleDeletePost = (deletePost) => {
-    const updatedPosts = posts.filter((post) => post["post-id"] !== deletePost);
-    setPosts(updatedPosts);
-  }
+    setPosts(response);
+  };
 
   const handlePrivatePosts = (friendsList) => {
-    const friends = friendsList
-    const updatedPosts = posts.filter((post) => friends.includes(post["author"]));
-    setPosts(updatedPosts);
-  }
+    const friends = friendsList;
+    const updatedPosts = posts.filter((post) =>
+      friends.includes(post["author"])
+    );
+    setPosts(updatedPosts.reverse());
+  };
 
   return (
     <>
@@ -79,20 +45,8 @@ export default function PostForm(props) {
           <PrivatePostButton privatePost={handlePrivatePosts} />
         </div>
       </div>
-      <div className="post-container">
 
-
-        {loaded && posts.map((post, index) => (
-          <div key={index} className="post">
-            <Post post={post} onEdit={handleEditPost} onDelete={handleDeletePost} />
-          </div>
-        ))}
-        {!loaded &&
-          <div className="post-loader-container">
-            <img src="http://superstorefinder.net/support/wp-content/uploads/2018/01/orange_circles.gif" className="post-loader" />
-          </div>
-        }
-      </div>
+      <AllPosts />
       <CreatePost onSubmit={getAllPost} />
     </>
   );
