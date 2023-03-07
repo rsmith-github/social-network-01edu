@@ -2,27 +2,17 @@ import React, { useState, useEffect } from "react"
 import { CreateGroupButton } from "./CreateGroupButton"
 import { GroupButton } from "./GroupButton"
 
-export const GroupContainer = () => {
-    const [groupArr, setGroupArr] = useState([])
+export const GroupContainer = (props) => {
     const [loaded, setLoaded] = useState(false)
-
+    const [groupArr, setGroupArr] = useState([])
     useEffect(() => {
-        if (!loaded) {
-            fetch('http://localhost:8080/create-group')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length >0 && data !==null)
-                    console.log("groups", data)
-                    setGroupArr(data)
-                    setLoaded(true)
-                })
-        }
-    }, [loaded])
-
+        if (props["groups"] != null && props["groups"] != undefined)
+            setGroupArr(props["groups"])
+        setLoaded(true)
+    }, [props])
 
     const newGroupCreated = (groupInfo) => {
         setGroupArr(groupRooms => {
-            console.log({ groupInfo })
             if (Array.isArray(groupRooms) && groupRooms.length === 0) {
                 return [groupInfo]
             } else {
@@ -33,14 +23,14 @@ export const GroupContainer = () => {
     return (
         <div className="group-posts-container">
             <div className="group-post-rooms">
-                {groupArr.length>0 &&
-                <>
-                {groupArr.map((group, i) => (
+                {groupArr.length > 0 &&
                     <>
-                        <GroupButton index={i} group={group} />
+                        {groupArr.map((group, i) => (
+                            <>
+                                <GroupButton index={i} group={group} socket={props.socket} />
+                            </>
+                        ))}
                     </>
-                ))}
-                </>
                 }
             </div>
             <div>

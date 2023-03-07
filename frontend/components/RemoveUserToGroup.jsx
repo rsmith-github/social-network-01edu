@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-export const AddUserToGroupButton = (groupInfo) => {
+export const RemoveUserToGroupButton = (groupInfo) => {
     const [errorMes, setErrorMes] = useState("")
     const [friends, setFriends] = useState([])
     const [searchInput, setSearchInput] = useState("");
@@ -37,29 +37,29 @@ export const AddUserToGroupButton = (groupInfo) => {
         setFriends(updatedUsers);
     }
 
-    const handleUserSubmit = (evt) => {
-        evt.preventDefault()
-        let users = []
-        friends.map(friend => {
-            if (friend.selected) {
-                users.push(friend.name)
-                return
-            }
-        })
-        let values = groupInfo["group"]["group"]
-        values["users"] = users.join(',')
-        console.log(values)
+    // const handleUserSubmit = (evt) => {
+    //     evt.preventDefault()
+    //     let users = []
+    //     friends.map(friend => {
+    //         if (friend.selected) {
+    //             users.push(friend.name)
+    //             return
+    //         }
+    //     })
+    //     let values= groupInfo["group"]["group"]
+    //     values["users"]=users.join(',')
+    //     console.log(values)
 
-        // update group, if name was not there before-> send request
-        // if name was removed-> remove user  prevent from adding to group
-        groupInfo["socket"].send(JSON.stringify(values))
-    }
+    //     // update group, if name was not there before-> send request
+    //     // if name was removed-> remove user  prevent from adding to group
+    //     groupInfo["socket"].send(JSON.stringify(values))
+    // }
 
 
     return (
-        <form className="group-members-form" onSubmit={handleUserSubmit}>
+        <form className="group-members-form" >
             <div className="comment-post-header">
-                <h1>Add Members </h1>
+                <h1>Remove Members </h1>
             </div>
             <input type="text" className="search-friends" placeholder="Find Your Friends" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
             <div className="create-chat-followers">

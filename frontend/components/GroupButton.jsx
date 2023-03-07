@@ -2,13 +2,15 @@ import React, { useState, useEffect } from "react"
 import { AddUserToGroupButton } from "./AddUserToGroup"
 import { AddGroupPost } from "./CreateGroupPostForm"
 import { GroupPost } from "./GroupPost"
+import { RemoveUserToGroupButton } from "./RemoveUserToGroup"
 
 export const GroupButton = (groupInfo) => {
     const [visible, setVisible] = useState(false)
     const [groupPosts, setGroupPosts] = useState([])
     const [loaded, setLoaded] = useState(false)
     const [user, setUser] = useState('')
-    const [openMembers, setOpenMembers] = useState(false)
+    const [AddMembers, setAddMembers] = useState(false)
+    const [RemoveMembers, setRemoveMembers] = useState(false)
     const [emptyPosts, setEmptyPosts] = useState("")
     const groupId = groupInfo["group"]["group-id"]
     const admin = groupInfo["group"]["admin"]
@@ -17,7 +19,6 @@ export const GroupButton = (groupInfo) => {
         fetch("http://localhost:8080/api/user")
             .then(response => response.json())
             .then(response => {
-                console.log("user for group admin", response)
                 setUser(response["nickname"])
             })
     }, [visible])
@@ -33,7 +34,6 @@ export const GroupButton = (groupInfo) => {
         })
             .then(response => response.json())
             .then(response => {
-                console.log({ response })
                 if (response.length > 0) {
                     setGroupPosts(response)
                 } else {
@@ -74,7 +74,6 @@ export const GroupButton = (groupInfo) => {
     }
 
     const getAllGroupPosts = (response) => {
-        console.log("added group post", response)
         setGroupPosts(response)
     }
 
@@ -82,7 +81,6 @@ export const GroupButton = (groupInfo) => {
         console.log("edited post", { edited })
         setGroupPosts(prevPosts => {
             const index = prevPosts.findIndex(post => post["post-id"] === edited["post-id"])
-            console.log({ index })
             if (index === -1) {
                 return prevPosts
             }
@@ -90,17 +88,23 @@ export const GroupButton = (groupInfo) => {
             edited["post-likes"] = formatNumber(edited["post-likes"])
             edited["post-dislikes"] = formatNumber(edited["post-dislikes"])
             newPost[index] = edited
-            return newPost.reverse()
+            return newPost
         })
     }
 
     const handleDeletePost = (deletePost) => {
         const updatedPosts = groupPosts.filter((post) => post["post-id"] !== deletePost);
-        setGroupPosts(updatedPosts.reverse());
+        setGroupPosts(updatedPosts);
     }
 
-    const openMembersForm = () => {
-        setOpenMembers((prev) => !prev)
+    const AddMembersForm = () => {
+        setAddMembers((prev) => !prev)
+        setRemoveMembers(false)
+    }
+
+    const RemoveMembersForm = () => {
+        setRemoveMembers((prev) => !prev)
+        setAddMembers(false)
     }
     return (
         <>
@@ -116,7 +120,10 @@ export const GroupButton = (groupInfo) => {
                                 <h1>{groupInfo["group"]["group-name"]}</h1>
                             </div>
                             {admin === user &&
-                                <button type="button" className="add-comment-button" onClick={openMembersForm}>Members</button>
+                                <div className="edit-members-button-container">
+                                    <button type="button" className="add-comment-button" onClick={RemoveMembersForm}>-</button>
+                                    <button type="button" className="add-comment-button" onClick={AddMembersForm}>+</button>
+                                </div>
                             }
                             <AddGroupPost id={groupId} onSubmit={getAllGroupPosts} />
                         </div>
@@ -140,9 +147,14 @@ export const GroupButton = (groupInfo) => {
                             }
                         </div>
                     </div>
-                    {openMembers &&
+                    {AddMembers &&
                         <>
-                            <AddUserToGroupButton group={groupInfo} user={user} />
+                            <AddUserToGroupButton group={groupInfo} user={user} socket={groupInfo.socket} />
+                        </>
+                    }
+                    {RemoveMembers &&
+                        <>
+                            <RemoveUserToGroupButton group={groupInfo} user={user} socket={groupInfo.socket} />
                         </>
                     }
                 </div>

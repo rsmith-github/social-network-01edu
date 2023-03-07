@@ -3,6 +3,7 @@ package functions
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
 type message struct {
@@ -108,13 +109,9 @@ func (h *hub) Run() {
 				}
 			case followMessage:
 				followData := m.incomingData.(followMessage)
-				db := OpenDB()
-
-				//get the users who have interacted
-				row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", followData.FollowRequest, db, "GetUserFromFollowers")
-				username := QueryUser(row, err).Nickname
+				username := GetUserFromFollowMessage(followData.FollowRequest).Nickname
 				follower := h.user[username]
-
+				followData.FollowRequestUsername = username
 				//update count and all dat...
 				followeeFollowerCount, followerFollwingCount, err := updateFollowerCount(followData.FollowRequest, followData.ToFollow, followData.IsFollowing)
 				if err != nil {
@@ -132,26 +129,50 @@ func (h *hub) Run() {
 					s.conn.send <- message{incomingData: updateMsg}
 					s.conn.send <- m
 				}
+			case GroupFields:
+				groupFieldsData := m.incomingData.(GroupFields)
+				potentialMembers := strings.Split(groupFieldsData.Users, ",")
+				for _, member := range potentialMembers {
+					groupRequestInTable := GetRequestNotifByType(member, groupFieldsData.Admin, "groupRequest")
+					var groupRequestExists bool
+					for i := 0; i < len(groupRequestInTable); i++ {
+						if groupRequestInTable[i].GroupId == groupFieldsData.Id {
+							groupRequestExists = true
+						}
+					}
+					loggedInMember := h.user[member]
+					for userSub, online := range loggedInMember {
+						if !online && !groupRequestExists {
+							notifyMemberWithGroupFieldData := groupFieldsData
+							notifyMemberWithGroupFieldData.Users = member
+							SqlExec.GroupFieldsData <- notifyMemberWithGroupFieldData
+						} else {
+							if !groupRequestExists {
+								SqlExec.GroupFieldsData <- groupFieldsData
+								userSub.conn.send <- message{incomingData: RequestNotifcationFields{GroupRequest: groupFieldsData}}
+							}
+						}
+					}
+				}
 			}
 		}
 	}
 }
 
 type sqlExecute struct {
-	chatData  chan ChatFields
-	notifData chan ChatNotifcationFields
-	//notifications chan NotifcationFields
-
-	//followers chan FollowersFields
-
-	//delete&add users from groupchat.
-
-	//add  otherfields like followers, sessions
+	chatData                chan ChatFields
+	chatNotifData           chan ChatNotifcationFields
+	followMessageData       chan followMessage
+	GroupFieldsData         chan GroupFields
+	RequestNotificationData chan RequestNotifcationFields
 }
 
 var SqlExec = sqlExecute{
-	chatData:  make(chan ChatFields),
-	notifData: make(chan ChatNotifcationFields),
+	chatData:                make(chan ChatFields),
+	chatNotifData:           make(chan ChatNotifcationFields),
+	followMessageData:       make(chan followMessage),
+	GroupFieldsData:         make(chan GroupFields),
+	RequestNotificationData: make(chan RequestNotifcationFields),
 }
 
 func (d *sqlExecute) ExecuteStatements() {
@@ -159,19 +180,30 @@ func (d *sqlExecute) ExecuteStatements() {
 		select {
 		case chat := <-SqlExec.chatData:
 			AddMessage(chat)
-		case notif := <-SqlExec.notifData:
+		case chatNotif := <-SqlExec.chatNotifData:
 			wg.Add(1)
-			checkIfNotifExists := GetChatNotif(notif.Receiver, notif.Sender, notif.ChatId)
-			if notif.Sender != "" && checkIfNotifExists == (ChatNotifcationFields{}) {
-				fmt.Println(notif.Receiver, "this is the chatNotification added to table.")
-				AddNotif(notif)
+			checkIfNotifExists := GetChatNotif(chatNotif.Receiver, chatNotif.Sender, chatNotif.ChatId)
+			if chatNotif.Sender != "" && checkIfNotifExists == (ChatNotifcationFields{}) {
+				fmt.Println(chatNotif.Receiver, "this is the chatNotification added to table.")
+				AddChatNotif(chatNotif)
 				wg.Done()
 				fmt.Println("added new chatNotification to table")
 			} else {
-				UpdateNotif(notif)
+				UpdateNotif(chatNotif)
 				wg.Done()
 				fmt.Println("updated chatNotification")
 			}
+		case followNotif := <-SqlExec.followMessageData:
+			user := GetUserFromFollowMessage(followNotif.ToFollow)
+			sender := GetUserFromFollowMessage(followNotif.FollowRequest)
+			AddRequestNotif(sender.Nickname, user.Nickname, "followRequest", "")
+			fmt.Println("added request notification for follow")
+		case groupFieldsData := <-SqlExec.GroupFieldsData:
+			AddRequestNotif(groupFieldsData.Admin, groupFieldsData.Users, "groupRequest", groupFieldsData.Id)
+			fmt.Println("added request notification for group")
+		case requestNotif := <-SqlExec.RequestNotificationData:
+			DeleteRequestNotif(requestNotif)
+			fmt.Println("deleted request notification")
 		}
 	}
 }

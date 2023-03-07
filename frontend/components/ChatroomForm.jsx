@@ -11,6 +11,7 @@ export const CreateChat = (newChat) => {
     const [localImage, setLocalImage] = useState("")
     const [local, setLocal] = useState(false)
     const [errorMes, setErrorMes] = useState("")
+    const [searchInput, setSearchInput] = useState("");
 
     useEffect(() => {
         fetch('http://localhost:8080/api/user')
@@ -31,6 +32,9 @@ export const CreateChat = (newChat) => {
                 setFriends(friends)
             })
     }, [visible])
+
+    const filteredFriends = friends.filter((checkbox) =>
+        checkbox.name.toLowerCase().includes(searchInput.toLowerCase()));
 
     // send info to golang
     const handleGroupChatSubmit = (evt) => {
@@ -118,6 +122,7 @@ export const CreateChat = (newChat) => {
         });
         setFriends(updatedFriends);
     }
+
     const handleLocalChange = (location) => {
         if (location) {
             setLocal(true)
@@ -207,8 +212,9 @@ export const CreateChat = (newChat) => {
                                 <label htmlFor="private">Private</label>
                             </div>
                         </div>
+                        <input type="text" className="search-friends" placeholder="Find Your Friends" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
                         <div className="create-chat-followers">
-                            {friends.map(friend => {
+                            {filteredFriends.map(friend => {
                                 if (friend.name != user) {
                                     return (
                                         <div>
