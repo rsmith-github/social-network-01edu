@@ -9,13 +9,14 @@ import { Post } from "./Post"
 export default function PostForm(props) {
   const [posts, setPosts] = useState([])
   const [loaded, setLoaded] = useState(false)
+  const [privatePost, setPrivatePost] = useState(false)
 
   useEffect(() => {
     if (!loaded) {
-      fetch('http://localhost:8080/create-post')
+      fetch('http://localhost:8080/view-public-posts')
         .then(response => response.json())
         .then(data => {
-          setPosts(data.reverse())
+          setPosts([...data])
           setLoaded(true)
         })
     }
@@ -62,12 +63,6 @@ export default function PostForm(props) {
     setPosts(updatedPosts);
   }
 
-  const handlePrivatePosts = (friendsList) => {
-    const friends = friendsList
-    const updatedPosts = posts.filter((post) => friends.includes(post["author"]));
-    setPosts(updatedPosts);
-  }
-
   return (
     <>
       <div className="formContainer">
@@ -75,14 +70,14 @@ export default function PostForm(props) {
           <img src={props.avatar} alt="profile photo" />
         </div>
         <div className="privacyButtons">
-          <PublicPostButton allPost={getAllPost} />
-          <PrivatePostButton privatePost={handlePrivatePosts} />
+          <PublicPostButton allPost={getAllPost} private={setPrivatePost} />
+          <PrivatePostButton allPost={getAllPost} private={setPrivatePost} />
         </div>
       </div>
       <div className="post-container">
 
 
-        {loaded && posts.map((post, index) => (
+        {loaded && posts.slice().reverse().map((post, index) => (
           <div key={index} className="post">
             <Post post={post} onEdit={handleEditPost} onDelete={handleDeletePost} />
           </div>
@@ -93,7 +88,7 @@ export default function PostForm(props) {
           </div>
         }
       </div>
-      <CreatePost onSubmit={getAllPost} />
+      <CreatePost onSubmit={getAllPost} private={privatePost} />
     </>
   );
 }

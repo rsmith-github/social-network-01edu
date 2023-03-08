@@ -68,12 +68,23 @@ type followNotification struct {
 }
 
 type RequestNotifcationFields struct {
-	FollowRequest followMessage `json:"notification-followRequest"`
-	GroupRequest  GroupFields   `json:"notification-groupRequest"`
-	Sender        string        `json:"remove-sender"`
-	Receiver      string        `json:"remove-receiver"`
-	GroupId       string        `json:"remove-groupId"`
+	FollowRequest followMessage           `json:"notification-followRequest"`
+	GroupRequest  GroupFields             `json:"notification-groupRequest"`
+	GroupAction   GroupAcceptNotification `json:"notification-group-action"`
+	Sender        string                  `json:"remove-sender"`
+	Receiver      string                  `json:"remove-receiver"`
+	TypeOfAction  string                  `json:"remove-typeOfAction"`
+	GroupId       string                  `json:"remove-groupId"`
 }
+
+type GroupAcceptNotification struct {
+	User        string `json:"user"`
+	Admin       string `json:"admin"`
+	Action      bool   `json:"action"`
+	GroupName   string `json:"group-name"`
+	GroupAvatar string `json:"group-avatar"`
+}
+
 type ChatNotifcationFields struct {
 	ChatId        string `json:"notification-chatId"`
 	Sender        string `json:"notification-sender"`
@@ -103,6 +114,8 @@ type PostFields struct {
 	PostComments int    `json:"post-comments"`
 	PostAuthor   bool   `json:"post-author"`
 	Time         int    `json:"post-time"`
+	Privacy      string `json:"privacy"`
+	Viewers      string `json:"viewers"`
 	Error        string `json:"error"`
 }
 
@@ -150,23 +163,25 @@ type GroupFields struct {
 	Users       string `json:"users"`
 	Admin       string `json:"admin"`
 	Action      string `json:"action"`
+	Date        int    `json:"last-post-sent"`
 }
 
 type GroupPostFields struct {
-	Id           string `json:"group-id"`
-	PostId       string `json:"post-id"`
-	Author       string `json:"author"`
-	AuthorImg    string `json:"author-img"`
-	Image        string `json:"post-image"`
-	Text         string `json:"post-text-content"`
-	Thread       string `json:"post-threads"`
-	Likes        int    `json:"post-likes"`
-	PostLiked    bool   `json:"post-liked"`
-	Dislikes     int    `json:"post-dislikes"`
-	PostDisliked bool   `json:"post-disliked"`
-	PostAuthor   bool   `json:"post-author"`
-	Time         int    `json:"post-time"`
-	Error        string `json:"error"`
+	Id           string      `json:"group-post-id"`
+	Group        GroupFields `json:"group"`
+	PostId       string      `json:"post-id"`
+	Author       string      `json:"author"`
+	AuthorImg    string      `json:"author-img"`
+	Image        string      `json:"post-image"`
+	Text         string      `json:"post-text-content"`
+	Thread       string      `json:"post-threads"`
+	Likes        int         `json:"post-likes"`
+	PostLiked    bool        `json:"post-liked"`
+	Dislikes     int         `json:"post-dislikes"`
+	PostDisliked bool        `json:"post-disliked"`
+	PostAuthor   bool        `json:"post-author"`
+	Time         int         `json:"post-time"`
+	Error        string      `json:"error"`
 }
 
 type GroupsAndLikesFields struct {

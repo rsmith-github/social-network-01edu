@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { AddUserToGroupButton } from "./AddUserToGroup"
 import { AddGroupPost } from "./CreateGroupPostForm"
 import { GroupPost } from "./GroupPost"
@@ -11,9 +11,13 @@ export const GroupButton = (groupInfo) => {
     const [user, setUser] = useState('')
     const [AddMembers, setAddMembers] = useState(false)
     const [RemoveMembers, setRemoveMembers] = useState(false)
+    const [groupDescription, setGroupDescription] = useState('')
+    const [descriptionBox, setDescriptionBox] = useState(false)
+    const conn = useRef(null)
     const [emptyPosts, setEmptyPosts] = useState("")
     const groupId = groupInfo["group"]["group-id"]
     const admin = groupInfo["group"]["admin"]
+    const [postAdded, setPostAdded]=useState(false)
 
     useEffect(() => {
         fetch("http://localhost:8080/api/user")
@@ -23,28 +27,60 @@ export const GroupButton = (groupInfo) => {
             })
     }, [visible])
 
+    useEffect(() => {
+        const fetchData = async () => {
+            const receivedResponse = await fetch("http://localhost:8080/get-group-posts", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: (groupId)
+            })
+            const response2 = await receivedResponse.json()
+            if (response2.length > 0) {
+                setGroupPosts(response2)
+            } else {
+                setEmptyPosts("Be the First to Send A Post")
+            }
+            setLoaded(true)
+            return response2
+        }
+        if (visible) {
+            fetchData().then(() => {
+                conn.current = new WebSocket("ws://" + document.location.host + "/ws/group")
+                console.log(conn.current)
+                conn.current.onmessage = (evt) => {
+                    evt.preventDefault()
+                    let incomingGroupPost = JSON.parse(evt.data)
+                    console.log({ incomingGroupPost })
+                    setGroupPosts(post => {
+                        if (post !== null) {
+                            return [...post, incomingGroupPost]
+                        } else {
+                            return [incomingGroupPost]
+                        }
+                    })
+                    // setGroupPosts(response)
+                }
+
+            })
+
+            return () => {
+                console.log('user close group')
+                conn.current.close(1000, "user closed group.")
+            }
+        }
+    }, [visible])
+
     const openForm = () => {
         setVisible((prev) => !prev)
-        fetch("http://localhost:8080/get-group-posts", {
-            method: "POST",
-            headers: {
-                'Content-Type': "application/json"
-            },
-            body: groupId,
-        })
-            .then(response => response.json())
-            .then(response => {
-                if (response.length > 0) {
-                    setGroupPosts(response)
-                } else {
-                    setEmptyPosts("Be the First to Send A Post")
-                }
-                setLoaded(true)
-            })
     };
 
     const closeForm = () => {
         setVisible((prev) => !prev)
+        if (postAdded){
+            groupInfo["addedPost"](groupPosts)
+        }
     };
 
     var ranges = [
@@ -73,9 +109,10 @@ export const GroupButton = (groupInfo) => {
         }
     }
 
-    const getAllGroupPosts = (response) => {
-        setGroupPosts(response)
-    }
+    // const getAllGroupPosts = (response) => {
+    //     setGroupPosts(response)
+    //     groupInfo["addedPost"](response)
+    // }
 
     const handleEditPost = (edited) => {
         console.log("edited post", { edited })
@@ -97,14 +134,22 @@ export const GroupButton = (groupInfo) => {
         setGroupPosts(updatedPosts);
     }
 
+    const showDescriptionBox = () => {
+        setDescriptionBox((prev) => !prev)
+        setRemoveMembers(false)
+        setAddMembers(false)
+    }
+
     const AddMembersForm = () => {
         setAddMembers((prev) => !prev)
         setRemoveMembers(false)
+        setDescriptionBox(false)
     }
 
     const RemoveMembersForm = () => {
         setRemoveMembers((prev) => !prev)
         setAddMembers(false)
+        setDescriptionBox(false)
     }
     return (
         <>
@@ -119,18 +164,21 @@ export const GroupButton = (groupInfo) => {
                                 <img src={handleBrokenAuthImage(groupInfo["group"]["group-avatar"])} />
                                 <h1>{groupInfo["group"]["group-name"]}</h1>
                             </div>
-                            {admin === user &&
-                                <div className="edit-members-button-container">
-                                    <button type="button" className="add-comment-button" onClick={RemoveMembersForm}>-</button>
-                                    <button type="button" className="add-comment-button" onClick={AddMembersForm}>+</button>
-                                </div>
-                            }
-                            <AddGroupPost id={groupId} onSubmit={getAllGroupPosts} />
+                            <div className="edit-members-button-container" style={{ marginTop: '10px' }}>
+                                {admin === user &&
+                                    <>
+                                        <button type="button" className="add-comment-button" onClick={RemoveMembersForm}>-</button>
+                                        <button type="button" className="add-comment-button" onClick={AddMembersForm}>+</button>
+                                    </>
+                                }
+                                <button type="button" className="add-comment-button" onClick={showDescriptionBox}>Description</button>
+                                <AddGroupPost id={groupId} socket={conn.current} added={setPostAdded} />
+                            </div>
                         </div>
-                        <div className="group-post-container">
+                        <div className="group-post-container" id={groupId}>
                             {groupPosts.length > 0 &&
                                 <>
-                                    {loaded && groupPosts.reverse().map((groupPost, index) => (
+                                    {loaded && groupPosts.slice().reverse().map((groupPost, index) => (
                                         <div key={index} className="post">
                                             <GroupPost post={groupPost} onEdit={handleEditPost} onDelete={handleDeletePost} />
                                         </div>
@@ -147,19 +195,31 @@ export const GroupButton = (groupInfo) => {
                             }
                         </div>
                     </div>
+                    {descriptionBox && (
+                        <div className="group-members-form" >
+                            {groupDescription ? (
+                                <>
+                                    {groupDescription}
+                                </>
+
+                            ) : (
+                                <>No Description Given</>
+                            )}
+                        </div>
+                    )}
                     {AddMembers &&
                         <>
-                            <AddUserToGroupButton group={groupInfo} user={user} socket={groupInfo.socket} />
+                            <AddUserToGroupButton group={groupInfo} user={user} socket={groupInfo.socket} onClose={AddMembersForm} />
                         </>
                     }
                     {RemoveMembers &&
                         <>
-                            <RemoveUserToGroupButton group={groupInfo} user={user} socket={groupInfo.socket} />
+                            <RemoveUserToGroupButton group={groupInfo} user={user} socket={groupInfo.socket} onClose={RemoveMembersForm} />
                         </>
                     }
                 </div>
             }
-            <button key={groupInfo["index"]} type="button" className="group-post-button" onClick={openForm} >
+            <button type="button" className="group-post-button" onClick={openForm} >
                 <img src={handleBrokenAuthImage(groupInfo["group"]["group-avatar"])} />
                 <p className="group-post-button-name">{groupInfo["group"]["group-name"]}</p>
             </button>

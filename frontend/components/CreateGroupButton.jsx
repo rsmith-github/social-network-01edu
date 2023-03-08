@@ -2,39 +2,14 @@ import React, { useState, useEffect } from "react"
 
 export const CreateGroupButton = (newGroup) => {
     const [visible, setVisible] = useState(false)
-    const [user, setUser] = useState('')
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
     const [loading, setLoading] = useState(false)
-    const [friends, setFriends] = useState([])
     const [urlImage, setUrlImage] = useState("")
     const [selectedImage, setSelectedImage] = useState(null)
     const [localImage, setLocalImage] = useState("")
     const [local, setLocal] = useState(false)
     const [errorMes, setErrorMes] = useState("")
-    const [searchInput, setSearchInput] = useState("");
-
-    useEffect(() => {
-        fetch('http://localhost:8080/api/user')
-            .then(response => response.json())
-            .then(data => {
-
-                setUser(data["nickname"])
-            })
-    }, [visible])
-
-    useEffect(() => {
-        fetch('http://localhost:8080/get-friends')
-            .then(response => response.json())
-            .then(data => {
-                let friends = []
-                data.map(friend => friends.push({ name: friend, selected: false }))
-                setFriends(friends)
-            })
-    }, [visible])
-
-    const filteredFriends = friends.filter((checkbox) =>
-        checkbox.name.toLowerCase().includes(searchInput.toLowerCase()))
 
     const openForm = () => {
         setVisible((prev) => !prev)
@@ -53,69 +28,41 @@ export const CreateGroupButton = (newGroup) => {
 
     }
 
-    const handleFriendClick = (id) => {
-        const updatedFriends = friends.map(friend => {
-            if (friend.name === id) {
-                return { ...friend, selected: !friend.selected };
-            }
-            return friend
-        });
-        setFriends(updatedFriends);
-    }
-
     const handleGroupPostSubmit = (evt) => {
         evt.preventDefault()
         setLoading(true)
         const data = new FormData(evt.target);
         let values = Object.fromEntries(data.entries())
-        let users = []
-        friends.map(friend => {
-            if (friend.selected) {
-                users.push(friend.name)
-                return
-            }
-        })
-        values["users"] = users.join(',')
         if (local) {
             values["group-avatar"] = localImage
         } else {
             values["group-avatar"] = urlImage
         }
         console.log({ values })
-        if (users.length != 0) {
-            fetch("http://localhost:8080/create-group", {
-                method: "POST",
-                headers: {
-                    'Content-Type': "multipart/form-data"
-                },
-                body: JSON.stringify(values),
+        fetch("http://localhost:8080/create-group", {
+            method: "POST",
+            headers: {
+                'Content-Type': "multipart/form-data"
+            },
+            body: JSON.stringify(values),
+        })
+            .then(response => response.json())
+            .then(response => {
+                if (!response.hasOwnProperty("group-id")) {
+                    setErrorMes("error creating group chat! Please Try Again")
+                } else {
+                    console.log(response)
+                    newGroup["onSubmit"](response)
+                    setName('')
+                    setDescription('')
+                    setLoading(false);
+                    setUrlImage("")
+                    setSelectedImage(null)
+                    setLocalImage("")
+                    setLocal(false)
+                    closeForm()
+                }
             })
-                .then(response => response.json())
-                .then(response => {
-                    if (!response.hasOwnProperty("group-id")) {
-                        setErrorMes("error creating group chat! Please Try Again")
-                    } else {
-                        console.log(response)
-                        newGroup["onSubmit"](response)
-                        setName('')
-                        setDescription('')
-                        const updatedFriends = friends.map(friend => { return { ...friend, selected: false } })
-                        setFriends(updatedFriends)
-                        setLoading(false);
-                        setUrlImage("")
-                        setSelectedImage(null)
-                        setLocalImage("")
-                        setLocal(false)
-                        closeForm()
-                    }
-                })
-        } else {
-            setErrorMes("Please Add User to Group")
-            setLoading(false)
-        }
-
-
-
     }
     return (
         <>
@@ -181,20 +128,6 @@ export const CreateGroupButton = (newGroup) => {
                         <p className="chat-image-message">File Must Not Exceed 20MB</p>
                         <input type="text" name="group-name" className="post-text-content" placeholder="Enter Group Name Here" onChange={(e) => setName(e.target.value)} disabled={loading} value={name} required />
                         <textarea name="group-description" className="post-text-content" placeholder="Description" onChange={(e) => setDescription(e.target.value)} disabled={loading} value={description} />
-                        <input type="text" className="search-friends" placeholder="Find Your Friends" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
-                        <div className="create-chat-followers">
-                            {filteredFriends.map(friend => {
-                                if (friend.name != user) {
-                                    return (
-                                        <div>
-                                            <input type="checkbox" className="friend-info" id={friend.name} checked={friend.selected} onChange={() => handleFriendClick(friend.name)} />
-                                            <label htmlFor={friend.name}>{friend.name}</label>
-                                        </div>
-                                    )
-                                }
-                            }
-                            )}
-                        </div>
                         {errorMes &&
                             <p className="error-message">{errorMes}</p>
                         }
