@@ -186,12 +186,17 @@ func (s *subscription) readPump() {
 			data.incomingData = followData
 			if user.Status == "private" && !followData.FollowRequestAccepted {
 				userSub := H.user[user.Nickname]
+				followerRequestInTable := GetRequestNotifByType(user.Nickname, sender.Nickname, "followRequest")
+				followerRequestExist := len(followerRequestInTable) > 0
 				for s, online := range userSub {
-					if !online {
+					//check if request notification exsists and user is
+					if !online && !followerRequestExist {
 						SqlExec.followMessageData <- followData
 					} else {
-						SqlExec.followMessageData <- followData
-						s.conn.send <- message{incomingData: RequestNotifcationFields{FollowRequest: followData}}
+						if !followerRequestExist {
+							SqlExec.followMessageData <- followData
+							s.conn.send <- message{incomingData: RequestNotifcationFields{FollowRequest: followData}}
+						}
 					}
 				}
 			} else {
@@ -204,7 +209,6 @@ func (s *subscription) readPump() {
 			requestNotifcationFields := data.incomingData.(RequestNotifcationFields)
 			SqlExec.RequestNotificationData <- requestNotifcationFields
 		}
-
 	}
 }
 
@@ -232,7 +236,6 @@ func (s *subscription) writePump() {
 			wg.Wait()
 			notif := message.incomingData.(ChatNotifcationFields)
 			notif.TotalNumber = GetTotalChatNotifs(s.name)
-			fmt.Println("wrote notification", notif, s.name)
 			err := c.ws.WriteJSON(notif)
 			if err != nil {
 				fmt.Println("error writing to websocket:", err)
@@ -247,7 +250,6 @@ func (s *subscription) writePump() {
 			if err != nil {
 				fmt.Println("error writing to notifications to websocket:", err)
 			}
-			fmt.Println("notifications exist for user", notifications)
 		case followMessage:
 			followMessage := message.incomingData.(followMessage)
 			if err := c.ws.WriteJSON(followMessage); err != nil {
@@ -306,9 +308,15 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 				db := OpenDB()
 				row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", requestNotif.Sender, db, "GetUserFromFollowers")
 				//...
-				senderEmail := QueryUser(row, err).Email
-				userEmail := LoggedInUser(r).Email
-				followMessage := followMessage{ToFollow: userEmail, FollowRequest: senderEmail, IsFollowing: false, Followers: GetTotalFollowers(userEmail)}
+				sender := QueryUser(row, err)
+				user := LoggedInUser(r)
+				followMessage := followMessage{
+					ToFollow:      user.Email,
+					FollowRequest: sender.Email,
+					IsFollowing:   false, Followers: GetTotalFollowers(user.Email),
+					FollowRequestUsername: sender.Nickname,
+					FolloweeUsername:      user.Nickname,
+				}
 				message := message{incomingData: RequestNotifcationFields{FollowRequest: followMessage}}
 				c.send <- message
 			} else {
