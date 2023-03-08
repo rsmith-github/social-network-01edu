@@ -140,11 +140,13 @@ func (h *hub) Run() {
 							notifyMemberWithGroupFieldData.Users = member
 							SqlExec.GroupFieldsData <- notifyMemberWithGroupFieldData
 						} else {
+							groupFieldsData.Users = member
 							SqlExec.GroupFieldsData <- groupFieldsData
 							userSub.conn.send <- message{incomingData: RequestNotifcationFields{GroupRequest: groupFieldsData}}
 						}
 					}
 				}
+				groupFieldsData.Action = ""
 			}
 		}
 	}
@@ -190,8 +192,16 @@ func (d *sqlExecute) ExecuteStatements() {
 			AddRequestNotif(sender.Nickname, user.Nickname, "followRequest", "")
 			fmt.Println("added request notification for follow")
 		case groupFieldsData := <-SqlExec.GroupFieldsData:
-			AddRequestNotif(groupFieldsData.Admin, groupFieldsData.Users, "groupRequest", groupFieldsData.Id)
-			fmt.Println("added request notification for group")
+			if groupFieldsData.Action == "remove" {
+				// get notification. If notification already exists, do nothing. Else add
+				AddRequestNotif(groupFieldsData.Admin, groupFieldsData.Users, "remove-group-request", groupFieldsData.Id)
+				fmt.Println("added remove from group request notification for group")
+				groupFieldsData.Action = ""
+			} else {
+				// get notification. If notification already exists, do nothing. Else add
+				AddRequestNotif(groupFieldsData.Admin, groupFieldsData.Users, "groupRequest", groupFieldsData.Id)
+				fmt.Println("added request notification for group")
+			}
 		case requestNotif := <-SqlExec.RequestNotificationData:
 			DeleteRequestNotif(requestNotif)
 			fmt.Println("deleted request notification")

@@ -11,6 +11,8 @@ export const GroupButton = (groupInfo) => {
     const [user, setUser] = useState('')
     const [AddMembers, setAddMembers] = useState(false)
     const [RemoveMembers, setRemoveMembers] = useState(false)
+    const [groupDescription, setGroupDescription] = useState('')
+    const [descriptionBox, setDescriptionBox] = useState(false)
     const [emptyPosts, setEmptyPosts] = useState("")
     const groupId = groupInfo["group"]["group-id"]
     const admin = groupInfo["group"]["admin"]
@@ -75,6 +77,7 @@ export const GroupButton = (groupInfo) => {
 
     const getAllGroupPosts = (response) => {
         setGroupPosts(response)
+        groupInfo["addedPost"](response)
     }
 
     const handleEditPost = (edited) => {
@@ -97,14 +100,22 @@ export const GroupButton = (groupInfo) => {
         setGroupPosts(updatedPosts);
     }
 
+    const showDescriptionBox = () => {
+        setDescriptionBox((prev) => !prev)
+        setRemoveMembers(false)
+        setAddMembers(false)
+    }
+
     const AddMembersForm = () => {
         setAddMembers((prev) => !prev)
         setRemoveMembers(false)
+        setDescriptionBox(false)
     }
 
     const RemoveMembersForm = () => {
         setRemoveMembers((prev) => !prev)
         setAddMembers(false)
+        setDescriptionBox(false)
     }
     return (
         <>
@@ -119,18 +130,21 @@ export const GroupButton = (groupInfo) => {
                                 <img src={handleBrokenAuthImage(groupInfo["group"]["group-avatar"])} />
                                 <h1>{groupInfo["group"]["group-name"]}</h1>
                             </div>
-                            {admin === user &&
-                                <div className="edit-members-button-container">
-                                    <button type="button" className="add-comment-button" onClick={RemoveMembersForm}>-</button>
-                                    <button type="button" className="add-comment-button" onClick={AddMembersForm}>+</button>
-                                </div>
-                            }
-                            <AddGroupPost id={groupId} onSubmit={getAllGroupPosts} />
+                            <div className="edit-members-button-container" style={{ marginTop: '10px' }}>
+                                {admin === user &&
+                                    <>
+                                        <button type="button" className="add-comment-button" onClick={RemoveMembersForm}>-</button>
+                                        <button type="button" className="add-comment-button" onClick={AddMembersForm}>+</button>
+                                    </>
+                                }
+                                <button type="button" className="add-comment-button" onClick={showDescriptionBox}>Description</button>
+                                <AddGroupPost id={groupId} onSubmit={getAllGroupPosts} />
+                            </div>
                         </div>
-                        <div className="group-post-container">
+                        <div className="group-post-container" id={groupId}>
                             {groupPosts.length > 0 &&
                                 <>
-                                    {loaded && groupPosts.reverse().map((groupPost, index) => (
+                                    {loaded && groupPosts.slice().reverse().map((groupPost, index) => (
                                         <div key={index} className="post">
                                             <GroupPost post={groupPost} onEdit={handleEditPost} onDelete={handleDeletePost} />
                                         </div>
@@ -147,14 +161,26 @@ export const GroupButton = (groupInfo) => {
                             }
                         </div>
                     </div>
+                    {descriptionBox && (
+                        <div className="group-members-form" >
+                            {groupDescription ? (
+                                <>
+                                    {groupDescription}
+                                </>
+
+                            ) : (
+                                <>No Description Given</>
+                            )}
+                        </div>
+                    )}
                     {AddMembers &&
                         <>
-                            <AddUserToGroupButton group={groupInfo} user={user} socket={groupInfo.socket} />
+                            <AddUserToGroupButton group={groupInfo} user={user} socket={groupInfo.socket} onClose={AddMembersForm} />
                         </>
                     }
                     {RemoveMembers &&
                         <>
-                            <RemoveUserToGroupButton group={groupInfo} user={user} socket={groupInfo.socket} />
+                            <RemoveUserToGroupButton group={groupInfo} user={user} socket={groupInfo.socket} onClose={RemoveMembersForm} />
                         </>
                     }
                 </div>

@@ -39,6 +39,8 @@ func main() {
 	http.HandleFunc("/get-chat", functions.Chat)
 	http.HandleFunc("/ws/chat", functions.ServeWs)
 	http.HandleFunc("/ws/user", functions.ServeWs)
+	http.HandleFunc("/view-public-posts", functions.ViewPublicPosts)
+	http.HandleFunc("/view-private-posts", functions.ViewPrivatePosts)
 	http.HandleFunc("/create-post", functions.CreatePost)
 	http.HandleFunc("/edit-post", functions.EditPost)
 	http.HandleFunc("/post-interactions", functions.PostInteractions)
@@ -49,7 +51,9 @@ func main() {
 	http.HandleFunc("/group-post-interactions", functions.GroupPostInteractions)
 	http.HandleFunc("/get-group-posts", functions.GroupPosts)
 	http.HandleFunc("/create-group", functions.CreateGroup)
+	http.HandleFunc("/group-members", functions.GroupMembers)
 	http.HandleFunc("/add-group-member", functions.AddMemberToGroup)
+	http.HandleFunc("/remove-group-member", functions.RemoveMemberFromGroup)
 
 	go functions.H.Run()
 	go functions.SqlExec.ExecuteStatements()

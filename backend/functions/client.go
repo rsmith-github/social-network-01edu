@@ -198,9 +198,11 @@ func (s *subscription) readPump() {
 				H.broadcast <- data
 			}
 		case GroupFields:
+			fmt.Println("data", data)
 			H.broadcast <- data
 		case RequestNotifcationFields:
 			//delete request notifications.
+			fmt.Println("request client", data)
 			requestNotifcationFields := data.incomingData.(RequestNotifcationFields)
 			SqlExec.RequestNotificationData <- requestNotifcationFields
 		}
@@ -263,6 +265,16 @@ func (s *subscription) writePump() {
 			if err := c.ws.WriteJSON(request); err != nil {
 				log.Printf("error sending update message: %v", err)
 			}
+		case GroupPostFields:
+			request := message.incomingData.(GroupPostFields)
+			if err := c.ws.WriteJSON(request); err != nil {
+				log.Printf("error sending update message: %v", err)
+			}
+		case GroupFields:
+			request := message.incomingData.(GroupFields)
+			if err := c.ws.WriteJSON(request); err != nil {
+				log.Printf("error sending update message: %v", err)
+			}
 		}
 
 	}
@@ -312,9 +324,33 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 				message := message{incomingData: RequestNotifcationFields{FollowRequest: followMessage}}
 				c.send <- message
 			} else {
-				groupFields := GetGroupFromId(requestNotif.GroupId)
-				message := message{incomingData: RequestNotifcationFields{GroupRequest: groupFields}}
-				c.send <- message
+				if requestNotif.TypeOfAction == "accepted-group-request" {
+					groupFields := GetGroup(requestNotif.GroupId)
+					message := message{incomingData: RequestNotifcationFields{GroupAction: GroupAcceptNotification{
+						User:        user,
+						Admin:       groupFields.Admin,
+						Action:      true,
+						GroupName:   groupFields.Name,
+						GroupAvatar: groupFields.Avatar,
+					}}}
+					c.send <- message
+				} else if requestNotif.TypeOfAction == "remove-group-request" {
+					groupFields := GetGroup(requestNotif.GroupId)
+					message := message{incomingData: RequestNotifcationFields{GroupAction: GroupAcceptNotification{
+						User:        user,
+						Admin:       groupFields.Admin,
+						Action:      false,
+						GroupName:   groupFields.Name,
+						GroupAvatar: groupFields.Avatar,
+					}}}
+					fmt.Println()
+					c.send <- message
+				} else if requestNotif.TypeOfAction == "groupRequest" {
+					groupFields := GetGroup(requestNotif.GroupId)
+					message := message{incomingData: RequestNotifcationFields{GroupRequest: groupFields}}
+					c.send <- message
+				}
+
 			}
 		}
 	}

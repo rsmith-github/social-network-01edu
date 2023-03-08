@@ -9,6 +9,7 @@ import NavBar from "./components/Navbar";
 import Profile from "./pages/Profile";
 import PublicProfiles from "./pages/PublicProfiles";
 import { injectStyle } from "react-toastify/dist/inject-style";
+import { AddedGroupNotify, GroupPostNotify, RemoveGroupNotify, RequestNotify } from "./components/RequestNotify";
 
 // CALL IT ONCE IN YOUR APP
 injectStyle();
@@ -31,37 +32,28 @@ function App() {
 
   const [groupArr, setGroupArr] = useState([])
 
-// Variable to check following status. Set to true if user presses follow or on refreshing the page.
-const isFollowing = useRef(false);
+  const isFollowing = useRef(false);
+  useEffect(() => {
+    window.addEventListener("beforeunload", closeConnection);
+    fetch('http://localhost:8080/create-group')
+      .then(response => response.json())
+      .then(data => {
+        if (data != null && data != undefined)
+          setGroupArr(data)
+      })
+    return () => {
+      window.removeEventListener("beforeunload", closeConnection);
+    };
+  }, []);
 
-
-
-  const RequestNotify = ({ type, accepted, rejected }) => {
-    const [message, setMessage] = useState("")
-    const handleAccepted = () => {
-      accepted();
-    }
-    const handleRejected = () => {
-      rejected();
-    }
-    useEffect(() => {
-      if (type.hasOwnProperty("group-id")) {
-        let str = `${type["admin"]}` + " Would Like You To Join " + `${type["group-name"]}`
-        setMessage(str)
-      }else if (type.hasOwnProperty("followRequest")){
-        let str = `${type["followRequest-username"]}` + " Would Like To Follow You" 
-        setMessage(str)
-      }
-    }, [type])
-
-    return (
-      <div>
-        <p>{message}</p>
-        <button className="button-85" onClick={handleAccepted}>Accept</button>
-        {/* <button className="button-85" onClick={handleRejected}>Reject</button> */}
-      </div>
-    )
-  }
+  useEffect(() => {
+    fetch('http://localhost:8080/create-group')
+      .then(response => response.json())
+      .then(data => {
+        if (data != null && data != undefined)
+          setGroupArr(data)
+      })
+  }, [name])
 
   const notify = (obj) => {
     if (obj["notification-sender"] != "" && obj["notification-sender"] !== undefined) {
@@ -74,66 +66,97 @@ const isFollowing = useRef(false);
         progress: undefined,
         theme: "dark"
       });
-      return 
-    } else if (obj["notification-followRequest"] !==undefined && obj["notification-followRequest"]["toFollow"] !== "" && obj["notification-followRequest"]["toFollow"] !== undefined) {
-      //inside the accepted function send the follow or group message to websocket.
-      toast(<RequestNotify type={obj["notification-followRequest"]} accepted={() => {   
-        let removeRequest = {
-        "remove-sender": `${obj["notification-followRequest"]["followRequest-username"]}`,
-        "remove-receiver": `${obj["notification-followRequest"]["toFollow-username"]}`,
-      }
-      isFollowing.current = true
-      console.log(isFollowing.current,"is following")
-      const follow = {
-        followRequest: `${obj["notification-followRequest"]["followRequest"]}`,
-        toFollow: `${obj["notification-followRequest"]["toFollow"]}`,
-        isFollowing: isFollowing.current,
-        followers: obj["notification-followRequest"]["followers"],
-        "followRequest-accepted":true
-      };
-      websocket.current.send(JSON.stringify(follow))
-      websocket.current.send(JSON.stringify(removeRequest))
-      fetchUsersData();
-    }} 
-        rejected={() => console.log('rejected')} />, 
-        {autoClose: false,
+    } else if (obj["group-id"] !== "" && obj["post-id"] !== "" && obj["group-id"] !== undefined && obj["post-id"] !== undefined) {
+      toast(<GroupPostNotify type={obj} />, {
+        autoClose: false,
         hideProgressBar: false,
-        closeOnClick: true,
+        closeOnClick: false,
         pauseOnHover: true,
         draggable: true,
         progress: undefined,
-        theme: "dark"})
-    } else if (obj["notification-groupRequest"] !== undefined && obj["notification-groupRequest"]["group-id"] !== "" && obj["notification-groupRequest"]["group-id"] !== undefined) {
-      toast(<RequestNotify type={obj["notification-groupRequest"]} accepted={() => {
-        fetch("http://localhost:8080/add-group-member", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: obj["notification-groupRequest"]["group-id"]
+        theme: "dark"
+      })
+    } else if (obj["notification-followRequest"]["followRequest"] !== "" && obj["notification-followRequest"]["followRequest"] !== undefined && obj["notification-followRequest"] !== undefined) {
+      toast(<RequestNotify type={obj["notification-followRequest"]} accepted={() => {
+        let removeRequest = {
+          "remove-sender": `${obj["notification-followRequest"]["followRequest-username"]}`,
+          "remove-receiver": `${obj["notification-followRequest"]["toFollow-username"]}`,
+        }
+        isFollowing.current = true
+        console.log(isFollowing.current, "is following")
+        const follow = {
+          followRequest: `${obj["notification-followRequest"]["followRequest"]}`,
+          toFollow: `${obj["notification-followRequest"]["toFollow"]}`,
+          isFollowing: isFollowing.current,
+          followers: obj["notification-followRequest"]["followers"],
+          "followRequest-accepted": true
+        };
+        websocket.current.send(JSON.stringify(follow))
+        websocket.current.send(JSON.stringify(removeRequest))
+        fetchUsersData();
+      }}
+        rejected={() => console.log('rejected')} />,
+        {
+          autoClose: false,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark"
         })
-          .then(response => response.text())
-          .then(response => {
-            console.log(response)
-            if (response === "accepted") {
-              console.log("should add", obj["notification-groupRequest"])
-              setGroupArr(groupRooms => {
-                if (Array.isArray(groupRooms) && groupRooms.length === 0) {
-                  return [obj["notification-groupRequest"]]
-                } else {
-                  return [...groupRooms, obj["notification-groupRequest"]]
-                }
-              });
-            } else {
-              console.log(response)
-            }
+    } else if (obj["notification-groupRequest"]["group-id"] !== "" && obj["notification-groupRequest"]["group-id"] !== undefined && obj["notification-groupRequest"] !== undefined) {
+      if (obj["notification-groupRequest"]["action"] == "remove") {
+        toast(<RemoveGroupNotify type={obj["notification-groupRequest"]} />, {
+          autoClose: false,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark"
+        })
+      } else {
+        toast(<RequestNotify type={obj["notification-groupRequest"]} accepted={() => {
+          fetch("http://localhost:8080/add-group-member", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: obj["notification-groupRequest"]["group-id"]
           })
-          //send to websocket request accepted.
-          let removeRequest = {
-            "remove-sender": `${obj["notification-groupRequest"]["admin"]}`,
-            "remove-receiver": user.nickname,
-            "remove-groupId": `${obj["notification-groupRequest"]["group-id"]}`
-          }
-          websocket.current.send(JSON.stringify(removeRequest))
-      }} rejected={() => console.log('rejected')} />, {
+            .then(response => response.text())
+            .then(response => {
+              if (response === "accepted") {
+                console.log("should add", obj["notification-groupRequest"])
+                setGroupArr(groupRooms => {
+                  if (Array.isArray(groupRooms) && groupRooms.length === 0) {
+                    return [obj["notification-groupRequest"]]
+                  } else {
+                    return [obj["notification-groupRequest"], ...groupRooms]
+                  }
+                });
+                let removeRequest = {
+                  "remove-sender": `${obj["notification-groupRequest"]["admin"]}`,
+                  "remove-receiver": user.nickname,
+                  "remove-groupId": `${obj["notification-groupRequest"]["group-id"]}`
+                }
+                websocket.current.send(JSON.stringify(removeRequest))
+              } else {
+                console.log(response)
+              }
+            })
+        }} rejected={() => console.log('rejected')} />, {
+          autoClose: false,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark"
+        })
+      }
+    } else if (obj["notification-group-action"]["action"] !== "" && obj["notification-group-action"]["action"] !== undefined && obj["notification-group-action"] !== undefined) {
+      // then remove from sql table
+      toast(<AddedGroupNotify type={obj["notification-group-action"]} />, {
         autoClose: false,
         hideProgressBar: false,
         closeOnClick: true,
@@ -162,6 +185,29 @@ const isFollowing = useRef(false);
           })
         } else {
           notify(msg)
+        }
+        if (msg.hasOwnProperty("notification-groupRequest") && msg["notification-groupRequest"]["action"] == "remove") {
+          console.log(msg)
+          setGroupArr(groups => {
+            const selectedGroupIndex = groups.findIndex(group => group["group-id"] === msg["notification-groupRequest"]["group-id"])
+            if (selectedGroupIndex != -1) {
+              groups.splice(selectedGroupIndex, 1)
+              return [...groups]
+            }
+          })
+        }
+        if (msg.hasOwnProperty("group-id") && msg.hasOwnProperty("post-id")) {
+          if (document.getElementById(msg["group-id"]) == undefined) {
+            console.log("here here")
+            setGroupArr(groups => {
+              const selectedGroupIndex = groups.findIndex(group => group["group-id"] === msg["group-id"])
+              const firstItem = groups[selectedGroupIndex]
+              if (selectedGroupIndex != -1) {
+                groups.splice(selectedGroupIndex, 1)
+                return [firstItem, ...groups]
+              }
+            })
+          }
         }
         if (msg.toFollow === usr.email) {
           // Send message to relevant user according to isFollowing true or false.
@@ -201,19 +247,6 @@ const isFollowing = useRef(false);
   // Websocket
   const [wSocket, setWSocket] = useState(null);
 
-  useEffect(() => {
-    window.addEventListener("beforeunload", closeConnection);
-    fetch('http://localhost:8080/create-group')
-      .then(response => response.json())
-      .then(data => {
-        if (data != null && data != undefined)
-          setGroupArr(data)
-      })
-    return () => {
-      window.removeEventListener("beforeunload", closeConnection);
-    };
-  }, []);
-
   const fetchData = async () => {
     // validate user based on session.
     const response = await fetch("http://localhost:8080/api/user", {
@@ -236,7 +269,7 @@ const isFollowing = useRef(false);
       aboutme: content.about,
       followers: content.followers,
       following: content.following,
-      status:content.status
+      status: content.status
     };
     setUser(user);
 
@@ -249,15 +282,6 @@ const isFollowing = useRef(false);
     fetchData();
   }, [name, users]); // fetch users data again when users have been updated, after follow. name var is for login.
 
-  useEffect(() => {
-    fetch('http://localhost:8080/create-group')
-      .then(response => response.json())
-      .then(data => {
-        console.log("groups", data)
-        if (data != null && data != undefined)
-          setGroupArr(data)
-      })
-  }, [name])
 
   const handleWSocket = (usr) => {
     if (wSocket === null) {
@@ -355,7 +379,7 @@ const isFollowing = useRef(false);
               // socket={wSocket} // Socket 2
               user={user}
               fetchUsersData={fetchUsersData}
-              isFollowing = {isFollowing}
+              isFollowing={isFollowing}
             />
           }
         />

@@ -2,9 +2,14 @@ import React from "react"
 
 export const PrivatePostButton = (action) => {
     const getFriendsPosts = () => {
-        fetch('http://localhost:8080/get-friends')
+        console.log("private post pressed")
+        fetch('http://localhost:8080/view-private-posts')
             .then(response => response.json())
-            .then(data => action["privatePost"](data))
+            .then(data => {
+                console.log(data)
+                action["allPost"](data)
+                action["private"](true)
+            })
     }
     return (
         <>
