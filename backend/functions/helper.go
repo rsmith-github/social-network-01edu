@@ -1514,10 +1514,10 @@ func GetRequestNotifByType(receiverName, senderName, requestType string) []Reque
 	for rows.Next() {
 		rows.Scan(&sender, &receiver, &typeOfRequest, &groupId)
 		requestNotif := RequestNotifcationFields{
-			Sender:   sender,
-			Receiver: receiver,
+			Sender:       sender,
+			Receiver:     receiver,
 			TypeOfAction: typeOfRequest,
-			GroupId:  groupId,
+			GroupId:      groupId,
 		}
 		sliceOfrequestNotif = append(sliceOfrequestNotif, requestNotif)
 	}

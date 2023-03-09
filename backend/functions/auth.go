@@ -635,7 +635,6 @@ func CreateGroup(w http.ResponseWriter, r *http.Request) {
 		content, _ := json.Marshal(groups)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)
-		GetUserGroups(user)
 	} else {
 		var data GroupFields
 		body, err := ioutil.ReadAll(r.Body)
@@ -755,7 +754,6 @@ func GroupPosts(w http.ResponseWriter, r *http.Request) {
 	user := LoggedInUser(r).Nickname
 	go func() {
 		groupRoomId <- groupId
-		fmt.Println(groupId)
 	}()
 
 	groupPosts := GetGroupPosts(user, groupId)

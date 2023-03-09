@@ -8,7 +8,7 @@ import { AllPosts } from "./AllPosts";
 // Post form in the center
 export default function PostForm(props) {
   const [posts, setPosts] = useState([])
-  const [loaded, setLoaded] = useState(false)
+  const [loaded, setLoaded]=useState(false)
   const [privatePost, setPrivatePost] = useState(false)
 
   useEffect(() => {
@@ -26,11 +26,19 @@ export default function PostForm(props) {
     setPosts(response);
   };
 
+  const handleBrokenAuthImage = (source) => {
+    if (source != "") {
+      return source
+    } else {
+      return "https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png"
+    }
+  }
+
   return (
     <>
       <div className="formContainer">
         <div className="smallAvatar">
-          <img src={props.avatar} alt="profile photo" />
+          <img src={handleBrokenAuthImage(props.avatar)} alt="profile photo" />
         </div>
         <div className="privacyButtons">
           <PublicPostButton allPost={getAllPost} private={setPrivatePost} />
@@ -38,8 +46,8 @@ export default function PostForm(props) {
         </div>
       </div>
 
-      <AllPosts />
-      <CreatePost onSubmit={getAllPost} />
+      <AllPosts posts={posts} />
+      <CreatePost onSubmit={getAllPost} private={privatePost} />
     </>
   );
 }

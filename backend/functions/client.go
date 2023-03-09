@@ -335,7 +335,6 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(requestNotifExist) > 0 {
 		for _, requestNotif := range requestNotifExist {
-			fmt.Println(requestNotif.GroupId)
 			if requestNotif.GroupId == "" {
 				//get the follower's email
 				db := OpenDB()
@@ -361,6 +360,7 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 						Action:      true,
 						GroupName:   groupFields.Name,
 						GroupAvatar: groupFields.Avatar,
+						GroupId:     requestNotif.GroupId,
 					}}}
 					c.send <- message
 				} else if requestNotif.TypeOfAction == "remove-group-request" {
@@ -371,6 +371,7 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 						Action:      false,
 						GroupName:   groupFields.Name,
 						GroupAvatar: groupFields.Avatar,
+						GroupId:     requestNotif.GroupId,
 					}}}
 					c.send <- message
 				} else if requestNotif.TypeOfAction == "groupRequest" {

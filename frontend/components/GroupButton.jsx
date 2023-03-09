@@ -17,7 +17,7 @@ export const GroupButton = (groupInfo) => {
     const [emptyPosts, setEmptyPosts] = useState("")
     const groupId = groupInfo["group"]["group-id"]
     const admin = groupInfo["group"]["admin"]
-    const [postAdded, setPostAdded]=useState(false)
+    const [postAdded, setPostAdded] = useState(false)
 
     useEffect(() => {
         fetch("http://localhost:8080/api/user")
@@ -78,7 +78,7 @@ export const GroupButton = (groupInfo) => {
 
     const closeForm = () => {
         setVisible((prev) => !prev)
-        if (postAdded){
+        if (postAdded) {
             groupInfo["addedPost"](groupPosts)
         }
     };
@@ -108,11 +108,6 @@ export const GroupButton = (groupInfo) => {
             return "https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png"
         }
     }
-
-    // const getAllGroupPosts = (response) => {
-    //     setGroupPosts(response)
-    //     groupInfo["addedPost"](response)
-    // }
 
     const handleEditPost = (edited) => {
         console.log("edited post", { edited })
@@ -165,12 +160,8 @@ export const GroupButton = (groupInfo) => {
                                 <h1>{groupInfo["group"]["group-name"]}</h1>
                             </div>
                             <div className="edit-members-button-container" style={{ marginTop: '10px' }}>
-                                {admin === user &&
-                                    <>
-                                        <button type="button" className="add-comment-button" onClick={RemoveMembersForm}>-</button>
-                                        <button type="button" className="add-comment-button" onClick={AddMembersForm}>+</button>
-                                    </>
-                                }
+                                <button type="button" className="add-comment-button" onClick={RemoveMembersForm}>-</button>
+                                <button type="button" className="add-comment-button" onClick={AddMembersForm}>+</button>
                                 <button type="button" className="add-comment-button" onClick={showDescriptionBox}>Description</button>
                                 <AddGroupPost id={groupId} socket={conn.current} added={setPostAdded} />
                             </div>
