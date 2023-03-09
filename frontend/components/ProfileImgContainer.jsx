@@ -68,24 +68,24 @@ export default function ProfileImgContainer(props) {
     setIsFollowing(newIsFollowing);
 
     //if the user is private then wait for request to be accepted, and set IsFollowing back to false.
-    if(props.user.status === "private" && newIsFollowing === true){
-      setIsFollowing(!newIsFollowing)
+    if (props.user.status === "private" && newIsFollowing === true) {
+      setIsFollowing(!newIsFollowing);
     }
-    
+
     let follow = JSON.stringify({
       followRequest: props.currentUser.email,
       toFollow: props.user.email,
       isFollowing: newIsFollowing,
       followers: props.user.followers,
     });
-    if (newIsFollowing === false){
+    if (newIsFollowing === false) {
       follow = JSON.stringify({
         followRequest: props.currentUser.email,
         toFollow: props.user.email,
         isFollowing: newIsFollowing,
         followers: props.user.followers,
         //send followRequest-accepted:true so it goes to the else condition in client's followMessage switch case.
-        "followRequest-accepted":true,
+        "followRequest-accepted": true,
       });
     }
     props.socket.send(follow);

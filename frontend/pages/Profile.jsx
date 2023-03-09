@@ -5,6 +5,7 @@ import { AllPosts } from "../components/AllPosts";
 
 import ProfileImgContainer from "../components/ProfileImgContainer";
 import RightSide from "../components/RightSide";
+import PostForm from "../components/PostForm";
 import Swal from "sweetalert2";
 
 export default function Profile(props) {
@@ -20,7 +21,14 @@ export default function Profile(props) {
         update={props.update}
         setUpdate={props.setUpdate}
       />
+      <div className="formContainer">
+        <div className="smallAvatar">
+          <img src={props.avatar} alt="profile photo" />
+        </div>
+        <div className="profile-page-title">{props.name}'s Posts</div>
+      </div>
       <AllPosts />
+      <RightSide />
     </div>
   );
 }

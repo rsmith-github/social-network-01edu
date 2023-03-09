@@ -41,7 +41,7 @@ func QueryUser(rows *sql.Rows, err error) User {
 	var aboutme string
 	var followers int
 	var following int
-	var status interface{}
+	var status string
 
 	var usr User
 	// Scan all the data from that row.
@@ -59,7 +59,7 @@ func QueryUser(rows *sql.Rows, err error) User {
 			Aboutme:   aboutme,
 			Followers: followers,
 			Following: following,
-			Status:    "",
+			Status:    status,
 		}
 		// currentUser = &username
 		CheckErr(err, "-------LINE 56")
@@ -1547,7 +1547,7 @@ func CreateSqlTables() {
 	CheckErr(deleteTblErr, "-------Error deleting table")
 
 	// Create user table if it doen't exist.
-	var _, usrTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `email` VARCHAR(64) NOT NULL UNIQUE, `password` VARCHAR(255) NOT NULL, `firstname` VARCHAR(64) NOT NULL, `lastname` VARCHAR(64) NOT NULL, `dob` VARCHAR(255) NOT NULL, `avatar` VARCHAR(255), `nickname` VARCHAR(64), `aboutme` VARCHAR(255), `followers` INTEGER DEFAULT 0, `following` INTEGER DEFAULT 0, 'status' TEXT)")
+	var _, usrTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `email` VARCHAR(64) NOT NULL UNIQUE, `password` VARCHAR(255) NOT NULL, `firstname` VARCHAR(64) NOT NULL, `lastname` VARCHAR(64) NOT NULL, `dob` VARCHAR(255) NOT NULL, `avatar` VARCHAR(255), `nickname` VARCHAR(64), `aboutme` VARCHAR(255), `followers` INTEGER DEFAULT 0, `following` INTEGER DEFAULT 0, 'status' TEXT DEFAULT NULL)")
 	CheckErr(usrTblErr, "-------Error creating table")
 
 	// Create sessions table if doesn't exist.
