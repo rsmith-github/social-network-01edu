@@ -61,6 +61,14 @@ func (data *message) setFieldType(dataFromWs []byte) error {
 		data.incomingData = groupFields
 		return nil
 	}
+	var groupPostFields GroupPostFields
+	errReadingGroupPost := json.Unmarshal(dataFromWs, &groupPostFields)
+	if errReadingGroupPost != nil {
+		return errReadingGroupPost
+	} else if groupPostFields != (GroupPostFields{}) {
+		data.incomingData = groupPostFields
+		return nil
+	}
 	var resetRequest RequestNotifcationFields
 	errReadingResetRequest := json.Unmarshal(dataFromWs, &resetRequest)
 	if errReadingResetRequest != nil {
@@ -203,9 +211,13 @@ func (s *subscription) readPump() {
 				H.broadcast <- data
 			}
 		case GroupFields:
+			fmt.Println("data", data)
+			H.broadcast <- data
+		case GroupPostFields:
 			H.broadcast <- data
 		case RequestNotifcationFields:
 			//delete request notifications.
+			fmt.Println("request client", data)
 			requestNotifcationFields := data.incomingData.(RequestNotifcationFields)
 			SqlExec.RequestNotificationData <- requestNotifcationFields
 		}
@@ -265,6 +277,16 @@ func (s *subscription) writePump() {
 			if err := c.ws.WriteJSON(request); err != nil {
 				log.Printf("error sending update message: %v", err)
 			}
+		case GroupPostFields:
+			request := message.incomingData.(GroupPostFields)
+			if err := c.ws.WriteJSON(request); err != nil {
+				log.Printf("error sending update message: %v", err)
+			}
+		case GroupFields:
+			request := message.incomingData.(GroupFields)
+			if err := c.ws.WriteJSON(request); err != nil {
+				log.Printf("error sending update message: %v", err)
+			}
 		}
 
 	}
@@ -274,6 +296,7 @@ func (s *subscription) writePump() {
 func ServeWs(w http.ResponseWriter, r *http.Request) {
 	var id string
 	var user string
+	var groupId string
 	var chatNotifExist []ChatNotifcationFields
 	var requestNotifExist []RequestNotifcationFields
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -285,14 +308,24 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/ws/chat" {
 		id = <-chatroomId
 		user = <-loggedInUsername
+		groupId = ""
+	} else if r.URL.Path == "/ws/group" {
+		fmt.Println("here")
+		id = ""
+		user = LoggedInUser(r).Nickname
+		groupId = <-groupRoomId
+		fmt.Println("beloooww")
 	} else {
 		id = ""
 		user = LoggedInUser(r).Nickname
+		groupId = ""
 		chatNotifExist = GetAllChatNotifs(user)
 		requestNotifExist = GetAllRequestNotifs(user)
 	}
 	c := &connection{send: make(chan message), ws: ws}
-	s := subscription{c, id, user, cookie.Value}
+	s := subscription{c, id, groupId, user, cookie.Value}
+	fmt.Println(s)
+
 	H.register <- &s
 	go s.writePump()
 	go s.readPump()
@@ -302,7 +335,6 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(requestNotifExist) > 0 {
 		for _, requestNotif := range requestNotifExist {
-			fmt.Println(requestNotif.GroupId)
 			if requestNotif.GroupId == "" {
 				//get the follower's email
 				db := OpenDB()
@@ -320,9 +352,34 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 				message := message{incomingData: RequestNotifcationFields{FollowRequest: followMessage}}
 				c.send <- message
 			} else {
-				groupFields := GetGroupFromId(requestNotif.GroupId)
-				message := message{incomingData: RequestNotifcationFields{GroupRequest: groupFields}}
-				c.send <- message
+				if requestNotif.TypeOfAction == "accepted-group-request" {
+					groupFields := GetGroup(requestNotif.GroupId)
+					message := message{incomingData: RequestNotifcationFields{GroupAction: GroupAcceptNotification{
+						User:        user,
+						Admin:       groupFields.Admin,
+						Action:      true,
+						GroupName:   groupFields.Name,
+						GroupAvatar: groupFields.Avatar,
+						GroupId:     requestNotif.GroupId,
+					}}}
+					c.send <- message
+				} else if requestNotif.TypeOfAction == "remove-group-request" {
+					groupFields := GetGroup(requestNotif.GroupId)
+					message := message{incomingData: RequestNotifcationFields{GroupAction: GroupAcceptNotification{
+						User:        user,
+						Admin:       groupFields.Admin,
+						Action:      false,
+						GroupName:   groupFields.Name,
+						GroupAvatar: groupFields.Avatar,
+						GroupId:     requestNotif.GroupId,
+					}}}
+					c.send <- message
+				} else if requestNotif.TypeOfAction == "groupRequest" {
+					groupFields := GetGroup(requestNotif.GroupId)
+					message := message{incomingData: RequestNotifcationFields{GroupRequest: groupFields}}
+					c.send <- message
+				}
+
 			}
 		}
 	}

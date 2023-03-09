@@ -17,6 +17,7 @@ const SECRET_KEY = "DonaldTrump_Dumpling"
 
 var chatroomId = make(chan string)
 var loggedInUsername = make(chan string)
+var groupRoomId = make(chan string)
 
 func Login(w http.ResponseWriter, r *http.Request) {
 
@@ -85,6 +86,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("Error marshalling user: ", err.Error())
 		} else {
 			w.Write(jsn) // Write user data
+			return
 		}
 		return
 	}
@@ -379,45 +381,50 @@ func EditChatroom(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func ViewPrivatePosts(w http.ResponseWriter, r *http.Request) {
+	allPosts := GetUserPosts(LoggedInUser(r).Nickname, "private")
+	content, _ := json.Marshal(allPosts)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(content)
+}
+
+func ViewPublicPosts(w http.ResponseWriter, r *http.Request) {
+	allPosts := GetUserPosts(LoggedInUser(r).Nickname, "public")
+	content, _ := json.Marshal(allPosts)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(content)
+}
+
 func CreatePost(w http.ResponseWriter, r *http.Request) {
 	var postData PostFields
-	if r.Method != "POST" {
-		allPosts := GetUserPosts(LoggedInUser(r).Nickname)
-		content, _ := json.Marshal(allPosts)
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(body, &postData)
+	if err != nil {
+		panic(err)
+	}
+	user := LoggedInUser(r).Nickname
+	if user == "" {
+		postData.Error = "Cannot Add Post, please Sign Up or Log In"
+		content, _ := json.Marshal(postData)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+	} else if (len(postData.Thread) == 0) && (postData.Image == "") && (postData.Text == "") {
+		postData.Error = "please add content or close"
+		content, _ := json.Marshal(postData)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)
 	} else {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			panic(err)
-		}
-
-		err = json.Unmarshal(body, &postData)
-		if err != nil {
-			panic(err)
-		}
-		user := LoggedInUser(r).Nickname
-		if user == "" {
-			postData.Error = "Cannot Add Post, please Sign Up or Log In"
-			content, _ := json.Marshal(postData)
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(content)
-		} else if (len(postData.Thread) == 0) && (postData.Image == "") && (postData.Text == "") {
-			postData.Error = "please add content or close"
-			content, _ := json.Marshal(postData)
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(content)
-		} else {
-			postData.Id = Generate()
-			postData.Author = user
-			fmt.Println("post", postData)
-			AddPost(postData)
-			// get all posts and return
-			allPosts := GetUserPosts(user)
-			content, _ := json.Marshal(allPosts)
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(content)
-		}
+		postData.Id = Generate()
+		postData.Author = user
+		AddPost(postData)
+		content, _ := json.Marshal("Post Added Successfully")
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
 	}
 }
 
@@ -619,10 +626,15 @@ func CreateGroup(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		user := LoggedInUser(r).Nickname
 		groups := GetUserGroups(user)
+		sort.Slice(groups, func(i, j int) bool {
+			return strings.ToLower(groups[i].Name) < strings.ToLower(groups[j].Name)
+		})
+		sort.Slice(groups, func(i, j int) bool {
+			return groups[i].Date > groups[j].Date
+		})
 		content, _ := json.Marshal(groups)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)
-		GetUserGroups(user)
 	} else {
 		var data GroupFields
 		body, err := ioutil.ReadAll(r.Body)
@@ -635,30 +647,24 @@ func CreateGroup(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		if data.Users != "" {
-			user := LoggedInUser(r).Nickname
-			data.Users += "," + user
+		user := LoggedInUser(r).Nickname
+		data.Users += "," + user
 
-			data.Id = Generate()
-			data.Admin = user
-			// add admin and addmin should be the LoggedInUser.Nickname
-			AddGroup(data, user)
-			var returnedUserDisplay []string
-			for _, u := range strings.Split(data.Users, ",") {
-				if u != user {
-					returnedUserDisplay = append(returnedUserDisplay, u)
-				}
+		data.Id = Generate()
+		data.Admin = user
+		// add admin and addmin should be the LoggedInUser.Nickname
+		AddGroup(data, user)
+		var returnedUserDisplay []string
+		for _, u := range strings.Split(data.Users, ",") {
+			if u != user {
+				returnedUserDisplay = append(returnedUserDisplay, u)
 			}
-			groupRoom := data
-			groupRoom.Users = strings.Join(returnedUserDisplay, ",")
-			content, _ := json.Marshal(groupRoom)
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(content)
-		} else {
-			content, _ := json.Marshal("Please Select Users For Your Group!!!!!")
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(content)
 		}
+		groupRoom := data
+		groupRoom.Users = strings.Join(returnedUserDisplay, ",")
+		content, _ := json.Marshal(groupRoom)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
 	}
 }
 
@@ -672,14 +678,70 @@ func AddMemberToGroup(w http.ResponseWriter, r *http.Request) {
 	user := LoggedInUser(r).Nickname
 	if !ConfirmGroupMember(user, groupId) {
 		err = AddUserToGroup(groupId, user)
+		// add to request notification that user accepted request and send message to the admin
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.Write([]byte("error"))
 		} else {
 			w.Header().Set("Content-Type", "application/json")
 			w.Write([]byte("accepted"))
+			group := GetGroup(groupId)
+			admin := group.Admin
+			adminSess := H.user[admin]
+			if len(adminSess) != 0 {
+				for userSub := range adminSess {
+					userSub.conn.send <- message{incomingData: RequestNotifcationFields{GroupAction: GroupAcceptNotification{
+						User:        user,
+						Admin:       admin,
+						Action:      true,
+						GroupName:   group.Name,
+						GroupAvatar: group.Avatar,
+					}}}
+				}
+			} else {
+				AddRequestNotif(user, admin, "accepted-group-request", groupId)
+			}
 		}
 	}
+}
+
+func RemoveMemberFromGroup(w http.ResponseWriter, r *http.Request) {
+	var data GroupFields
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		panic(err)
+	}
+	members := strings.Split(data.Users, ",")
+	var removeMessage string
+	for _, mem := range members {
+		err := RemoveUserFromGroup(data.Id, mem)
+		if err != nil {
+			removeMessage = "Error Removing User, Please Try Again Later"
+		} else {
+			removeMessage = "Users have been successfully removed"
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(removeMessage))
+}
+
+func GroupMembers(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	group := GetGroup(string(body))
+	members := strings.Split(group.Users, ",")
+	fmt.Println(members)
+	content, _ := json.Marshal(members)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(content)
 }
 
 func GroupPosts(w http.ResponseWriter, r *http.Request) {
@@ -690,6 +752,10 @@ func GroupPosts(w http.ResponseWriter, r *http.Request) {
 
 	groupId := string(body)
 	user := LoggedInUser(r).Nickname
+	go func() {
+		groupRoomId <- groupId
+	}()
+
 	groupPosts := GetGroupPosts(user, groupId)
 	content, _ := json.Marshal(groupPosts)
 	w.Header().Set("Content-Type", "application/json")
@@ -726,7 +792,6 @@ func CreateGroupPost(w http.ResponseWriter, r *http.Request) {
 			postData.PostId = Generate()
 			postData.Author = user
 
-			fmt.Println("post", postData)
 			if ConfirmGroupMember(user, postData.Id) {
 				err := AddGroupPost(postData)
 				if err != nil {
@@ -736,15 +801,24 @@ func CreateGroupPost(w http.ResponseWriter, r *http.Request) {
 					w.Write(content)
 				} else {
 					// get all posts and return
-					fmt.Println("post added to", postData.Id)
+					group := GetGroup(postData.Id)
+					potentialMember := strings.Split(group.Users, ",")
+					for _, member := range potentialMember {
+						if member != user {
+							loggedInMember := H.user[member]
+							for userSub := range loggedInMember {
+								postData.Group = group
+								userSub.conn.send <- message{incomingData: postData}
+							}
+						}
+					}
 					allPosts := GetGroupPosts(user, postData.Id)
-					fmt.Println("all Posts", allPosts)
-					content, _ := json.Marshal(allPosts)
+					content, _ := json.Marshal(allPosts[len(allPosts)-1])
 					w.Header().Set("Content-Type", "application/json")
 					w.Write(content)
 				}
 			} else {
-				postData.Error = "You Are Not A Member Of This Group"
+				postData.Error = "You No Longer Have Access To This Group!"
 				content, _ := json.Marshal(postData)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
