@@ -41,7 +41,7 @@ func QueryUser(rows *sql.Rows, err error) User {
 	var aboutme string
 	var followers int
 	var following int
-	var status string
+	var status interface{}
 
 	var usr User
 	// Scan all the data from that row.
@@ -59,7 +59,7 @@ func QueryUser(rows *sql.Rows, err error) User {
 			Aboutme:   aboutme,
 			Followers: followers,
 			Following: following,
-			Status:    status,
+			Status:    "",
 		}
 		// currentUser = &username
 		CheckErr(err, "-------LINE 56")

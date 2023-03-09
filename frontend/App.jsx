@@ -9,7 +9,12 @@ import NavBar from "./components/Navbar";
 import Profile from "./pages/Profile";
 import PublicProfiles from "./pages/PublicProfiles";
 import { injectStyle } from "react-toastify/dist/inject-style";
-import { AddedGroupNotify, GroupPostNotify, RemoveGroupNotify, RequestNotify } from "./components/RequestNotify";
+import {
+  AddedGroupNotify,
+  GroupPostNotify,
+  RemoveGroupNotify,
+  RequestNotify,
+} from "./components/RequestNotify";
 
 // CALL IT ONCE IN YOUR APP
 injectStyle();
@@ -30,31 +35,29 @@ function App() {
   // All users state vars
   const [users, setUsers] = useState([]);
 
-  const [groupArr, setGroupArr] = useState([])
+  const [groupArr, setGroupArr] = useState([]);
 
-  const [followUpdate, setFollowUpdate] = useState(false)
+  const [followUpdate, setFollowUpdate] = useState(false);
 
   useEffect(() => {
     window.addEventListener("beforeunload", closeConnection);
-    fetch('http://localhost:8080/create-group')
-      .then(response => response.json())
-      .then(data => {
-        if (data != null && data != undefined)
-          setGroupArr(data)
-      })
+    fetch("http://localhost:8080/create-group")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data != null && data != undefined) setGroupArr(data);
+      });
     return () => {
       window.removeEventListener("beforeunload", closeConnection);
     };
   }, []);
 
   useEffect(() => {
-    fetch('http://localhost:8080/create-group')
-      .then(response => response.json())
-      .then(data => {
-        if (data != null && data != undefined)
-          setGroupArr(data)
-      })
-  }, [name])
+    fetch("http://localhost:8080/create-group")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data != null && data != undefined) setGroupArr(data);
+      });
+  }, [name]);
 
   const notify = (obj, ws) => {
     if (
@@ -70,8 +73,13 @@ function App() {
         progress: undefined,
         theme: "dark",
       });
-      return
-    } else if (obj["group-post-id"] != "" && obj["post-id"] != "" && obj["group-post-id"] !== undefined && obj["post-id"] !== undefined) {
+      return;
+    } else if (
+      obj["group-post-id"] != "" &&
+      obj["post-id"] != "" &&
+      obj["group-post-id"] !== undefined &&
+      obj["post-id"] !== undefined
+    ) {
       toast(<GroupPostNotify type={obj} />, {
         autoClose: false,
         hideProgressBar: false,
@@ -79,26 +87,34 @@ function App() {
         pauseOnHover: true,
         draggable: true,
         progress: undefined,
-        theme: "dark"
-      })
-      return
-    } else if (obj["notification-followRequest"] !== undefined && obj["notification-followRequest"]["followRequest"] !== undefined && obj["notification-followRequest"]["followRequest"] !== "") {
-      toast(<RequestNotify type={obj["notification-followRequest"]} accepted={() => {
-        let removeRequest = {
-          "remove-sender": `${obj["notification-followRequest"]["followRequest-username"]}`,
-          "remove-receiver": `${obj["notification-followRequest"]["toFollow-username"]}`,
-        }
-        //send to backend "followRequest:accepted" so it can broadcast and go to the else condition in client's "followMessage" switch case.
-        const follow = {
-          followRequest: `${obj["notification-followRequest"]["followRequest"]}`,
-          toFollow: `${obj["notification-followRequest"]["toFollow"]}`,
-          isFollowing: true,
-          followers: obj["notification-followRequest"]["followers"],
-          "followRequest-accepted": true
-        };
-        ws.send(JSON.stringify(follow))
-        ws.send(JSON.stringify(removeRequest))
-      }} />,
+        theme: "dark",
+      });
+      return;
+    } else if (
+      obj["notification-followRequest"] !== undefined &&
+      obj["notification-followRequest"]["followRequest"] !== undefined &&
+      obj["notification-followRequest"]["followRequest"] !== ""
+    ) {
+      toast(
+        <RequestNotify
+          type={obj["notification-followRequest"]}
+          accepted={() => {
+            let removeRequest = {
+              "remove-sender": `${obj["notification-followRequest"]["followRequest-username"]}`,
+              "remove-receiver": `${obj["notification-followRequest"]["toFollow-username"]}`,
+            };
+            //send to backend "followRequest:accepted" so it can broadcast and go to the else condition in client's "followMessage" switch case.
+            const follow = {
+              followRequest: `${obj["notification-followRequest"]["followRequest"]}`,
+              toFollow: `${obj["notification-followRequest"]["toFollow"]}`,
+              isFollowing: true,
+              followers: obj["notification-followRequest"]["followers"],
+              "followRequest-accepted": true,
+            };
+            ws.send(JSON.stringify(follow));
+            ws.send(JSON.stringify(removeRequest));
+          }}
+        />,
         {
           autoClose: false,
           hideProgressBar: false,
@@ -111,13 +127,18 @@ function App() {
             let removeRequest = {
               "remove-sender": `${obj["notification-followRequest"]["followRequest-username"]}`,
               "remove-receiver": `${obj["notification-followRequest"]["toFollow-username"]}`,
-            }
-            ws.send(JSON.stringify(removeRequest))
-            console.log('sent', removeRequest)
-          }
-        })
-      return
-    } else if (obj["notification-groupRequest"] !== undefined && obj["notification-groupRequest"]["group-id"] !== undefined && obj["notification-groupRequest"]["group-id"] !== "") {
+            };
+            ws.send(JSON.stringify(removeRequest));
+            console.log("sent", removeRequest);
+          },
+        }
+      );
+      return;
+    } else if (
+      obj["notification-groupRequest"] !== undefined &&
+      obj["notification-groupRequest"]["group-id"] !== undefined &&
+      obj["notification-groupRequest"]["group-id"] !== ""
+    ) {
       if (obj["notification-groupRequest"]["action"] == "remove") {
         toast(<RemoveGroupNotify type={obj["notification-groupRequest"]} />, {
           autoClose: false,
@@ -132,54 +153,63 @@ function App() {
               "remove-sender": `${obj["notification-groupRequest"]["admin"]}`,
               "remove-receiver": user.nickname,
               "remove-typeOfAction": "remove-group-request",
-              "remove-groupId": `${obj["notification-groupRequest"]["group-id"]}`
-            }
-            ws.send(JSON.stringify(removeRequest))
-            console.log('sent', removeRequest)
-          }
-        })
-        return
+              "remove-groupId": `${obj["notification-groupRequest"]["group-id"]}`,
+            };
+            ws.send(JSON.stringify(removeRequest));
+            console.log("sent", removeRequest);
+          },
+        });
+        return;
       } else {
-        toast(<RequestNotify type={obj["notification-groupRequest"]} accepted={async () => {
-          const responseFromAddingMember = fetch("http://localhost:8080/add-group-member", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: obj["notification-groupRequest"]["group-id"]
-          })
-          let response = await (await responseFromAddingMember).text()
-          if (response === "accepted") {
-            setGroupArr(groupRooms => {
-              if (Array.isArray(groupRooms) && groupRooms.length === 0) {
-                return [obj["notification-groupRequest"]]
-              } else {
-                return [...groupRooms, obj["notification-groupRequest"]]
+        toast(
+          <RequestNotify
+            type={obj["notification-groupRequest"]}
+            accepted={async () => {
+              const responseFromAddingMember = fetch(
+                "http://localhost:8080/add-group-member",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: obj["notification-groupRequest"]["group-id"],
+                }
+              );
+              let response = await (await responseFromAddingMember).text();
+              if (response === "accepted") {
+                setGroupArr((groupRooms) => {
+                  if (Array.isArray(groupRooms) && groupRooms.length === 0) {
+                    return [obj["notification-groupRequest"]];
+                  } else {
+                    return [...groupRooms, obj["notification-groupRequest"]];
+                  }
+                });
               }
-            });
+            }}
+          />,
+          {
+            autoClose: false,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "dark",
+            onClose: () => {
+              //sends in a requestNotificationJson to remove the request from the sql table, this will go to the client's "RequestNotification" switch case.
+              let removeRequest = {
+                "remove-sender": `${obj["notification-groupRequest"]["admin"]}`,
+                "remove-receiver": user.nickname,
+                "remove-typeOfAction": "groupRequest",
+                "remove-groupId": `${obj["notification-groupRequest"]["group-id"]}`,
+              };
+              ws.send(JSON.stringify(removeRequest));
+            },
           }
-        }} />, {
-          autoClose: false,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "dark",
-          onClose: () => {
-            //sends in a requestNotificationJson to remove the request from the sql table, this will go to the client's "RequestNotification" switch case.
-            let removeRequest = {
-              "remove-sender": `${obj["notification-groupRequest"]["admin"]}`,
-              "remove-receiver": user.nickname,
-              "remove-typeOfAction": "groupRequest",
-              "remove-groupId": `${obj["notification-groupRequest"]["group-id"]}`
-            }
-            ws.send(JSON.stringify(removeRequest))
-          }
-        })
-        return
+        );
+        return;
       }
     } else if (obj["notification-group-action"] !== undefined) {
       // then remove from sql table
-      console.log("new new ", obj)
+      console.log("new new ", obj);
       toast(<AddedGroupNotify type={obj["notification-group-action"]} />, {
         autoClose: false,
         hideProgressBar: false,
@@ -193,14 +223,13 @@ function App() {
             "remove-sender": `${obj["notification-group-action"]["admin"]}`,
             "remove-receiver": user.nickname,
             "remove-typeOfAction": "remove-group-request",
-            "remove-groupId": `${obj["notification-group-action"]["groupId"]}`
-          }
-          ws.send(JSON.stringify(removeRequest))
-          console.log('sent', removeRequest)
-        }
-
-      })
-      return
+            "remove-groupId": `${obj["notification-group-action"]["groupId"]}`,
+          };
+          ws.send(JSON.stringify(removeRequest));
+          console.log("sent", removeRequest);
+        },
+      });
+      return;
     }
   };
 
@@ -217,38 +246,50 @@ function App() {
         console.log(msg, "this is msg.");
         if (Array.isArray(msg)) {
           msg.map((notif) => {
-            notify(notif, websocket.current)
-          })
+            notify(notif, websocket.current);
+          });
         } else {
           notify(msg, websocket.current);
         }
-        if (msg.hasOwnProperty("notification-groupRequest") && msg["notification-groupRequest"]["action"] == "remove") {
-          console.log(msg)
-          setGroupArr(groups => {
-            const selectedGroupIndex = groups.findIndex(group => group["group-id"] === msg["notification-groupRequest"]["group-id"])
+        if (
+          msg.hasOwnProperty("notification-groupRequest") &&
+          msg["notification-groupRequest"]["action"] == "remove"
+        ) {
+          console.log(msg);
+          setGroupArr((groups) => {
+            const selectedGroupIndex = groups.findIndex(
+              (group) =>
+                group["group-id"] ===
+                msg["notification-groupRequest"]["group-id"]
+            );
             if (selectedGroupIndex != -1) {
-              groups.splice(selectedGroupIndex, 1)
-              return [...groups]
+              groups.splice(selectedGroupIndex, 1);
+              return [...groups];
             }
-          })
+          });
         }
-        if (msg.hasOwnProperty("group-post-id") && msg.hasOwnProperty("post-id")) {
+        if (
+          msg.hasOwnProperty("group-post-id") &&
+          msg.hasOwnProperty("post-id")
+        ) {
           if (document.getElementById(msg["group-post-id"]) == undefined) {
-            setGroupArr(groups => {
-              const selectedGroupIndex = groups.findIndex(group => group["group-id"] === msg["group-post-id"])
-              const firstItem = groups[selectedGroupIndex]
+            setGroupArr((groups) => {
+              const selectedGroupIndex = groups.findIndex(
+                (group) => group["group-id"] === msg["group-post-id"]
+              );
+              const firstItem = groups[selectedGroupIndex];
               if (selectedGroupIndex != -1) {
-                groups.splice(selectedGroupIndex, 1)
-                return [firstItem, ...groups]
+                groups.splice(selectedGroupIndex, 1);
+                return [firstItem, ...groups];
               }
-            })
+            });
           }
         }
         if (msg.hasOwnProperty("followRequest")) {
-          console.log("accepted follower", usr)
+          console.log("accepted follower", usr);
           if (msg["followRequest-username"] == usr.nickname) {
-            console.log("matchy matchy")
-            setFollowUpdate(true)
+            console.log("matchy matchy");
+            setFollowUpdate(true);
           }
         }
         if (msg.toFollow === usr.email) {
@@ -338,13 +379,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    fetch("http:localhost:8080/create-group")
-      .then(response => response.json())
-      .then(data => {
-        if (data != null && data != undefined)
-          setGroupArr(data)
-      })
-  }, [name])
+    fetch("http://localhost:8080/create-group")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data !== null && data !== undefined) setGroupArr(data);
+      });
+  }, [name]);
 
   return (
     // <StrictMode>
