@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, setState } from "react"
 import { EditChat } from "./EditChatRoomForm"
 
 export const ChatBox = (response) => {
@@ -16,7 +16,6 @@ export const ChatBox = (response) => {
     const chatroomId = response.r
     const chatImg = response.i
     console.log({ chatImg })
-
     useEffect(() => {
         const fetchData = async () => {
             const receivedResponse = await fetch("http://localhost:8080/get-chat", {
@@ -48,11 +47,10 @@ export const ChatBox = (response) => {
                 conn.current.onopen = () => {
                     //create notification object
                     let updateNotif = {
-                        "notification-chatId" : chatroomId,
-                        "notification-receiver" : resp.user,
+                        "notification-chatId": chatroomId,
+                        "notification-receiver": resp.user,
                     }
-                    conn.current.send(JSON.stringify(updateNotif)) 
-                    console.log("Chat box connection open")
+                    conn.current.send(JSON.stringify(updateNotif))
                 }
                 conn.current.onmessage = (evt) => {
                     evt.preventDefault()
@@ -70,7 +68,6 @@ export const ChatBox = (response) => {
             })
 
             return () => {
-                console.log('user close chat')
                 conn.current.close(1000, "user closed chat.")
             }
         }
@@ -109,7 +106,6 @@ export const ChatBox = (response) => {
             if (conn.current != undefined) {
                 console.log(msgSend)
                 conn.current.send(JSON.stringify(msgSend))
-
             } else {
                 console.log("no connection")
             }
@@ -136,9 +132,7 @@ export const ChatBox = (response) => {
                 console.log(response)
                 closeChatRoom()
             })
-
     }
-
     const handleBrokenAuthImage = (source) => {
         if (source != "") {
             return source
@@ -146,6 +140,12 @@ export const ChatBox = (response) => {
             return "https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png"
         }
     }
+    
+    const messagesEndRef = useRef(null)
+    useEffect(()=>{
+        if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }},[messages]);
 
     return (
         <>
@@ -208,13 +208,13 @@ export const ChatBox = (response) => {
                         )}
 
                     </div>
-                    <div className="previous-messages">
+                    <div className="previous-messages" style={{overflowY: 'scroll' }} >
                         {messages ? (
                             <>
                                 {messages.map(message => {
                                     if (message["sender"] == user) {
                                         return (
-                                            <div className="chat-message-sender" >
+                                            <div className="chat-message-sender" key={message["message"]}  >
                                                 <p className="chat-time">{new Date(message["date"]).toLocaleString()}</p>
                                                 <p className="chat-message">{message["message"]}</p>
                                                 <p className="chat-author">{message["sender"]}</p>
@@ -223,14 +223,13 @@ export const ChatBox = (response) => {
 
                                     } else {
                                         return (
-                                            <div className="chat-message-receiver" >
+                                            <div className="chat-message-receiver" key={message["message"]}  >
                                                 <p className="chat-time">{new Date(message["date"]).toLocaleString()}</p>
                                                 <p className="chat-message">{message["message"]}</p>
                                                 <p className="chat-author">{message["sender"]}</p>
                                             </div>
                                         )
                                     }
-
                                 })
                                 }
                             </>
@@ -239,6 +238,7 @@ export const ChatBox = (response) => {
                                 <h2>Be the first to send a message</h2>
                             </div>
                         )}
+                        <div ref={messagesEndRef}/>
                     </div>
                     <form className="message-form" onSubmit={handleMessageSubmit}>
                         <textarea name="message" contentEditable={true} className="message-text-input" value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="For Emojis Press: 'Windows + ;' or 'Ctrl + Cmd + Space'" />
