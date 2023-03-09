@@ -1,5 +1,5 @@
 import React, { useState, useEffect, StrictMode, useRef } from "react";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, json } from "react-router-dom";
 import Home from "./pages/Home";
@@ -13,8 +13,6 @@ import { AddedGroupNotify, GroupPostNotify, RemoveGroupNotify, RequestNotify } f
 
 // CALL IT ONCE IN YOUR APP
 injectStyle();
-
-
 
 import Swal from "sweetalert2";
 
@@ -59,15 +57,18 @@ function App() {
   }, [name])
 
   const notify = (obj, ws) => {
-    if (obj["notification-sender"] != "" && obj["notification-sender"] !== undefined) {
-      toast('🦄 message from: ' + `${obj["notification-sender"]}`, {
+    if (
+      obj["notification-sender"] != "" &&
+      obj["notification-sender"] !== undefined
+    ) {
+      toast("🦄 message from: " + `${obj["notification-sender"]}`, {
         autoClose: false,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
         progress: undefined,
-        theme: "dark"
+        theme: "dark",
       });
       return
     } else if (obj["group-post-id"] != "" && obj["post-id"] != "" && obj["group-post-id"] !== undefined && obj["post-id"] !== undefined) {
@@ -200,7 +201,7 @@ function App() {
       })
       return
     }
-  }
+  };
 
   const openConnection = (name, usr) => {
     if (websocket.current === null && name !== undefined && name !== "") {
@@ -212,13 +213,13 @@ function App() {
       };
       websocket.current.onmessage = (event) => {
         let msg = JSON.parse(event.data);
-        console.log(msg, 'this is msg.')
+        console.log(msg, "this is msg.");
         if (Array.isArray(msg)) {
           msg.map((notif) => {
             notify(notif, websocket.current)
           })
         } else {
-          notify(msg, websocket.current)
+          notify(msg, websocket.current);
         }
         if (msg.hasOwnProperty("notification-groupRequest") && msg["notification-groupRequest"]["action"] == "remove") {
           console.log(msg)
@@ -274,7 +275,6 @@ function App() {
         fetchUsersData();
       };
     }
-
   };
 
   const closeConnection = () => {
@@ -306,12 +306,14 @@ function App() {
       aboutme: content.about,
       followers: content.followers,
       following: content.following,
-      status: content.status
+      status: content.status,
     };
     setUser(user);
 
     // try to connect user to websocket.
-    openConnection(name, user);
+    openConnection(name, user); // from Abdul PR merge 7 March 2023
+    // handleWSocket(user); // works here
+    // openConnection(name);
   };
 
   useEffect(() => {

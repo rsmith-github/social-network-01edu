@@ -88,6 +88,7 @@ main {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 80%;
 }
 .followerDiv span {
   font-size: large;
@@ -1507,4 +1508,19 @@ main {
   border: none;
   margin-top: 10px;
   margin-bottom: 10px;
+}
+#name-email-dob {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#name-email-dob p {
+  width: 50%;
+  text-align: left;
+}
+.moreInfo:hover {
+  color: rgba(228, 137, 0);
+}
+.bold {
+  font-weight: 700;
 }
