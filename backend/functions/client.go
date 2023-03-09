@@ -104,44 +104,50 @@ func (s *subscription) readPump() {
 			chatRoom := GetChatRoom(s.room, s.name)
 			usersInChat := strings.Split(chatRoom.Users, ",")
 			notifSent := make(map[string]bool)
-			for loggedInUsers := range H.user {
-				for chatSubs := range H.rooms[s.room] {
-					if Contains(usersInChat, loggedInUsers) {
-						//+1 because the client's name is removed from the button
-						if loggedInUsers != chatSubs.name && len(usersInChat)+1 > len(H.rooms[s.room]) {
-							for userSub := range H.user[loggedInUsers] {
-								checkIfNotifExists := GetChatNotif(userSub.name, chatData.Sender, s.room)
-								if checkIfNotifExists != (ChatNotifcationFields{}) {
-									checkIfNotifExists.NumOfMessages++
-									checkIfNotifExists.Date = chatData.Date
-									SqlExec.chatNotifData <- checkIfNotifExists
-									sendNotif := message{incomingData: checkIfNotifExists}
-									userSub.conn.send <- sendNotif
-									notifSent[userSub.name] = true
-									fmt.Println("sending an exsisting notification in db")
-								} else {
-									newNotification := ChatNotifcationFields{
-										ChatId:        chatData.Id,
-										Sender:        chatData.Sender,
-										Date:          chatData.Date,
-										Receiver:      userSub.name,
-										NumOfMessages: 1,
-									}
-									SqlExec.chatNotifData <- newNotification
-									sendNotif := message{incomingData: newNotification}
-									userSub.conn.send <- sendNotif
-									notifSent[userSub.name] = true
-									fmt.Println("sending new notification.")
+			loggedInUsersInChat := make(map[string]bool)
+			//+1 because the client's name is removed from the button
+			if len(usersInChat)+1 > len(H.rooms[s.room]) {
+				loggedInUsersInChat[s.name] = true
+				for chatSub := range H.rooms[s.room] {
+					for i := range usersInChat {
+						if usersInChat[i] == chatSub.name && !loggedInUsersInChat[chatSub.name] {
+							loggedInUsersInChat[chatSub.name] = true
+							//make notifSent true as they're already in chat to prevent receiving of notifs
+							notifSent[chatSub.name] = true
+						} else if usersInChat[i] != s.name && !loggedInUsersInChat[chatSub.name] {
+							loggedInUsersInChat[usersInChat[i]] = false
+						}
+					}
+				}
+				//range through logged in users and check if they're in chat
+				for loggedInUsername := range H.user {
+					if !loggedInUsersInChat[loggedInUsername] {
+						for userSub := range H.user[loggedInUsername] {
+							checkIfNotifExists := GetChatNotif(userSub.name, chatData.Sender, s.room)
+							if checkIfNotifExists != (ChatNotifcationFields{}) {
+								checkIfNotifExists.NumOfMessages++
+								checkIfNotifExists.Date = chatData.Date
+								SqlExec.chatNotifData <- checkIfNotifExists
+								sendNotif := message{incomingData: checkIfNotifExists}
+								userSub.conn.send <- sendNotif
+								notifSent[userSub.name] = true
+							} else {
+								newNotification := ChatNotifcationFields{
+									ChatId:        chatData.Id,
+									Sender:        chatData.Sender,
+									Date:          chatData.Date,
+									Receiver:      userSub.name,
+									NumOfMessages: 1,
 								}
-
+								SqlExec.chatNotifData <- newNotification
+								sendNotif := message{incomingData: newNotification}
+								userSub.conn.send <- sendNotif
+								notifSent[userSub.name] = true
 							}
 						}
 					}
 				}
-			}
-
-			//send notifications to sql table if user is offline
-			if len(usersInChat)+1 > len(H.rooms[s.room]) {
+				//send notifications to sql table if user is offline
 				for _, users := range usersInChat {
 					if !notifSent[users] {
 						checkIfNotifExists := GetChatNotif(users, chatData.Sender, s.room)
@@ -233,9 +239,7 @@ func (s *subscription) writePump() {
 			}
 		case ChatNotifcationFields:
 			//wait for sql to execute functions...
-			wg.Wait()
 			notif := message.incomingData.(ChatNotifcationFields)
-			notif.TotalNumber = GetTotalChatNotifs(s.name)
 			err := c.ws.WriteJSON(notif)
 			if err != nil {
 				fmt.Println("error writing to websocket:", err)
@@ -243,9 +247,6 @@ func (s *subscription) writePump() {
 			}
 		case []ChatNotifcationFields:
 			notifications := message.incomingData.([]ChatNotifcationFields)
-			for i := range notifications {
-				notifications[i].TotalNumber = GetTotalChatNotifs(s.name)
-			}
 			err := c.ws.WriteJSON(notifications)
 			if err != nil {
 				fmt.Println("error writing to notifications to websocket:", err)
@@ -302,7 +303,6 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(requestNotifExist) > 0 {
 		for _, requestNotif := range requestNotifExist {
-			fmt.Println(requestNotif.GroupId)
 			if requestNotif.GroupId == "" {
 				//get the follower's email
 				db := OpenDB()

@@ -1251,7 +1251,6 @@ func GetTotalChatNotifs(user string) int {
 	for i := range sliceOfNotifFields {
 		totalNotifsCounter += sliceOfNotifFields[i].NumOfMessages
 	}
-	fmt.Println(totalNotifsCounter)
 	return totalNotifsCounter
 }
 
