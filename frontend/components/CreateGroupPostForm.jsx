@@ -9,6 +9,7 @@ export const AddGroupPost = (newPost) => {
     const [threadArr, setThreadArr] = useState([])
     const [visible, setVisible] = useState(false)
     const [local, setLocal] = useState(false)
+    let connection = newPost.socket
 
 
     const closePostForm = () => {
@@ -34,7 +35,7 @@ export const AddGroupPost = (newPost) => {
         const data = new FormData(evt.target);
         let values = Object.fromEntries(data.entries())
         console.log({ values })
-        values["group-id"] = newPost.id
+        values["group-post-id"] = newPost.id
         if (local) {
             values["post-image"] = localImage
         } else {
@@ -56,18 +57,17 @@ export const AddGroupPost = (newPost) => {
             .then(response => response.json())
             // return array of posts and send to the top.
             .then(response => {
-                if (response.hasOwnProperty("error")) {
+                if (response["error"] != "") {
                     setErrorMes(response["error"])
                     setTimeout(() => {
                         setErrorMes("")
                     }, 5000)
                 } else {
-                    console.log(response)
-                    newPost["onSubmit"](response)
+                    newPost["added"](true)
+                    connection.send(JSON.stringify(response))
                     closePostForm()
                 }
             })
-
     }
 
     const addThread = () => {
@@ -106,11 +106,11 @@ export const AddGroupPost = (newPost) => {
                         <div className="image-location">
                             <div>
                                 <input type="radio" id="Url" name="img-location" value="Url" onChange={() => handleLocalChange(false)} defaultChecked />
-                                <label htmlFor="Url">Online</label>
+                                <label htmlFor="Url">Add Online Image</label>
                             </div>
                             <div>
                                 <input type="radio" id="local" name="img-location" value="local" onChange={() => handleLocalChange(true)} />
-                                <label htmlFor="local">Local</label>
+                                <label htmlFor="local">Add Local Image</label>
                             </div>
                         </div>
                         {local ? (

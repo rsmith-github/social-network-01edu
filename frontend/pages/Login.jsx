@@ -39,9 +39,8 @@ export default function Login(props) {
   return (
     <div>
       <main className="form-signin w-100 m-auto" style={{ display: "block" }}>
+        <h1 className="h3 mb-3 fw-normal">Please sign in</h1>
         <form onSubmit={submit}>
-          <h1 className="h3 mb-3 fw-normal">Please sign in</h1>
-
           <div className="form-floating">
             <input
               type="email"

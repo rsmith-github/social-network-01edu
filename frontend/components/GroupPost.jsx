@@ -5,7 +5,6 @@ import { EditGroupPostButton } from "./EditGroupPostButton"
 import { DeleteGroupPostButton } from "./DeleteGroupPostButton"
 
 export const GroupPost = (post) => {
-    console.log(post["post"])
 
     const dateFormat = (strDate) => {
         let date = new Date(strDate)

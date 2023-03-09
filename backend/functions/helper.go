@@ -130,11 +130,49 @@ func AddUserToGroup(groupId, user string) error {
 	group.Users += "," + user
 	stmt, err := db.Prepare("UPDATE groups SET users = ? WHERE id = ?")
 	if err != nil {
-		fmt.Println("error updating chatroom", err)
+		fmt.Println("error updating group", err)
 		return err
 	}
 	stmt.Exec(group.Users, groupId)
 	return nil
+}
+
+func RemoveUserFromGroup(groupId, user string) error {
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT users FROM groups WHERE id = '%v'", groupId)
+	row, err := db.Query(s)
+	if err != nil {
+		return err
+	}
+	var group GroupFields
+	var users string
+	for row.Next() { // Iterate and fetch the records from result cursor
+		row.Scan(&users)
+		group = GroupFields{
+			Users: users,
+		}
+	}
+	row.Close()
+	var groupMembers []string
+	for i := range strings.Split(group.Users, ",") {
+		if strings.Split(group.Users, ",")[i] == user {
+			groupMembers = removeFromGroup(strings.Split(group.Users, ","), i)
+		}
+
+	}
+	group.Users = strings.Join(groupMembers, ",")
+	fmt.Println(group.Users)
+	stmt, err := db.Prepare("UPDATE groups SET users = ? WHERE id = ?")
+	if err != nil {
+		fmt.Println("error updating group", err)
+		return err
+	}
+	stmt.Exec(group.Users, groupId)
+	return nil
+}
+
+func removeFromGroup(slice []string, s int) []string {
+	return append(slice[:s], slice[s+1:]...)
 }
 
 func GetUserGroups(username string) []GroupFields {
@@ -144,7 +182,7 @@ func GetUserGroups(username string) []GroupFields {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	var adminGroup []GroupFields
 	var id, name, description, users, admin, avatar string
 	for row.Next() { // Iterate and fetch the records from result cursor
 		row.Scan(&id, &name, &description, &users, &admin, &avatar)
@@ -157,25 +195,39 @@ func GetUserGroups(username string) []GroupFields {
 			Avatar:      avatar,
 		}
 		sliceOfUsers := strings.Split(group.Users, ",")
+		posts := GetGroupPosts(username, group.Id)
+		if len(posts) > 0 {
+			date := posts[len(posts)-1].Time
+			group.Date = date
+		}
+		if !Contains(sliceOfUsers, group.Admin) {
+			sliceOfUsers = append(sliceOfUsers, group.Admin)
+			adminGroup = append(adminGroup, group)
+		}
+
 		for i, involved := range sliceOfUsers {
 			if involved == username {
 				group.Users = strings.Join(removeUserFromChatButton(sliceOfUsers, i), ",")
 				involvedGroups = append(involvedGroups, group)
 			}
 		}
+
 	}
 	row.Close()
+	for _, groups := range adminGroup {
+		UpdateGroup(groups, "", username)
+	}
 	return involvedGroups
 }
 
-func GetGroupFromId(groupId string) GroupFields {
+func GetGroup(groupId string) GroupFields {
 	db := OpenDB()
-	row, err := db.Query("SELECT * FROM groups")
-	var group GroupFields
+	s := fmt.Sprintf("SELECT * FROM groups WHERE id = '%v'", groupId)
+	row, err := db.Query(s)
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	var group GroupFields
 	var id, name, description, users, admin, avatar string
 	for row.Next() { // Iterate and fetch the records from result cursor
 		row.Scan(&id, &name, &description, &users, &admin, &avatar)
@@ -232,14 +284,17 @@ func UpdateGroup(groupRoom GroupFields, action string, user string) GroupFields 
 		groupRoom.Users = strings.Join(returnedUserDisplay, ",")
 	} else {
 		groupRoom.Admin = user
-
-		groupRoom.Users += strings.Join(users, ",") + "," + user
+		if groupRoom.Users == "" {
+			groupRoom.Users = user
+		} else {
+			groupRoom.Users += strings.Join(users, ",") + "," + user
+		}
 	}
-	stmt, err := db.Prepare("UPDATE groups SET name = ?, description = ?, users=? , admin =? WHERE id = ?")
+	stmt, err := db.Prepare("UPDATE groups SET users=? , admin = ? WHERE id = ?")
 	if err != nil {
 		fmt.Println("error updating group", err)
 	}
-	stmt.Exec(groupRoom.Name, groupRoom.Description, groupRoom.Users, groupRoom.Admin, groupRoom.Id)
+	stmt.Exec(groupRoom.Users, groupRoom.Admin, groupRoom.Id)
 	return groupRoom
 }
 
@@ -248,7 +303,6 @@ func UpdateGroup(groupRoom GroupFields, action string, user string) GroupFields 
 //
 
 func AddGroupPost(postFields GroupPostFields) error {
-	fmt.Println("new group Psst", postFields)
 	db := OpenDB()
 	stmt, err := db.Prepare(`INSERT into "groupposts" (id, postid , author, image, text, thread, time) VALUES (?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
@@ -314,10 +368,12 @@ func GetGroupPosts(user, groupId string) []GroupPostFields {
 		postTableRows.Likes = len(GetGroupPostLikes(postTableRows.PostId, "l"))
 		postTableRows.Dislikes = len(GetGroupPostLikes(postTableRows.PostId, "d"))
 		postLike := GetGroupLike(postTableRows.PostId, user)
-		if postLike.Like == "l" {
-			postTableRows.PostLiked = true
-		} else if postLike.Like == "d" {
-			postTableRows.PostDisliked = true
+		if postLike != (GroupsAndLikesFields{}) {
+			if postLike.Like == "l" {
+				postTableRows.PostLiked = true
+			} else if postLike.Like == "d" {
+				postTableRows.PostDisliked = true
+			}
 		}
 		sliceOfPostTableRows = append(sliceOfPostTableRows, postTableRows)
 	}
@@ -400,7 +456,10 @@ func GetGroupLike(id, user string) GroupsAndLikesFields {
 	var author string
 	var like string
 	if rows.Next() {
-		rows.Scan(&postId, &author, &like)
+		err := rows.Scan(&postId, &author, &like)
+		if err != nil {
+			fmt.Println("error getting group post like", err)
+		}
 		GroupLikeRow = GroupsAndLikesFields{
 			PostId:   postId,
 			Username: author,
@@ -427,7 +486,7 @@ func GetGroupPostLikes(id, l string) []GroupsAndLikesFields {
 	var postId string
 	var author string
 	var like string
-	for rows.Next() {
+	if rows.Next() {
 		rows.Scan(&postId, &author, &like)
 		likedRows := GroupsAndLikesFields{
 			PostId:   postId,
@@ -679,11 +738,11 @@ func GetPreviousMessages(chatroomId string) []ChatFields {
 
 func AddPost(postFields PostFields) {
 	db := OpenDB()
-	stmt, err := db.Prepare(`INSERT into "posts"(id,author,image,text,thread,time) VALUES (?,?,?,?,?,?)`)
+	stmt, err := db.Prepare(`INSERT into "posts"(id,author,image,text,thread,time,privacy,viewers) VALUES (?,?,?,?,?,?,?,?)`)
 	if err != nil {
 		fmt.Println("error add post to table", err)
 	}
-	stmt.Exec(postFields.Id, postFields.Author, postFields.Image, postFields.Text, postFields.Thread, postFields.Time)
+	stmt.Exec(postFields.Id, postFields.Author, postFields.Image, postFields.Text, postFields.Thread, postFields.Time, postFields.Privacy, postFields.Viewers)
 }
 
 func UpdatePost(postFields PostFields) error {
@@ -705,7 +764,7 @@ func RemovePost(id string) error {
 	stmt.Exec(id)
 	return err
 }
-func GetUserPosts(user string) []PostFields {
+func GetUserPosts(user, privateness string) []PostFields {
 	db := OpenDB()
 	sliceOfPostTableRows := []PostFields{}
 	rows, _ := db.Query(`SELECT * FROM "posts"`)
@@ -713,19 +772,26 @@ func GetUserPosts(user string) []PostFields {
 	var author string
 	var image string
 	var text string
-	var thread string
+	var privacy string
+	var viewers string
 	var time int
+	var thread string
 
 	for rows.Next() {
-		rows.Scan(&id, &author, &image, &text, &thread, &time)
+		rows.Scan(&id, &author, &image, &text, &thread, &time, &privacy, &viewers)
 		postTableRows := PostFields{
-			Id:         id,
-			Author:     author,
-			Image:      image,
-			Text:       text,
-			Thread:     thread,
-			Time:       time,
-			PostAuthor: false,
+			Id:           id,
+			Author:       author,
+			Image:        image,
+			Text:         text,
+			Thread:       thread,
+			Time:         time,
+			Privacy:      privacy,
+			Viewers:      viewers,
+			PostAuthor:   false,
+			PostComments: len(GetPostComments(id, user)),
+			Likes:        len(GetPostLikes(id, "l")),
+			Dislikes:     len(GetPostLikes(id, "d")),
 		}
 		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", postTableRows.Author, db, "GetUserFromPosts")
 		postTableRows.AuthorImg = QueryUser(row, err).Avatar
@@ -741,8 +807,27 @@ func GetUserPosts(user string) []PostFields {
 		}
 		postTableRows.Dislikes = len(GetPostLikes(postTableRows.Id, "d"))
 		postTableRows.PostComments = len(GetPostComments(postTableRows.Id, user))
+		if privateness == "public" {
+			if postTableRows.Privacy == "public" {
+				sliceOfPostTableRows = append(sliceOfPostTableRows, postTableRows)
+			}
+		} else {
+			if postTableRows.Privacy == "private" {
+				row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", user, db, "GetUserFromPosts")
+				friends := GetFollowing(QueryUser(row, err))
+				friends = append(friends, user)
+				if Contains(friends, postTableRows.Author) {
+					sliceOfPostTableRows = append(sliceOfPostTableRows, postTableRows)
+				}
+			} else if postTableRows.Privacy == "almost-private" {
+				viewPost := strings.Split(postTableRows.Viewers, ",")
+				viewPost = append(viewPost, postTableRows.Author)
+				if Contains(viewPost, user) {
+					sliceOfPostTableRows = append(sliceOfPostTableRows, postTableRows)
+				}
+			}
 
-		sliceOfPostTableRows = append(sliceOfPostTableRows, postTableRows)
+		}
 	}
 	rows.Close()
 	return sliceOfPostTableRows
@@ -760,9 +845,11 @@ func GetPost(postId string, user string) PostFields {
 	var text string
 	var thread string
 	var time int
+	var privacy string
+	var viewers string
 
 	for rows.Next() {
-		rows.Scan(&id, &author, &image, &text, &thread, &time)
+		rows.Scan(&id, &author, &image, &text, &thread, &time, &privacy, &viewers)
 		post = PostFields{
 			Id:           id,
 			Author:       author,
@@ -774,6 +861,8 @@ func GetPost(postId string, user string) PostFields {
 			PostComments: len(GetPostComments(postId, user)),
 			Likes:        len(GetPostLikes(postId, "l")),
 			Dislikes:     len(GetPostLikes(postId, "d")),
+			Privacy:      privacy,
+			Viewers:      viewers,
 		}
 		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", post.Author, db, "GetUserFromPosts")
 		post.AuthorImg = QueryUser(row, err).Avatar
@@ -1122,6 +1211,34 @@ func GetFollowers(user User) []string {
 	return friends
 }
 
+func GetFollowing(user User) []string {
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT * FROM followers WHERE follower = '%v'", user.Email)
+	rows, err := db.Query(s)
+	if err != nil {
+		fmt.Println("error selecting followees", err)
+	}
+	var id int
+	var follower, followee string
+	var friends []string
+	for rows.Next() {
+		err := rows.Scan(&id, &follower, &followee)
+		if err != nil {
+			fmt.Println("error getting friends", err)
+		} else {
+			row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", followee, db, "GetUserFromFollowers")
+			name := QueryUser(row, err).Nickname
+			if !Contains(friends, name) {
+				friends = append(friends, name)
+			}
+		}
+
+	}
+	friends = append(friends, user.Nickname)
+	rows.Close()
+	return friends
+}
+
 func GetTotalFollowers(email string) int {
 	db := OpenDB()
 	s := fmt.Sprintf("SELECT * FROM followers WHERE follower = '%v'", email)
@@ -1313,12 +1430,12 @@ func DeleteRequestNotif(item RequestNotifcationFields) {
 		fmt.Println("removed follow req")
 		return
 	} else {
-		stmt, error2 := db.Prepare("DELETE FROM requestNotification WHERE sender = ? AND receiver = ? AND groupId = ? AND typeOfRequest = ?")
+		stmt, error2 := db.Prepare("DELETE FROM requestNotification WHERE sender = ? AND receiver = ?  AND typeOfRequest = ? AND groupId = ?")
 		if error2 != nil {
 			fmt.Println(error2)
 			return
 		}
-		_, err := stmt.Exec(item.Sender, item.Receiver, item.GroupId, "groupRequest")
+		_, err := stmt.Exec(item.Sender, item.Receiver, item.TypeOfAction, item.GroupId)
 		if err != nil {
 			fmt.Println(err, "error executing delete groupRequestNotif.")
 			return
@@ -1374,9 +1491,10 @@ func GetAllRequestNotifs(user string) []RequestNotifcationFields {
 	for rows.Next() {
 		rows.Scan(&sender, &receiver, &typeOfRequest, &groupId)
 		requestTableRows := RequestNotifcationFields{
-			Sender:   sender,
-			Receiver: receiver,
-			GroupId:  groupId,
+			Sender:       sender,
+			Receiver:     receiver,
+			TypeOfAction: typeOfRequest,
+			GroupId:      groupId,
 		}
 		sliceOfRequestFields = append(sliceOfRequestFields, requestTableRows)
 	}
@@ -1396,9 +1514,10 @@ func GetRequestNotifByType(receiverName, senderName, requestType string) []Reque
 	for rows.Next() {
 		rows.Scan(&sender, &receiver, &typeOfRequest, &groupId)
 		requestNotif := RequestNotifcationFields{
-			Sender:   sender,
-			Receiver: receiver,
-			GroupId:  groupId,
+			Sender:       sender,
+			Receiver:     receiver,
+			TypeOfAction: typeOfRequest,
+			GroupId:      groupId,
 		}
 		sliceOfrequestNotif = append(sliceOfrequestNotif, requestNotif)
 	}
@@ -1424,8 +1543,8 @@ func CreateSqlTables() {
 	db := OpenDB()
 
 	// if you need to delete a table rather than delete a whole database
-	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS "requestNotification"`)
-	// CheckErr(deleteTblErr, "-------Error deleting table")
+	_, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS "followers"`)
+	CheckErr(deleteTblErr, "-------Error deleting table")
 
 	// Create user table if it doen't exist.
 	var _, usrTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `email` VARCHAR(64) NOT NULL UNIQUE, `password` VARCHAR(255) NOT NULL, `firstname` VARCHAR(64) NOT NULL, `lastname` VARCHAR(64) NOT NULL, `dob` VARCHAR(255) NOT NULL, `avatar` VARCHAR(255), `nickname` VARCHAR(64), `aboutme` VARCHAR(255), `followers` INTEGER DEFAULT 0, `following` INTEGER DEFAULT 0, 'status' TEXT)")
@@ -1445,7 +1564,7 @@ func CreateSqlTables() {
 	CheckErr(messagesTblErr, "-------Error creating table")
 
 	// Create posts table if doesn't exist. , `privacy` TEXT NOT NULL, `viewers` TEXT
-	var _, postTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `posts` ( `id` TEXT NOT NULL UNIQUE, `author` TEXT NOT NULL, `image` TEXT,`text` TEXT,`thread` TEXT, `time` NUMBER)")
+	var _, postTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `posts` ( `id` TEXT NOT NULL UNIQUE, `author` TEXT NOT NULL, `image` TEXT,`text` TEXT,`thread` TEXT, `time` NUMBER,`privacy` TEXT NOT NULL, `viewers` TEXT)")
 	CheckErr(postTblErr, "-------Error creating table")
 
 	// Create Likes table if not exists

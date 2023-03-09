@@ -17,6 +17,8 @@ export default function Profile(props) {
         socket={props.socket}
         currentUser={props.currentUser}
         fetchUsersData={props.fetchUsersData}
+        update={props.update}
+        setUpdate={props.setUpdate}
       />
       <AllPosts />
     </div>

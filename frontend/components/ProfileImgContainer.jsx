@@ -8,8 +8,12 @@ import Swal from "sweetalert2";
 export default function ProfileImgContainer(props) {
   // Check if we are at other user's profile. If so, show follow button instead of my profile button.
   const otherUser = window.location.href.split("/").at(-1);
+  // Variable to check following status. Set to true if user presses follow or on refreshing the page.
+  const [isFollowing, setIsFollowing] = useState(false);
+  useEffect(()=>{
+    if (props.update)
+     if (props.user.status === "private"){
 
-  if (props.user.status === "private"){
     (async () => {
       const response = await fetch("http://localhost:8080/api/followers", {
         method: "POST",
@@ -29,13 +33,12 @@ export default function ProfileImgContainer(props) {
       // }
       // The above is the same as:
       setIsFollowing(result !== null);
+      props["setUpdate"](false)
       return 
     })();
   }
-
-  // Variable to check following status. Set to true if user presses follow or on refreshing the page.
-  const [isFollowing, setIsFollowing] = useState(false);
-
+  },[props.update])
+ 
   // Get all the followers of the user rendered on component.
   useEffect(() => {
     (async () => {
@@ -50,7 +53,6 @@ export default function ProfileImgContainer(props) {
       });
 
       let result = await response.json();
-
       // if (result === null) {
       // } else {
       //   setIsFollowing(true);
