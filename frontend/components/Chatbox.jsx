@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, setState } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { EditChat } from "./EditChatRoomForm"
 
 export const ChatBox = (response) => {
@@ -15,7 +15,6 @@ export const ChatBox = (response) => {
     const conn = useRef(null)
     const chatroomId = response.r
     const chatImg = response.i
-    console.log({ chatImg })
     useEffect(() => {
         const fetchData = async () => {
             const receivedResponse = await fetch("http://localhost:8080/get-chat", {
@@ -26,7 +25,6 @@ export const ChatBox = (response) => {
                 body: (chatroomId)
             })
             const response2 = await receivedResponse.json()
-            console.log(response2)
             setUser(response2["user"])
             setAdmin(response2["chatroom"]["admin"])
             setMessages(response2["previous-messages"])
@@ -43,7 +41,6 @@ export const ChatBox = (response) => {
         if (visible) {
             fetchData().then((resp) => {
                 conn.current = new WebSocket("ws://" + document.location.host + "/ws/chat")
-                console.log(conn.current)
                 conn.current.onopen = () => {
                     //create notification object
                     let updateNotif = {
@@ -55,7 +52,6 @@ export const ChatBox = (response) => {
                 conn.current.onmessage = (evt) => {
                     evt.preventDefault()
                     let incomingMessage = JSON.parse(evt.data)
-                    console.log({ incomingMessage })
                     setMessages(messages => {
                         if (messages !== null) {
                             return [...messages, incomingMessage]
@@ -94,7 +90,6 @@ export const ChatBox = (response) => {
         evt.preventDefault()
         const data = new FormData(evt.target);
         let values = Object.fromEntries(data.entries())
-        console.log(values)
         if (values["message"] != "") {
             let msgSend = {
                 "sender": user,
@@ -104,7 +99,6 @@ export const ChatBox = (response) => {
             }
             setEmoji('')
             if (conn.current != undefined) {
-                console.log(msgSend)
                 conn.current.send(JSON.stringify(msgSend))
             } else {
                 console.log("no connection")
@@ -119,7 +113,6 @@ export const ChatBox = (response) => {
     };
 
     const leaveChat = () => {
-        console.log(user, "left the chat")
         const values = { "action": "leave", "chatroom-id": chatroomId }
         fetch("http://localhost:8080/edit-chatroom", {
             method: "POST",
@@ -128,8 +121,7 @@ export const ChatBox = (response) => {
             },
             body: JSON.stringify(values),
         }).then(response => response.json())
-            .then((response) => {
-                console.log(response)
+            .then(() => {
                 closeChatRoom()
             })
     }
