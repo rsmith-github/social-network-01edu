@@ -206,7 +206,7 @@ export const ChatBox = (response) => {
                                 {messages.map(message => {
                                     if (message["sender"] == user) {
                                         return (
-                                            <div className="chat-message-sender" key={message["message"]}  >
+                                            <div className="chat-message-sender" key={message["message-id"]}  >
                                                 <p className="chat-time">{new Date(message["date"]).toLocaleString()}</p>
                                                 <p className="chat-message">{message["message"]}</p>
                                                 <p className="chat-author">{message["sender"]}</p>
@@ -215,7 +215,7 @@ export const ChatBox = (response) => {
 
                                     } else {
                                         return (
-                                            <div className="chat-message-receiver" key={message["message"]}  >
+                                            <div className="chat-message-receiver" key={message["message-id"]}  >
                                                 <p className="chat-time">{new Date(message["date"]).toLocaleString()}</p>
                                                 <p className="chat-message">{message["message"]}</p>
                                                 <p className="chat-author">{message["sender"]}</p>
