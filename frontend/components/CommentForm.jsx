@@ -107,11 +107,11 @@ export const AddComment = (newComment) => {
                         <div className="image-location">
                             <div>
                                 <input type="radio" id="Url" name="img-location" value="Url" onChange={() => handleLocalChange(false)} defaultChecked />
-                                <label htmlFor="Url">Online</label>
+                                <label htmlFor="Url">Add Online Image</label>
                             </div>
                             <div>
                                 <input type="radio" id="local" name="img-location" value="local" onChange={() => handleLocalChange(true)} />
-                                <label htmlFor="local">Local</label>
+                                <label htmlFor="local">Add Local Image</label>
                             </div>
                         </div>
                         {local ? (

@@ -83,6 +83,7 @@ type GroupAcceptNotification struct {
 	Action      bool   `json:"action"`
 	GroupName   string `json:"group-name"`
 	GroupAvatar string `json:"group-avatar"`
+	GroupId     string `json:"groupId"`
 }
 
 type ChatNotifcationFields struct {

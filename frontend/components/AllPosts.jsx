@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Post } from "./Post";
 
-export const AllPosts = () => {
+export const AllPosts = (postsArr) => {
   const [posts, setPosts] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -17,6 +17,9 @@ export const AllPosts = () => {
     }
   }, [loaded]);
 
+  useEffect(() => {
+    setPosts(postsArr["posts"])
+  }, [postsArr["posts"]]);
 
   var ranges = [
     { divider: 1e18, suffix: "E" },

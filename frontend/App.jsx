@@ -177,8 +177,9 @@ function App() {
         })
         return
       }
-    } else if (obj["notification-group-action"] !== undefined && obj["notification-group-action"]["action"] != "" && obj["notification-group-action"]["action"] !== undefined) {
+    } else if (obj["notification-group-action"] !== undefined) {
       // then remove from sql table
+      console.log("new new ", obj)
       toast(<AddedGroupNotify type={obj["notification-group-action"]} />, {
         autoClose: false,
         hideProgressBar: false,
@@ -189,10 +190,10 @@ function App() {
         theme: "dark",
         onClose: () => {
           let removeRequest = {
-            "remove-sender": `${obj["notification-groupRequest"]["admin"]}`,
+            "remove-sender": `${obj["notification-group-action"]["admin"]}`,
             "remove-receiver": user.nickname,
-            "remove-typeOfAction": "accepted-group-request",
-            "remove-groupId": `${obj["notification-groupRequest"]["group-id"]}`
+            "remove-typeOfAction": "remove-group-request",
+            "remove-groupId": `${obj["notification-group-action"]["groupId"]}`
           }
           ws.send(JSON.stringify(removeRequest))
           console.log('sent', removeRequest)
