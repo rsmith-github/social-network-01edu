@@ -9,7 +9,7 @@ export default function ProfileImgContainer(props) {
   // Check if we are at other user's profile. If so, show follow button instead of my profile button.
   const otherUser = window.location.href.split("/").at(-1);
 
-  if (props.user.status === "private"){
+  if (props.user.status === "private") {
     (async () => {
       const response = await fetch("http://localhost:8080/api/followers", {
         method: "POST",
@@ -29,7 +29,7 @@ export default function ProfileImgContainer(props) {
       // }
       // The above is the same as:
       setIsFollowing(result !== null);
-      return 
+      return;
     })();
   }
 
@@ -66,24 +66,24 @@ export default function ProfileImgContainer(props) {
     setIsFollowing(newIsFollowing);
 
     //if the user is private then wait for request to be accepted, and set IsFollowing back to false.
-    if(props.user.status === "private" && newIsFollowing === true){
-      setIsFollowing(!newIsFollowing)
+    if (props.user.status === "private" && newIsFollowing === true) {
+      setIsFollowing(!newIsFollowing);
     }
-    
+
     let follow = JSON.stringify({
       followRequest: props.currentUser.email,
       toFollow: props.user.email,
       isFollowing: newIsFollowing,
       followers: props.user.followers,
     });
-    if (newIsFollowing === false){
+    if (newIsFollowing === false) {
       follow = JSON.stringify({
         followRequest: props.currentUser.email,
         toFollow: props.user.email,
         isFollowing: newIsFollowing,
         followers: props.user.followers,
         //send followRequest-accepted:true so it goes to the else condition in client's followMessage switch case.
-        "followRequest-accepted":true,
+        "followRequest-accepted": true,
       });
     }
     props.socket.send(follow);

@@ -20,7 +20,7 @@ main {
     grid-template-columns: 20% 60% 17%;
     grid-template-rows: 80px 60px 1fr 1fr 15px;
     grid-gap: 1rem;
-    grid-template-areas: "profile post-buttons right-side" "profile group right-side" "profile posts right-side" " profile posts right-side";
+    grid-template-areas: "profile post-buttons right-side" "profile group right-side" "profile posts right-side" " profile posts right-side"; 
 }
 
 .form-signin {
@@ -50,7 +50,7 @@ main {
 }
 
 .profileImgContainer {
-    grid-area: profile;
+    /* grid-area: profile; */
     display: flex;
     height: max-content;
     justify-content: center;
@@ -68,6 +68,7 @@ main {
     flex-direction: column;
     align-items: center;
     background-color: white;
+    width: 100%;
 }
 
 .profileImg {
@@ -125,7 +126,13 @@ main {
 }
 
 .profileContainer {
-    display: flex;
+    display: grid;
+    width: 100%;
+    height: 90vh;
+    grid-template-columns: 20% 60% 17%;
+    grid-template-rows: 80px 60px 1fr 1fr 15px;
+    grid-gap: 1rem;
+    grid-template-areas: "profile post-buttons right-side" "profile group right-side" "profile posts right-side" " profile posts right-side"; 
 }
 
 .formContainer {
@@ -139,6 +146,7 @@ main {
     padding-left: 10px;
     padding-right: 10px;
     border-top: 5px solid rgba(215, 57, 0, 0.874);
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
 }
 
 .privacyButtons {
@@ -191,6 +199,7 @@ main {
     right: 5px;
     z-index: 999;
     background-color: rgba(215, 57, 0, 0.874);
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.4);
 }
 
 #open-chat-button:hover {
@@ -821,6 +830,7 @@ main {
     right: 70px;
     z-index: 999;
     background-color: rgba(215, 57, 0, 0.874);
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.4);
 }
 
 .create-post-button:hover {
@@ -1479,6 +1489,7 @@ main {
     align-items: center;
     padding: 10px;
     justify-content: space-between;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
 }
 
 .create-group-post-button {

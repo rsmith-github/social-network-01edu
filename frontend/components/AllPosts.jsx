@@ -1,9 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { LikeButton } from "./LikePostButton";
-import { DisLikeButton } from "./DislikePostButton";
-import { CommentButton } from "./CommentButton";
-import { EditButton } from "./EditPostButton";
-import { DeleteButton } from "./DeletePostButton";
 
 import { Post } from "./Post";
 
@@ -22,7 +17,6 @@ export const AllPosts = () => {
         });
     }
   }, [loaded]);
-
 
   var ranges = [
     { divider: 1e18, suffix: "E" },

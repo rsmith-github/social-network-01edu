@@ -142,6 +142,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		jsonified, _ := json.Marshal(newUser)
 		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte(jsonified))
+		fmt.Println(string(jsonified))
 		return
 	}
 

@@ -189,7 +189,7 @@ function App() {
         let msg = JSON.parse(event.data);
         console.log(msg, "this is msg.");
         if (Array.isArray(msg)) {
-          msg.map((notit) => {
+          msg.map((notif) => {
             notify(notif, websocket.current);
           });
         } else {
