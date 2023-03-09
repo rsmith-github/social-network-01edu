@@ -13,7 +13,7 @@ export const PrivatePostButton = (action) => {
     }
     return (
         <>
-            <button className="postType" onClick={getFriendsPosts}>Private Post</button>
+            <button className="postType" onClick={getFriendsPosts}>Private Posts</button>
         </>
     )
 }

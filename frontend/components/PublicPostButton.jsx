@@ -13,7 +13,7 @@ export const PublicPostButton = (action) => {
     }
     return (
         <>
-            <button className="postType" onClick={getAllPosts}>Public Post</button>
+            <button className="postType" onClick={getAllPosts}>Public Posts</button>
         </>
     )
 }
