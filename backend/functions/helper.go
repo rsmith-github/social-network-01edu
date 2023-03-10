@@ -1660,7 +1660,7 @@ func GetRequestNotifByType(receiverName, senderName, requestType string) []Reque
 }
 
 func GetRequestNotif(receiverName, senderName, requestType, id string) bool {
-	fmt.Println(receiverName,senderName , requestType, id)
+	fmt.Println(receiverName, senderName, requestType, id)
 	db := OpenDB()
 	var requestNotif RequestNotifcationFields
 	n := fmt.Sprintf(`SELECT * FROM requestNotification WHERE sender = '%v' AND receiver ='%v' AND typeOfRequest ='%v' AND groupId='%v'`, senderName, receiverName, requestType, id)
