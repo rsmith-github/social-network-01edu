@@ -15,8 +15,6 @@ export const ChatBox = (response) => {
     const conn = useRef(null)
     const chatroomId = response.r
     const chatImg = response.i
-    console.log({ chatImg })
-
     useEffect(() => {
         const fetchData = async () => {
             const receivedResponse = await fetch("http://localhost:8080/get-chat", {
@@ -27,7 +25,6 @@ export const ChatBox = (response) => {
                 body: (chatroomId)
             })
             const response2 = await receivedResponse.json()
-            console.log(response2)
             setUser(response2["user"])
             setAdmin(response2["chatroom"]["admin"])
             setMessages(response2["previous-messages"])
@@ -44,20 +41,17 @@ export const ChatBox = (response) => {
         if (visible) {
             fetchData().then((resp) => {
                 conn.current = new WebSocket("ws://" + document.location.host + "/ws/chat")
-                console.log(conn.current)
                 conn.current.onopen = () => {
                     //create notification object
                     let updateNotif = {
-                        "notification-chatId" : chatroomId,
-                        "notification-receiver" : resp.user,
+                        "notification-chatId": chatroomId,
+                        "notification-receiver": resp.user,
                     }
-                    conn.current.send(JSON.stringify(updateNotif)) 
-                    console.log("Chat box connection open")
+                    conn.current.send(JSON.stringify(updateNotif))
                 }
                 conn.current.onmessage = (evt) => {
                     evt.preventDefault()
                     let incomingMessage = JSON.parse(evt.data)
-                    console.log({ incomingMessage })
                     setMessages(messages => {
                         if (messages !== null) {
                             return [...messages, incomingMessage]
@@ -70,7 +64,6 @@ export const ChatBox = (response) => {
             })
 
             return () => {
-                console.log('user close chat')
                 conn.current.close(1000, "user closed chat.")
             }
         }
@@ -97,7 +90,6 @@ export const ChatBox = (response) => {
         evt.preventDefault()
         const data = new FormData(evt.target);
         let values = Object.fromEntries(data.entries())
-        console.log(values)
         if (values["message"] != "") {
             let msgSend = {
                 "sender": user,
@@ -107,9 +99,7 @@ export const ChatBox = (response) => {
             }
             setEmoji('')
             if (conn.current != undefined) {
-                console.log(msgSend)
                 conn.current.send(JSON.stringify(msgSend))
-
             } else {
                 console.log("no connection")
             }
@@ -123,7 +113,6 @@ export const ChatBox = (response) => {
     };
 
     const leaveChat = () => {
-        console.log(user, "left the chat")
         const values = { "action": "leave", "chatroom-id": chatroomId }
         fetch("http://localhost:8080/edit-chatroom", {
             method: "POST",
@@ -132,13 +121,10 @@ export const ChatBox = (response) => {
             },
             body: JSON.stringify(values),
         }).then(response => response.json())
-            .then((response) => {
-                console.log(response)
+            .then(() => {
                 closeChatRoom()
             })
-
     }
-
     const handleBrokenAuthImage = (source) => {
         if (source != "") {
             return source
@@ -146,6 +132,12 @@ export const ChatBox = (response) => {
             return "https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png"
         }
     }
+    
+    const messagesEndRef = useRef(null)
+    useEffect(()=>{
+        if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }},[messages]);
 
     return (
         <>
@@ -208,13 +200,13 @@ export const ChatBox = (response) => {
                         )}
 
                     </div>
-                    <div className="previous-messages">
+                    <div className="previous-messages" style={{overflowY: 'scroll' }} >
                         {messages ? (
                             <>
                                 {messages.map(message => {
                                     if (message["sender"] == user) {
                                         return (
-                                            <div className="chat-message-sender" >
+                                            <div className="chat-message-sender" key={message["message-id"]}  >
                                                 <p className="chat-time">{new Date(message["date"]).toLocaleString()}</p>
                                                 <p className="chat-message">{message["message"]}</p>
                                                 <p className="chat-author">{message["sender"]}</p>
@@ -223,14 +215,13 @@ export const ChatBox = (response) => {
 
                                     } else {
                                         return (
-                                            <div className="chat-message-receiver" >
+                                            <div className="chat-message-receiver" key={message["message-id"]}  >
                                                 <p className="chat-time">{new Date(message["date"]).toLocaleString()}</p>
                                                 <p className="chat-message">{message["message"]}</p>
                                                 <p className="chat-author">{message["sender"]}</p>
                                             </div>
                                         )
                                     }
-
                                 })
                                 }
                             </>
@@ -239,6 +230,7 @@ export const ChatBox = (response) => {
                                 <h2>Be the first to send a message</h2>
                             </div>
                         )}
+                        <div ref={messagesEndRef}/>
                     </div>
                     <form className="message-form" onSubmit={handleMessageSubmit}>
                         <textarea name="message" contentEditable={true} className="message-text-input" value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="For Emojis Press: 'Windows + ;' or 'Ctrl + Cmd + Space'" />

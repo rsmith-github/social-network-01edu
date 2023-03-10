@@ -7,18 +7,18 @@ import { AllPosts } from "./AllPosts";
 
 // Post form in the center
 export default function PostForm(props) {
-  const [posts, setPosts] = useState([]);
-  const [loaded, setLoaded] = useState(false);
+  const [posts, setPosts] = useState([])
+  const [loaded, setLoaded]=useState(false)
+  const [privatePost, setPrivatePost] = useState(false)
 
   useEffect(() => {
     if (!loaded) {
-      fetch("http://localhost:8080/create-post")
-        .then((response) => response.json())
-        .then((data) => {
-          console.log(data);
-          setPosts(data);
-          setLoaded(true);
-        });
+      fetch('http://localhost:8080/view-public-posts')
+        .then(response => response.json())
+        .then(data => {
+          setPosts([...data])
+          setLoaded(true)
+        })
     }
   }, [loaded]);
 
@@ -26,28 +26,28 @@ export default function PostForm(props) {
     setPosts(response);
   };
 
-  const handlePrivatePosts = (friendsList) => {
-    const friends = friendsList;
-    const updatedPosts = posts.filter((post) =>
-      friends.includes(post["author"])
-    );
-    setPosts(updatedPosts.reverse());
-  };
+  const handleBrokenAuthImage = (source) => {
+    if (source != "") {
+      return source
+    } else {
+      return "https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png"
+    }
+  }
 
   return (
     <>
       <div className="formContainer">
         <div className="smallAvatar">
-          <img src={props.avatar} alt="profile photo" />
+          <img src={handleBrokenAuthImage(props.avatar)} alt="profile photo" />
         </div>
         <div className="privacyButtons">
-          <PublicPostButton allPost={getAllPost} />
-          <PrivatePostButton privatePost={handlePrivatePosts} />
+          <PublicPostButton allPost={getAllPost} private={setPrivatePost} />
+          <PrivatePostButton allPost={getAllPost} private={setPrivatePost} />
         </div>
       </div>
 
-      <AllPosts />
-      <CreatePost onSubmit={getAllPost} />
+      <AllPosts posts={posts} />
+      <CreatePost onSubmit={getAllPost} private={privatePost} />
     </>
   );
 }

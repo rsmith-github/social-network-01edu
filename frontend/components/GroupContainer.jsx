@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { CreateGroupButton } from "./CreateGroupButton"
 import { GroupButton } from "./GroupButton"
+import { SearchGroupButton } from "./SearchGroup"
 
 export const GroupContainer = (props) => {
     const [loaded, setLoaded] = useState(false)
@@ -9,31 +10,50 @@ export const GroupContainer = (props) => {
         if (props["groups"] != null && props["groups"] != undefined)
             setGroupArr(props["groups"])
         setLoaded(true)
-    }, [props])
+    }, [props["groups"]])
 
     const newGroupCreated = (groupInfo) => {
         setGroupArr(groupRooms => {
             if (Array.isArray(groupRooms) && groupRooms.length === 0) {
                 return [groupInfo]
             } else {
-                return [...groupRooms, groupInfo]
+                return [groupInfo, ...groupRooms]
             }
         });
     }
+
+    const newPostAdded = (groupPostArr) => {
+        setGroupArr(groups => {
+            const selectedGroupIndex = groups.findIndex(group => group["group-id"] === groupPostArr[0]["group-post-id"])
+            const firstItem = groups[selectedGroupIndex]
+            console.log({ firstItem })
+            if (selectedGroupIndex != -1) {
+                groups.splice(selectedGroupIndex, 1)
+                return [firstItem, ...groups]
+            }
+        })
+    }
+
+
     return (
         <div className="group-posts-container">
             <div className="group-post-rooms">
-                {groupArr.length > 0 &&
+                {loaded &&
                     <>
-                        {groupArr.map((group, i) => (
+                        {groupArr.length > 0 &&
                             <>
-                                <GroupButton index={i} group={group} socket={props.socket} />
+                                {groupArr.map((group) => (
+                                    <>
+                                        <GroupButton group={group} socket={props.socket} addedPost={newPostAdded} />
+                                    </>
+                                ))}
                             </>
-                        ))}
-                    </>
-                }
+                        }
+                    </>}
+
             </div>
-            <div>
+            <div className="create-group-button-container">
+                <SearchGroupButton onSubmit={newGroupCreated} />
                 <CreateGroupButton onSubmit={newGroupCreated} />
             </div>
         </div>

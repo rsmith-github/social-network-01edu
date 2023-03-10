@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { LikeButton } from "./LikePostButton";
-import { DisLikeButton } from "./DislikePostButton";
-import { CommentButton } from "./CommentButton";
-import { EditButton } from "./EditPostButton";
-import { DeleteButton } from "./DeletePostButton";
-
 import { Post } from "./Post";
 
-export const AllPosts = () => {
+export const AllPosts = (postsArr) => {
   const [posts, setPosts] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!loaded) {
-      fetch("http://localhost:8080/create-post")
+      fetch("http://localhost:8080/view-public-posts")
         .then((response) => response.json())
         .then((data) => {
           console.log(data);
@@ -23,6 +17,9 @@ export const AllPosts = () => {
     }
   }, [loaded]);
 
+  useEffect(() => {
+    setPosts(postsArr["posts"])
+  }, [postsArr["posts"]]);
 
   var ranges = [
     { divider: 1e18, suffix: "E" },
@@ -59,19 +56,19 @@ export const AllPosts = () => {
       edited["post-likes"] = formatNumber(edited["post-likes"]);
       edited["post-dislikes"] = formatNumber(edited["post-dislikes"]);
       newPost[index] = edited;
-      return newPost.reverse();
+      return newPost;
     });
   };
 
   const handleDeletePost = (deletePost) => {
     const updatedPosts = posts.filter((post) => post["post-id"] !== deletePost);
-    setPosts(updatedPosts.reverse());
+    setPosts(updatedPosts);
   };
 
   return (
     <div className="post-container">
       {loaded &&
-        posts.map((post, index) => (
+        posts.slice().reverse().map((post, index) => (
           <div key={index} className="post">
             <Post
               post={post}
