@@ -32,7 +32,7 @@ func main() {
 	http.HandleFunc("/api/users", functions.UsersApi)
 	http.HandleFunc("/api/followers", functions.FollowersApi)
 	http.HandleFunc("/profile", functions.Profile)
-	// http.HandleFunc("/public-profiles", functions.DynamicPath)
+	http.HandleFunc("/public-profiles", functions.DynamicPath)
 	http.HandleFunc("/get-friends", functions.GetFriends)
 	http.HandleFunc("/create-chat", functions.CreateChat)
 	http.HandleFunc("/edit-chatroom", functions.EditChatroom)
