@@ -21,22 +21,32 @@ export const AddUserToGroupButton = (groupInfo) => {
     }, [])
 
     useEffect(() => {
-        fetch('http://localhost:8080/get-friends')
-            .then(response => response.json())
-            .then(newData => {
-                let friends = []
-                newData.map(friend => {
-                    if (!groupMembers.includes(friend)) {
-                        friends.push({ name: friend, selected: false })
-                    }
-                })
-                friends.sort((a, b) => a.name.localeCompare(b.name))
-                setFriends(friends)
+
+        const potentialGroupMembers = async () => {
+            // Fetch users from "all users" api
+            const usersPromise = await fetch("http://localhost:8080/api/users", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+            });
+            const newData = await usersPromise.json();
+            let friends = []
+            console.log(newData)
+            newData.map(friend => {
+                if (!groupMembers.includes(friend.nickname)) {
+                    friends.push({ name: friend.nickname, selected: false })
+                }
             })
+            friends.sort((a, b) => a.name.localeCompare(b.name))
+            setFriends(friends)
+        };
+        potentialGroupMembers()
     }, [groupMembers])
 
-    const filteredFriends = friends.filter((checkbox) =>
-        checkbox.name.toLowerCase().includes(searchInput.toLowerCase()))
+    let filteredFriends = []
+    if (friends != null) {
+        filteredFriends = friends.filter((checkbox) =>
+            checkbox.name.toLowerCase().includes(searchInput.toLowerCase()))
+    }
 
     const handleFriendClick = (id) => {
         const updatedUsers = friends.map(member => {

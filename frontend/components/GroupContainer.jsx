@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { CreateGroupButton } from "./CreateGroupButton"
 import { GroupButton } from "./GroupButton"
+import { SearchGroupButton } from "./SearchGroup"
 
 export const GroupContainer = (props) => {
     const [loaded, setLoaded] = useState(false)
@@ -51,7 +52,8 @@ export const GroupContainer = (props) => {
                     </>}
 
             </div>
-            <div>
+            <div className="create-group-button-container">
+                <SearchGroupButton onSubmit={newGroupCreated} />
                 <CreateGroupButton onSubmit={newGroupCreated} />
             </div>
         </div>
