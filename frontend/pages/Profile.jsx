@@ -27,7 +27,7 @@ export default function Profile(props) {
         </div>
         <div className="profile-page-title">{props.name}'s Posts</div>
       </div>
-      <AllPosts />
+      <AllPosts user={props.user} />
       <RightSide />
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Post } from "./Post";
 
-export const AllPosts = (postsArr) => {
+export const AllPosts = (props) => {
   const [posts, setPosts] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -18,8 +18,14 @@ export const AllPosts = (postsArr) => {
   }, [loaded]);
 
   useEffect(() => {
-    setPosts(postsArr["posts"])
-  }, [postsArr["posts"]]);
+    setPosts(props["posts"]);
+  }, [props["posts"]]);
+
+  useEffect(() => {
+    // props["posts"].forEach((post) => {
+    //   console.log(post);
+    // });
+  }, [props["posts"]]);
 
   var ranges = [
     { divider: 1e18, suffix: "E" },
@@ -39,6 +45,7 @@ export const AllPosts = (postsArr) => {
         );
       }
     }
+
     return n.toString();
   }
 
@@ -68,15 +75,18 @@ export const AllPosts = (postsArr) => {
   return (
     <div className="post-container">
       {loaded &&
-        posts.slice().reverse().map((post, index) => (
-          <div key={index} className="post">
-            <Post
-              post={post}
-              onEdit={handleEditPost}
-              onDelete={handleDeletePost}
-            />
-          </div>
-        ))}
+        posts
+          .slice()
+          .reverse()
+          .map((post, index) => (
+            <div key={index} className="post">
+              <Post
+                post={post}
+                onEdit={handleEditPost}
+                onDelete={handleDeletePost}
+              />
+            </div>
+          ))}
       {!loaded && (
         <div className="post-loader-container">
           <img
