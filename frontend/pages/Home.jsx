@@ -17,7 +17,7 @@ export default function Home(props) {
               user={props.user}
               avatar={props.avatar}
             />
-            <GroupContainer groups={props.groups} socket={props.socket} />
+            <GroupContainer groups={props.groups} socket={props.socket}/>
             <PostForm avatar={props.avatar} />
             <RightSide />
             <GetChat />

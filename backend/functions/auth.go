@@ -17,6 +17,7 @@ const SECRET_KEY = "DonaldTrump_Dumpling"
 
 var chatroomId = make(chan string)
 var loggedInUsername = make(chan string)
+var groupRoomId = make(chan string)
 
 func Login(w http.ResponseWriter, r *http.Request) {
 
@@ -85,6 +86,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("Error marshalling user: ", err.Error())
 		} else {
 			w.Write(jsn) // Write user data
+			return
 		}
 		return
 	}
@@ -142,6 +144,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		jsonified, _ := json.Marshal(newUser)
 		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte(jsonified))
+		fmt.Println(string(jsonified))
 		return
 	}
 
@@ -216,6 +219,7 @@ func GetFriends(w http.ResponseWriter, r *http.Request) {
 	content, _ := json.Marshal(friends)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(content)
+
 }
 
 func CreateChat(w http.ResponseWriter, r *http.Request) {
@@ -250,10 +254,12 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 				content, _ := json.Marshal(chatroom)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			} else {
 				content, _ := json.Marshal("Private Chat Already Exists")
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			}
 		} else if data.Type == "group" {
 			data.Id = Generate()
@@ -271,15 +277,18 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 			content, _ := json.Marshal(chatroom)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(content)
+
 		} else {
 			content, _ := json.Marshal("Please Select Type of Chat Created")
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(content)
+
 		}
 	} else {
 		content, _ := json.Marshal("Please Select Users To Chat To!!!!!")
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)
+
 	}
 }
 func Chat(w http.ResponseWriter, r *http.Request) {
@@ -297,6 +306,7 @@ func Chat(w http.ResponseWriter, r *http.Request) {
 		content, _ := json.Marshal(openedChat)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)
+
 		go func() {
 			chatroomId <- groupChatId
 			loggedInUsername <- openedChat.User
@@ -318,6 +328,7 @@ func Chat(w http.ResponseWriter, r *http.Request) {
 		content, _ := json.Marshal(totalChats)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)
+
 	}
 }
 
@@ -376,48 +387,59 @@ func EditChatroom(w http.ResponseWriter, r *http.Request) {
 		content, _ := json.Marshal(check)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)
+
 	}
+}
+
+func ViewPrivatePosts(w http.ResponseWriter, r *http.Request) {
+	allPosts := GetUserPosts(LoggedInUser(r).Nickname, "private")
+	content, _ := json.Marshal(allPosts)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(content)
+
+}
+
+func ViewPublicPosts(w http.ResponseWriter, r *http.Request) {
+	allPosts := GetUserPosts(LoggedInUser(r).Nickname, "public")
+	content, _ := json.Marshal(allPosts)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(content)
+
 }
 
 func CreatePost(w http.ResponseWriter, r *http.Request) {
 	var postData PostFields
-	if r.Method != "POST" {
-		allPosts := GetUserPosts(LoggedInUser(r).Nickname)
-		content, _ := json.Marshal(allPosts)
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(body, &postData)
+	if err != nil {
+		panic(err)
+	}
+	user := LoggedInUser(r).Nickname
+	if user == "" {
+		postData.Error = "Cannot Add Post, please Sign Up or Log In"
+		content, _ := json.Marshal(postData)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)
-	} else {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			panic(err)
-		}
 
-		err = json.Unmarshal(body, &postData)
-		if err != nil {
-			panic(err)
-		}
-		user := LoggedInUser(r).Nickname
-		if user == "" {
-			postData.Error = "Cannot Add Post, please Sign Up or Log In"
-			content, _ := json.Marshal(postData)
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(content)
-		} else if (len(postData.Thread) == 0) && (postData.Image == "") && (postData.Text == "") {
-			postData.Error = "please add content or close"
-			content, _ := json.Marshal(postData)
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(content)
-		} else {
-			postData.Id = Generate()
-			postData.Author = user
-			fmt.Println("post", postData)
-			AddPost(postData)
-			// get all posts and return
-			allPosts := GetUserPosts(user)
-			content, _ := json.Marshal(allPosts)
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(content)
-		}
+	} else if (len(postData.Thread) == 0) && (postData.Image == "") && (postData.Text == "") {
+		postData.Error = "please add content or close"
+		content, _ := json.Marshal(postData)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+
+	} else {
+		postData.Id = Generate()
+		postData.Author = user
+		AddPost(postData)
+		content, _ := json.Marshal("Post Added Successfully")
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+
 	}
 }
 
@@ -445,11 +467,13 @@ func PostInteractions(w http.ResponseWriter, r *http.Request) {
 				content, _ := json.Marshal(postLikes)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			} else {
 				postLikes := GetPost(likeData.PostId, user)
 				content, _ := json.Marshal(postLikes)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			}
 		} else if likeData.Type == "delete" {
 			postData := GetPost(likeData.PostId, user)
@@ -458,6 +482,7 @@ func PostInteractions(w http.ResponseWriter, r *http.Request) {
 				content, _ := json.Marshal(postData)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			} else {
 				err = RemovePost(postData.Id)
 				if err != nil {
@@ -466,12 +491,14 @@ func PostInteractions(w http.ResponseWriter, r *http.Request) {
 				content, _ := json.Marshal(postData)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			}
 		} else if likeData.Type == "comments" {
 			commentData := GetPostComments(likeData.PostId, user)
 			content, _ := json.Marshal(commentData)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(content)
+
 		}
 	}
 }
@@ -501,11 +528,13 @@ func EditPost(w http.ResponseWriter, r *http.Request) {
 			content, _ := json.Marshal(postData)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(content)
+
 		} else if user != currentPost.Author {
 			postData.Error = "you are NOT the author"
 			content, _ := json.Marshal(postData)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(content)
+
 		} else {
 			fmt.Println("post", postData)
 			if postData.Image == "" {
@@ -517,6 +546,7 @@ func EditPost(w http.ResponseWriter, r *http.Request) {
 				content, _ := json.Marshal(postData)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			}
 
 		}
@@ -526,6 +556,7 @@ func EditPost(w http.ResponseWriter, r *http.Request) {
 		content, _ := json.Marshal(post)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)
+
 	}
 }
 
@@ -553,6 +584,7 @@ func CreateComment(w http.ResponseWriter, r *http.Request) {
 			content, _ := json.Marshal(commentData.Error)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(content)
+
 		} else {
 			allComments := ReturnComments{
 				TotalComments: GetPostComments(commentData.PostId, user),
@@ -561,6 +593,7 @@ func CreateComment(w http.ResponseWriter, r *http.Request) {
 			content, _ := json.Marshal(allComments)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(content)
+
 		}
 	}
 }
@@ -591,11 +624,13 @@ func CommentInteractions(w http.ResponseWriter, r *http.Request) {
 				content, _ := json.Marshal(postLikes)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			} else {
 				postLikes := GetComment(likeData.CommentId, user)
 				content, _ := json.Marshal(postLikes)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			}
 
 		} else if likeData.Type == "delete" {
@@ -605,24 +640,49 @@ func CommentInteractions(w http.ResponseWriter, r *http.Request) {
 				content, _ := json.Marshal(comment)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			} else {
 				content, _ := json.Marshal(comment)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			}
 
 		}
 	}
 }
-
+func GetAllGroups(w http.ResponseWriter, r *http.Request) {
+	// get all groups that you re not involved in
+	user := LoggedInUser(r).Nickname
+	groups := SearchGroups(user)
+	content, _ := json.Marshal(groups)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(content)
+}
 func CreateGroup(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		user := LoggedInUser(r).Nickname
 		groups := GetUserGroups(user)
+		sort.Slice(groups, func(i, j int) bool {
+			return strings.ToLower(groups[i].Name) < strings.ToLower(groups[j].Name)
+		})
+		sort.Slice(groups, func(i, j int) bool {
+			return groups[i].Date > groups[j].Date
+		})
 		content, _ := json.Marshal(groups)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(content)
-		GetUserGroups(user)
+
+		// Empty message to prevent sending invalid Json.
+		var emptyMessage = make(map[string]string)
+		emptyMessage["message"] = "nothing to see here"
+		empty, _ := json.Marshal(emptyMessage)
+		if string(content) != "null" {
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(empty)
+		}
+
 	} else {
 		var data GroupFields
 		body, err := ioutil.ReadAll(r.Body)
@@ -635,29 +695,63 @@ func CreateGroup(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		if data.Users != "" {
-			user := LoggedInUser(r).Nickname
-			data.Users += "," + user
+		user := LoggedInUser(r).Nickname
+		data.Users += "," + user
 
-			data.Id = Generate()
-			data.Admin = user
-			// add admin and addmin should be the LoggedInUser.Nickname
-			AddGroup(data, user)
-			var returnedUserDisplay []string
-			for _, u := range strings.Split(data.Users, ",") {
-				if u != user {
-					returnedUserDisplay = append(returnedUserDisplay, u)
-				}
+		data.Id = Generate()
+		data.Admin = user
+		// add admin and addmin should be the LoggedInUser.Nickname
+		AddGroup(data, user)
+		var returnedUserDisplay []string
+		for _, u := range strings.Split(data.Users, ",") {
+			if u != user {
+				returnedUserDisplay = append(returnedUserDisplay, u)
 			}
-			groupRoom := data
-			groupRoom.Users = strings.Join(returnedUserDisplay, ",")
-			content, _ := json.Marshal(groupRoom)
+		}
+		groupRoom := data
+		groupRoom.Users = strings.Join(returnedUserDisplay, ",")
+		content, _ := json.Marshal(groupRoom)
+		// Empty message to prevent sending invalid Json.
+		var emptyMessage = make(map[string]string)
+		emptyMessage["message"] = "nothing to see here"
+		empty, _ := json.Marshal(emptyMessage)
+		if string(content) != "null" {
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(content)
 		} else {
-			content, _ := json.Marshal("Please Select Users For Your Group!!!!!")
 			w.Header().Set("Content-Type", "application/json")
-			w.Write(content)
+			w.Write(empty)
+		}
+
+	}
+}
+
+func SendGroupRequest(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	groupId := string(body)
+	user := LoggedInUser(r).Nickname
+	if !ConfirmGroupMember(user, groupId) {
+		group := GetGroup(groupId)
+		admin := group.Admin
+		adminSess := H.user[admin]
+		if !GetRequestNotif(admin, user, "send-group-request", groupId) {
+			AddRequestNotif(user, admin, "send-group-request", groupId)
+			if len(adminSess) != 0 {
+				for userSub := range adminSess {
+					userSub.conn.send <- message{incomingData: RequestNotifcationFields{GroupAction: GroupAcceptNotification{
+						User:        user,
+						Admin:       admin,
+						Action:      "send-group-request",
+						GroupName:   group.Name,
+						GroupAvatar: group.Avatar,
+						GroupId:     group.Id,
+					}}}
+				}
+			}
 		}
 	}
 }
@@ -672,14 +766,74 @@ func AddMemberToGroup(w http.ResponseWriter, r *http.Request) {
 	user := LoggedInUser(r).Nickname
 	if !ConfirmGroupMember(user, groupId) {
 		err = AddUserToGroup(groupId, user)
+		// add to request notification that user accepted request and send message to the admin
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.Write([]byte("error"))
 		} else {
 			w.Header().Set("Content-Type", "application/json")
 			w.Write([]byte("accepted"))
+			group := GetGroup(groupId)
+			admin := group.Admin
+			adminSess := H.user[admin]
+			if len(adminSess) != 0 {
+				for userSub := range adminSess {
+					userSub.conn.send <- message{incomingData: RequestNotifcationFields{GroupAction: GroupAcceptNotification{
+						User:        user,
+						Admin:       admin,
+						Action:      "accepted-group-request",
+						GroupName:   group.Name,
+						GroupAvatar: group.Avatar,
+						GroupId:     group.Id,
+					}}}
+				}
+			} else {
+				if !GetRequestNotif(admin, user, "accepted-group-request", groupId) {
+					AddRequestNotif(user, admin, "accepted-group-request", groupId)
+				}
+			}
 		}
 	}
+}
+
+func RemoveMemberFromGroup(w http.ResponseWriter, r *http.Request) {
+	var data GroupFields
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		panic(err)
+	}
+	members := strings.Split(data.Users, ",")
+	var removeMessage string
+	for _, mem := range members {
+		err := RemoveUserFromGroup(data.Id, mem)
+		if err != nil {
+			removeMessage = "Error Removing User, Please Try Again Later"
+		} else {
+			removeMessage = "Users have been successfully removed"
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(removeMessage))
+}
+
+func GroupMembers(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	group := GetGroup(string(body))
+	members := strings.Split(group.Users, ",")
+	fmt.Println(members)
+	content, _ := json.Marshal(members)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(content)
+
 }
 
 func GroupPosts(w http.ResponseWriter, r *http.Request) {
@@ -690,10 +844,15 @@ func GroupPosts(w http.ResponseWriter, r *http.Request) {
 
 	groupId := string(body)
 	user := LoggedInUser(r).Nickname
+	go func() {
+		groupRoomId <- groupId
+	}()
+
 	groupPosts := GetGroupPosts(user, groupId)
 	content, _ := json.Marshal(groupPosts)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(content)
+
 	GetUserGroups(user)
 }
 
@@ -717,16 +876,17 @@ func CreateGroupPost(w http.ResponseWriter, r *http.Request) {
 			content, _ := json.Marshal(postData)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(content)
+
 		} else if (len(postData.Thread) == 0) && (postData.Image == "") && (postData.Text == "") {
 			postData.Error = "please add content or close"
 			content, _ := json.Marshal(postData)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(content)
+
 		} else {
 			postData.PostId = Generate()
 			postData.Author = user
 
-			fmt.Println("post", postData)
 			if ConfirmGroupMember(user, postData.Id) {
 				err := AddGroupPost(postData)
 				if err != nil {
@@ -734,20 +894,32 @@ func CreateGroupPost(w http.ResponseWriter, r *http.Request) {
 					content, _ := json.Marshal(postData)
 					w.Header().Set("Content-Type", "application/json")
 					w.Write(content)
+
 				} else {
 					// get all posts and return
-					fmt.Println("post added to", postData.Id)
+					group := GetGroup(postData.Id)
+					potentialMember := strings.Split(group.Users, ",")
+					for _, member := range potentialMember {
+						if member != user {
+							loggedInMember := H.user[member]
+							for userSub := range loggedInMember {
+								postData.Group = group
+								userSub.conn.send <- message{incomingData: postData}
+							}
+						}
+					}
 					allPosts := GetGroupPosts(user, postData.Id)
-					fmt.Println("all Posts", allPosts)
-					content, _ := json.Marshal(allPosts)
+					content, _ := json.Marshal(allPosts[len(allPosts)-1])
 					w.Header().Set("Content-Type", "application/json")
 					w.Write(content)
+
 				}
 			} else {
-				postData.Error = "You Are Not A Member Of This Group"
+				postData.Error = "You No Longer Have Access To This Group!"
 				content, _ := json.Marshal(postData)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			}
 
 		}
@@ -778,11 +950,14 @@ func GroupPostInteractions(w http.ResponseWriter, r *http.Request) {
 				content, _ := json.Marshal(postLikes)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			} else {
 				postLikes := GetGroupPost(likeData.PostId, user)
+				fmt.Println(postLikes)
 				content, _ := json.Marshal(postLikes)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			}
 		} else if likeData.Type == "delete" {
 			postData := GetGroupPost(likeData.PostId, user)
@@ -791,6 +966,7 @@ func GroupPostInteractions(w http.ResponseWriter, r *http.Request) {
 				content, _ := json.Marshal(postData)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			} else {
 				err = RemoveGroupPost(postData.PostId)
 				if err != nil {
@@ -799,7 +975,13 @@ func GroupPostInteractions(w http.ResponseWriter, r *http.Request) {
 				content, _ := json.Marshal(postData)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			}
+		} else if likeData.Type == "comments" {
+			commentData := GetGroupPostComments(likeData.PostId, user)
+			content, _ := json.Marshal(commentData)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
 		}
 	}
 }
@@ -829,11 +1011,13 @@ func EditGroupPost(w http.ResponseWriter, r *http.Request) {
 			content, _ := json.Marshal(postData)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(content)
+
 		} else if user != currentPost.Author {
 			postData.Error = "you are NOT the author"
 			content, _ := json.Marshal(postData)
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(content)
+
 		} else {
 			fmt.Println("post", postData)
 			if postData.Image == "" {
@@ -845,11 +1029,163 @@ func EditGroupPost(w http.ResponseWriter, r *http.Request) {
 				content, _ := json.Marshal(postData)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(content)
+
 			}
 
 		}
 		post := GetGroupPost(postData.PostId, user)
 		content, _ := json.Marshal(post)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+
+	}
+}
+
+func CreateGroupPostComment(w http.ResponseWriter, r *http.Request) {
+	var commentData CommentFields
+	if r.Method != "POST" {
+		// bad request
+	} else {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+
+		err = json.Unmarshal(body, &commentData)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("check comment-id", commentData)
+		user := LoggedInUser(r).Nickname
+		commentData.CommentId = Generate()
+		commentData.Author = user
+		AddCommentErr := AddGroupPostComment(commentData)
+		if AddCommentErr != nil {
+			commentData.Error = "Error Adding Comment! Please Try Again Later!"
+			content, _ := json.Marshal(commentData.Error)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		} else {
+			allComments := ReturnGroupComments{
+				TotalComments: GetGroupPostComments(commentData.PostId, user),
+				Post:          GetGroupPost(commentData.PostId, user),
+			}
+			content, _ := json.Marshal(allComments)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		}
+	}
+}
+
+func GroupPostCommentInteractions(w http.ResponseWriter, r *http.Request) {
+	var likeData CommentsAndLikesFields
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+	err = json.Unmarshal(body, &likeData)
+	if err != nil {
+		panic(err)
+	}
+	user := LoggedInUser(r).Nickname
+	if likeData.Type == "delete" {
+		commentData := GetGroupPostComment(likeData.CommentId, user)
+		if user != commentData.Author {
+			commentData.Error = "you are NOT the author"
+			content, _ := json.Marshal(commentData)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		} else {
+			err = RemoveGroupPostComment(commentData.CommentId)
+			if err != nil {
+				commentData.Error = "Error Deleting comment please try again later"
+			}
+			content, _ := json.Marshal(commentData)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(content)
+		}
+	}
+}
+
+func CreateGroupEvent(w http.ResponseWriter, r *http.Request) {
+	var eventData GroupEventFields
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+	err = json.Unmarshal(body, &eventData)
+	if err != nil {
+		panic(err)
+	}
+	user := LoggedInUser(r).Nickname
+	eventData.EventId = Generate()
+	eventData.Organiser = user
+	err = AddGroupEvent(eventData)
+	if err != nil {
+		eventData.Error = "Error Adding Event. Please Try Again Later!"
+
+	}
+	eventData.EventOrganiser = true
+	content, _ := json.Marshal(eventData)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(content)
+}
+
+func GetGroupEvents(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+	groupId := string(body)
+	user := LoggedInUser(r).Nickname
+	allEvents := GetEvents(groupId, user)
+	content, _ := json.Marshal(allEvents)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(content)
+}
+
+func EventInteractions(w http.ResponseWriter, r *http.Request) {
+	var eventData EventAttendanceFields
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+	err = json.Unmarshal(body, &eventData)
+	if err != nil {
+		panic(err)
+	}
+	user := LoggedInUser(r).Nickname
+	if eventData.Status == "attendance" {
+		attendanceData := GetEventAttendees(eventData.EventId)
+		var sliceOfAttendees []User
+		db := OpenDB()
+		for _, attendee := range attendanceData {
+			row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", attendee.User, db, "GetUserFromEventsInteraction")
+			sliceOfAttendees = append(sliceOfAttendees, QueryUser(row, err))
+
+		}
+		db.Close()
+		fmt.Println(sliceOfAttendees)
+		content, _ := json.Marshal(sliceOfAttendees)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+	} else if eventData.Status == "delete" {
+		removedEvent := GetEvent(eventData.EventId, user)
+		err := DeleteGroupEvent(eventData.EventId)
+		if err != nil {
+			removedEvent.Error = "Error Removing Event, Please Try Again Later"
+		}
+		content, _ := json.Marshal(removedEvent)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(content)
+	} else {
+		eventData.User = user
+		err := AddEventAttendee(eventData)
+		event := GetEvent(eventData.EventId, user)
+		if err != nil {
+			event.Error = "Error! Please Try Again Later !"
+		}
+		content, _ := json.Marshal(event)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(content)
 	}

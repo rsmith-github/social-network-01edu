@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 export default function NavBar(props) {
@@ -8,19 +8,31 @@ export default function NavBar(props) {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
     });
-    console.log(props)
+    console.log(props);
     props["closeConn"]();
     props.setName("");
   };
 
+  const onHover = (ev) => {
+    ev.target.click();
+  };
+
   return (
-    <nav className="navbar navbar-expand-md navbar-dark bg-dark mb-4">
+    <nav
+      className="navbar navbar-expand-md navbar-dark"
+      style={{
+        backgroundColor: "RGB(148, 28, 47)",
+        boxShadow:
+          "rgb(0 0 0 / 30%) 0px 4px 6px -1px, rgb(0 0 0 / 6%) 0px 2px 4px -1px",
+      }}
+    >
       <button
         className="navbar-toggler"
         type="button"
         data-bs-toggle="collapse"
         data-bs-target="#navbarCollapse"
         style={{ marginLeft: "10px" }}
+        onMouseEnter={onHover}
       >
         <span className="navbar-toggler-icon"></span>
       </button>

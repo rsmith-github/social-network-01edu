@@ -4,28 +4,27 @@ export const RemoveUserToGroupButton = (groupInfo) => {
     const [friends, setFriends] = useState([])
     const [searchInput, setSearchInput] = useState("");
     const groupId = groupInfo["group"]["group"]["group-id"]
-    const groupMembersString = groupInfo["group"]["group"]["users"]
     const user = groupInfo["user"]
-    console.log(groupInfo, "add user to group")
     useEffect(() => {
-        fetch('http://localhost:8080/get-friends')
+        fetch('http://localhost:8080/group-members', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: groupId,
+        })
             .then(response => response.json())
             .then(data => {
-                if (groupMembersString != "" || groupMembersString != null || groupMembersString.length === 0) {
-                    groupMembers = groupMembersString.split(",")
-                }
+                console.log({ data })
                 let friends = []
-                data.map(friend => {
-                    if (!groupMembers.includes(friend)) {
-                        friends.push({ name: friend, selected: false })
-                    }
-                })
+                data.map(friend => friends.push({ name: friend, selected: false }))
+                friends.sort((a, b) => a.name.localeCompare(b.name))
                 setFriends(friends)
             })
     }, [])
-
-    const filteredFriends = friends.filter((checkbox) =>
-        checkbox.name.toLowerCase().includes(searchInput.toLowerCase()))
+    let filteredFriends = []
+    if (friends != undefined) {
+        filteredFriends = friends.filter((checkbox) =>
+            checkbox.name.toLowerCase().includes(searchInput.toLowerCase()))
+    }
 
     const handleFriendClick = (id) => {
         const updatedUsers = friends.map(member => {
@@ -37,27 +36,36 @@ export const RemoveUserToGroupButton = (groupInfo) => {
         setFriends(updatedUsers);
     }
 
-    // const handleUserSubmit = (evt) => {
-    //     evt.preventDefault()
-    //     let users = []
-    //     friends.map(friend => {
-    //         if (friend.selected) {
-    //             users.push(friend.name)
-    //             return
-    //         }
-    //     })
-    //     let values= groupInfo["group"]["group"]
-    //     values["users"]=users.join(',')
-    //     console.log(values)
+    const handleUserSubmit = (evt) => {
+        evt.preventDefault()
+        let users = []
+        friends.map(friend => {
+            if (friend.selected) {
+                users.push(friend.name)
+                return
+            }
+        })
+        let values = groupInfo["group"]["group"]
+        values["users"] = users.join(',')
+        values["action"] = "remove"
+        console.log(values)
 
-    //     // update group, if name was not there before-> send request
-    //     // if name was removed-> remove user  prevent from adding to group
-    //     groupInfo["socket"].send(JSON.stringify(values))
-    // }
+        fetch("http://localhost:8080/remove-group-member", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(values)
+        })
+            .then(response => response.text())
+            .then(response => {
+                setErrorMes(response)
+                setTimeout(() => groupInfo["onClose"](), 5000)
+            })
+        groupInfo["socket"].send(JSON.stringify(values))
+    }
 
 
     return (
-        <form className="group-members-form" >
+        <form className="group-members-form" onSubmit={handleUserSubmit}>
             <div className="comment-post-header">
                 <h1>Remove Members </h1>
             </div>
