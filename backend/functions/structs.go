@@ -92,7 +92,6 @@ type ChatNotifcationFields struct {
 	Receiver      string `json:"notification-receiver"`
 	NumOfMessages int    `json:"notification-numOfMessages"`
 	Date          int    `json:"notification-date"`
-	TotalNumber   int    `json:"notification-totalNotifs"`
 }
 
 type OpenChatInfo struct {
