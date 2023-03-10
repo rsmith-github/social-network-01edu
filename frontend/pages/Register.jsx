@@ -53,8 +53,8 @@ export default function Register() {
   return (
     <div>
       <main className="form-signin w-100 m-auto" style={{ display: "block" }}>
+        <h1 className="h3 mb-3 fw-normal">Please register</h1>
         <form onSubmit={submit}>
-          <h1 className="h3 mb-3 fw-normal">Please register</h1>
 
           <div className="form-floating">
             <input
@@ -131,33 +131,46 @@ export default function Register() {
             />
             <label htmlFor="nickname">Nickname</label>
           </div>
+          <div className="form-floating">
+            <div className="form-control reginput status">
+              <div>
+                <input
+                  required
+                  type="radio"
+                  id="private-status"
+                  value={"private"}
+                  name="status"
+                  onClick={(e) => setStatus(e.target.value)}
+                />
+                <label htmlFor="public-status">Private</label>
+              </div>
+              <div>
+
+                <input
+                  required
+                  type="radio"
+                  id="public-status"
+                  value={"public"}
+                  name="status"
+                  onClick={(e) => setStatus(e.target.value)}
+                />
+                <label htmlFor="public-status">Public</label>
+              </div>
+            </div>
+            <label htmlFor="">Status</label>
+          </div>
+          <div className="form-floating">
             <input
-              required
-              type="radio"
-              id="private-status"
-              value={"private"}
-              name="status"
-              onClick={(e) => setStatus(e.target.value)}
-            />
-            <label htmlFor="public-status">Private</label>
-            <input
-              required
-              type="radio"
-              id="public-status"
-              value={"public"}
-              name="status"
-              onClick={(e) => setStatus(e.target.value)}
-            />
-            <label htmlFor="public-status">Public</label>
-            <input
-              className="form-control"
+              className="form-control reginput"
               name="aboutme"
+              placeholder="About Me"
               id="about"
               cols="30"
               rows="10"
               onChange={(e) => setAbout(e.target.value)}
             ></input>
             <label htmlFor="about">About me</label>
+          </div>
           <button className="w-100 btn btn-lg btn-primary" type="submit">
             Register
           </button>
