@@ -59,6 +59,27 @@ function App() {
       });
   }, [name]);
 
+  const customToastClose = ({ closeToast, type }) => {
+    return (
+      <i
+        onClick={() => {
+          let removeRequest = {
+            "remove-sender": `${type["notification-followRequest"]["followRequest-username"]}`,
+            "remove-receiver": `${type["notification-followRequest"]["toFollow-username"]}`,
+          };
+          websocket.current.send(JSON.stringify(removeRequest));
+          closeToast;
+          console.log("sent", removeRequest);
+        }}
+        style={{
+          marginRight: "5px",
+        }}
+      >
+        x
+      </i>
+    );
+  };
+
   const notify = (obj, ws) => {
     if (
       obj["notification-sender"] != "" &&
@@ -103,6 +124,7 @@ function App() {
               "remove-sender": `${obj["notification-followRequest"]["followRequest-username"]}`,
               "remove-receiver": `${obj["notification-followRequest"]["toFollow-username"]}`,
             };
+            ws.send(JSON.stringify(removeRequest));
             //send to backend "followRequest:accepted" so it can broadcast and go to the else condition in client's "followMessage" switch case.
             const follow = {
               followRequest: `${obj["notification-followRequest"]["followRequest"]}`,
@@ -112,7 +134,6 @@ function App() {
               "followRequest-accepted": true,
             };
             ws.send(JSON.stringify(follow));
-            ws.send(JSON.stringify(removeRequest));
           }}
         />,
         {
@@ -123,14 +144,8 @@ function App() {
           draggable: true,
           progress: undefined,
           theme: "dark",
-          onClose: () => {
-            let removeRequest = {
-              "remove-sender": `${obj["notification-followRequest"]["followRequest-username"]}`,
-              "remove-receiver": `${obj["notification-followRequest"]["toFollow-username"]}`,
-            };
-            ws.send(JSON.stringify(removeRequest));
-            console.log("sent", removeRequest);
-          },
+          closeButton: customToastClose,
+          type: obj,
         }
       );
       return;

@@ -338,6 +338,7 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 			if requestNotif.GroupId == "" {
 				//get the follower's email
 				db := OpenDB()
+				defer db.Close()
 				row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", requestNotif.Sender, db, "GetUserFromFollowers")
 				//...
 				sender := QueryUser(row, err)

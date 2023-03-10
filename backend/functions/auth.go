@@ -29,6 +29,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 		// Try to find user from database
 		db := OpenDB()
+		defer db.Close()
 		rows, err := db.Query("SELECT * FROM users WHERE email=?", userToLogin.Email)
 		foundUser := QueryUser(rows, err)
 

@@ -38,7 +38,52 @@ func FollowersApi(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// This endpoint returns all followers.
+func AllFollowersApi(w http.ResponseWriter, r *http.Request) {
+
+	// all followers and all following based on user.
+	var user User
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&user)
+	if err != nil {
+		fmt.Println("Error in FollowersApi function:  ", err)
+	}
+
+	// Try to find rows where follower=user.Email or followee=user.Email, in order to see who is following when clicking on the follower/following count.
+	bytes := ExecuteSQL(`SELECT * FROM followers WHERE follower="` + user.Email + `" OR followee="` + user.Email + `";`)
+
+	// Map followers and following of the user.
+	userFollowingAndFollowersMap := make(map[string][]string)
+
+	// Unmarshal becasue it returns a list of bytes. Put json into a list of follows.
+	userFollowerFollowingList := make([]Follow, 0)
+	err1 := json.Unmarshal(bytes, &userFollowerFollowingList)
+	if err1 != nil {
+		panic(err)
+	}
+
+	// Filter followers and followees of user.
+	for _, followObj := range userFollowerFollowingList {
+		if followObj.Followee == user.Email {
+			userFollowingAndFollowersMap["followers"] = append(userFollowingAndFollowersMap["followers"], followObj.Follower)
+		} else if followObj.Follower == user.Email {
+			userFollowingAndFollowersMap["following"] = append(userFollowingAndFollowersMap["following"], followObj.Followee)
+
+		}
+	}
+
+	userFollowersBytes, _ := json.Marshal(userFollowingAndFollowersMap)
+
+	// Make sure content type is json not plain text.
+	w.Header().Set("Content-Type", "application/json")
+	// Write json as from bytes.
+	w.Write(userFollowersBytes)
+
+}
+
 func createApi(table string, w http.ResponseWriter, r *http.Request) {
+
+	// fmt.Println(table)
 
 	var str string
 	// Build query string

@@ -9,6 +9,12 @@ import PostForm from "../components/PostForm";
 import Swal from "sweetalert2";
 
 export default function Profile(props) {
+  // fetch followers and following for current user
+
+  // handle click event.
+
+  // show popup 
+
   return (
     <div className="profileContainer">
       <ProfileImgContainer

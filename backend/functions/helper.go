@@ -70,6 +70,7 @@ func QueryUser(rows *sql.Rows, err error) User {
 }
 func UpdateUserPrivacy(user User) error {
 	db := OpenDB()
+	defer db.Close()
 	stmt, err := db.Prepare("UPDATE users SET status=? WHERE email=?")
 	if err != nil {
 		fmt.Println(err, "error preparing stmt")
@@ -98,6 +99,7 @@ func AddGroup(groupFields GroupFields, creator string) error {
 	groupFields.Users = creator
 	groupFields.Admin = creator
 	db := OpenDB()
+	defer db.Close()
 	stmt, err := db.Prepare(`INSERT INTO "groups" (id,name,description,users,admin,avatar) values (?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		fmt.Println("error preparing table:", err)
@@ -113,6 +115,7 @@ func AddGroup(groupFields GroupFields, creator string) error {
 
 func AddUserToGroup(groupId, user string) error {
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT users FROM groups WHERE id = '%v'", groupId)
 	row, err := db.Query(s)
 	if err != nil {
@@ -139,6 +142,7 @@ func AddUserToGroup(groupId, user string) error {
 
 func RemoveUserFromGroup(groupId, user string) error {
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT users FROM groups WHERE id = '%v'", groupId)
 	row, err := db.Query(s)
 	if err != nil {
@@ -177,6 +181,7 @@ func removeFromGroup(slice []string, s int) []string {
 
 func GetUserGroups(username string) []GroupFields {
 	db := OpenDB()
+	defer db.Close()
 	row, err := db.Query("SELECT * FROM groups")
 	var involvedGroups []GroupFields
 	if err != nil {
@@ -222,6 +227,7 @@ func GetUserGroups(username string) []GroupFields {
 
 func GetGroup(groupId string) GroupFields {
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT * FROM groups WHERE id = '%v'", groupId)
 	row, err := db.Query(s)
 	if err != nil {
@@ -246,6 +252,7 @@ func GetGroup(groupId string) GroupFields {
 
 func ConfirmGroupMember(username, groupId string) bool {
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT users FROM groups WHERE id = '%v'", groupId)
 	row, err := db.Query(s)
 	if err != nil {
@@ -267,6 +274,7 @@ func ConfirmGroupMember(username, groupId string) bool {
 
 func UpdateGroup(groupRoom GroupFields, action string, user string) GroupFields {
 	db := OpenDB()
+	defer db.Close()
 	users := strings.Split(groupRoom.Users, ",")
 	sort.Strings(users)
 	if action == "leave" {
@@ -304,6 +312,7 @@ func UpdateGroup(groupRoom GroupFields, action string, user string) GroupFields 
 
 func AddGroupPost(postFields GroupPostFields) error {
 	db := OpenDB()
+	defer db.Close()
 	stmt, err := db.Prepare(`INSERT into "groupposts" (id, postid , author, image, text, thread, time) VALUES (?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		fmt.Println("error add group-post to table", err)
@@ -315,6 +324,7 @@ func AddGroupPost(postFields GroupPostFields) error {
 
 func UpdateGroupPost(postFields GroupPostFields) error {
 	db := OpenDB()
+	defer db.Close()
 	stmt, err := db.Prepare(`UPDATE "groupposts" SET "text" = ?, "thread" = ?, "image" = ? WHERE "postid" = ?`)
 	if err != nil {
 		fmt.Println("Cannot update post")
@@ -325,6 +335,7 @@ func UpdateGroupPost(postFields GroupPostFields) error {
 
 func RemoveGroupPost(id string) error {
 	db := OpenDB()
+	defer db.Close()
 	stmt, err := db.Prepare("DELETE FROM groupposts WHERE postid = ?")
 	if err != nil {
 		fmt.Println("error removing post from posts table", err)
@@ -334,6 +345,7 @@ func RemoveGroupPost(id string) error {
 }
 func GetGroupPosts(user, groupId string) []GroupPostFields {
 	db := OpenDB()
+	defer db.Close()
 	sliceOfPostTableRows := []GroupPostFields{}
 	s := fmt.Sprintf("SELECT * FROM groupposts WHERE id = '%v'", groupId)
 	rows, err := db.Query(s)
@@ -383,6 +395,7 @@ func GetGroupPosts(user, groupId string) []GroupPostFields {
 
 func GetGroupPost(postId string, user string) GroupPostFields {
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT * FROM groupposts WHERE postid ='%v'", postId)
 	var post GroupPostFields
 	rows, _ := db.Query(s)
@@ -431,6 +444,7 @@ func GetGroupPost(postId string, user string) GroupPostFields {
 func AddGroupLike(GroupLikes GroupsAndLikesFields) error {
 	LikedGroup := GetGroupLike(GroupLikes.PostId, GroupLikes.Username)
 	db := OpenDB()
+	defer db.Close()
 	var s string
 	if LikedGroup.Like == "" {
 		s = "INSERT INTO likesgroup (like, id, username) values (?, ?, ?)"
@@ -450,6 +464,7 @@ func AddGroupLike(GroupLikes GroupsAndLikesFields) error {
 func GetGroupLike(id, user string) GroupsAndLikesFields {
 	GroupLikeRow := GroupsAndLikesFields{}
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT * FROM likesgroup WHERE id = '%v' AND username = '%v'", id, user)
 	rows, _ := db.Query(s)
 	var postId string
@@ -473,6 +488,7 @@ func GetGroupLike(id, user string) GroupsAndLikesFields {
 func GetGroupPostLikes(id, l string) []GroupsAndLikesFields {
 	sliceOfGroupLikesRow := []GroupsAndLikesFields{}
 	db := OpenDB()
+	defer db.Close()
 	var s string
 	if l == "all" {
 		s = fmt.Sprintf("SELECT * FROM likesgroup WHERE username = '%v' AND like = '%v'", id, "l")
@@ -505,6 +521,7 @@ func GetGroupPostLikes(id, l string) []GroupsAndLikesFields {
 
 func CheckIfPrivateExistsBasedOnUsers(chatFields ChatRoomFields) bool {
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT * FROM chatroom WHERE type = '%v'", chatFields.Type)
 	row, err := db.Query(s)
 	sameNameGroups := []ChatRoomFields{}
@@ -551,6 +568,7 @@ func AddChat(chatFields ChatRoomFields, creator string) error {
 	chatFields.Users = strings.Join(sliceOfUsers, ",")
 	chatFields.Admin = creator
 	db := OpenDB()
+	defer db.Close()
 	stmt, err := db.Prepare(`INSERT INTO "chatroom" (id, name,description,type,users,admin,avatar) values (?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		fmt.Println("error preparing table:", err)
@@ -566,6 +584,7 @@ func AddChat(chatFields ChatRoomFields, creator string) error {
 
 func GetUserChats(username string) ChatroomType {
 	db := OpenDB()
+	defer db.Close()
 	row, err := db.Query("SELECT * FROM chatroom")
 	var involvedChats ChatroomType
 	if err != nil {
@@ -616,6 +635,7 @@ func GetUserChats(username string) ChatroomType {
 
 func GetChatRoom(chatroom string, user string) ChatRoomFields {
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT * FROM chatroom WHERE id = '%v'", chatroom)
 	row, err := db.Query(s)
 	if err != nil {
@@ -664,6 +684,7 @@ func Contains(s []string, e string) bool {
 
 func UpdateChatroom(chatroom ChatRoomFields, action string, user string) ChatRoomFields {
 	db := OpenDB()
+	defer db.Close()
 	users := strings.Split(chatroom.Users, ",")
 	sort.Strings(users)
 	if action == "leave" {
@@ -694,6 +715,7 @@ func UpdateChatroom(chatroom ChatRoomFields, action string, user string) ChatRoo
 
 func AddMessage(chatFields ChatFields) error {
 	db := OpenDB()
+	defer db.Close()
 	stmt, err := db.Prepare(`INSERT INTO "messages" (id,sender,messageId,message,date) values (?, ?, ?, ?, ?)`)
 	if err != nil {
 		fmt.Println("error preparing table:", err)
@@ -708,6 +730,7 @@ func AddMessage(chatFields ChatFields) error {
 }
 func GetPreviousMessages(chatroomId string) []ChatFields {
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT * FROM messages WHERE id = '%v'", chatroomId)
 	row, err := db.Query(s)
 	if err != nil {
@@ -738,6 +761,7 @@ func GetPreviousMessages(chatroomId string) []ChatFields {
 
 func AddPost(postFields PostFields) {
 	db := OpenDB()
+	defer db.Close()
 	stmt, err := db.Prepare(`INSERT into "posts"(id,author,image,text,thread,time,privacy,viewers) VALUES (?,?,?,?,?,?,?,?)`)
 	if err != nil {
 		fmt.Println("error add post to table", err)
@@ -747,6 +771,7 @@ func AddPost(postFields PostFields) {
 
 func UpdatePost(postFields PostFields) error {
 	db := OpenDB()
+	defer db.Close()
 	stmt, err := db.Prepare(`UPDATE "posts" SET "text" = ?, "thread" = ?, "image" = ? WHERE "id" = ?`)
 	if err != nil {
 		fmt.Println("Cannot update post")
@@ -757,6 +782,7 @@ func UpdatePost(postFields PostFields) error {
 
 func RemovePost(id string) error {
 	db := OpenDB()
+	defer db.Close()
 	stmt, err := db.Prepare("DELETE FROM posts WHERE id = ?")
 	if err != nil {
 		fmt.Println("error removing post from posts table", err)
@@ -766,6 +792,7 @@ func RemovePost(id string) error {
 }
 func GetUserPosts(user, privateness string) []PostFields {
 	db := OpenDB()
+	defer db.Close()
 	sliceOfPostTableRows := []PostFields{}
 	rows, _ := db.Query(`SELECT * FROM "posts"`)
 	var id string
@@ -836,6 +863,7 @@ func GetUserPosts(user, privateness string) []PostFields {
 func GetPost(postId string, user string) PostFields {
 	fmt.Println(user, "get post", postId)
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf(`SELECT * FROM "posts" WHERE id ='%v'`, postId)
 	var post PostFields
 	rows, _ := db.Query(s)
@@ -887,6 +915,7 @@ func GetPost(postId string, user string) PostFields {
 func GetPostLike(id, user string) LikesFields {
 	sliceOfLikeRows := LikesFields{}
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT * FROM likes WHERE id = '%v' AND username = '%v'", id, user)
 	rows, _ := db.Query(s)
 	var postid string
@@ -907,6 +936,7 @@ func GetPostLike(id, user string) LikesFields {
 func AddPostLikes(postLiked LikesFields) error {
 	LikedPost := GetPostLike(postLiked.PostId, postLiked.Username)
 	db := OpenDB()
+	defer db.Close()
 	var s string
 	if LikedPost.Like == "" {
 		s = "INSERT INTO likes (like, id, username) values (?, ?, ?)"
@@ -926,6 +956,7 @@ func AddPostLikes(postLiked LikesFields) error {
 func GetPostLikes(id, l string) []LikesFields {
 	sliceOfLikedRows := []LikesFields{}
 	db := OpenDB()
+	defer db.Close()
 	var s string
 	if l == "all" {
 		s = fmt.Sprintf("SELECT * FROM likes WHERE username = '%v' AND like = '%v'", id, "l")
@@ -959,6 +990,7 @@ func GetPostLikes(id, l string) []LikesFields {
 func AddComment(commentFields CommentFields) error {
 	fmt.Println("comments", commentFields)
 	db := OpenDB()
+	defer db.Close()
 	stmt, err := db.Prepare(`INSERT INTO "comments" (id, postid, author, image, text, thread, time) values(?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		log.Fatal("error preparing to comment table:= ", err)
@@ -976,6 +1008,7 @@ func AddComment(commentFields CommentFields) error {
 func GetPostComments(postId, user string) []CommentFields {
 	// fmt.Println(user, "postId", postId)
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT * FROM comments WHERE postid = '%v'", postId)
 
 	sliceOfCommentRows := []CommentFields{}
@@ -1018,6 +1051,7 @@ func GetPostComments(postId, user string) []CommentFields {
 
 func RemoveComment(id string) error {
 	db := OpenDB()
+	defer db.Close()
 	stmt, err := db.Prepare(`DELETE FROM "comments" WHERE "id" = ?`)
 	if err != nil {
 		fmt.Println("error removing post from posts table", err)
@@ -1028,6 +1062,7 @@ func RemoveComment(id string) error {
 
 func GetComment(commentId, user string) CommentFields {
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT * FROM comments WHERE id = '%v'", commentId)
 	rows, _ := db.Query(s)
 	var commentid, postid, author, image, thread, text string
@@ -1070,6 +1105,7 @@ func GetComment(commentId, user string) CommentFields {
 func AddCommentLike(commentLikes CommentsAndLikesFields) error {
 	LikedComment := GetCommentLike(commentLikes.CommentId, commentLikes.Username)
 	db := OpenDB()
+	defer db.Close()
 	var s string
 	if LikedComment.Like == "" {
 		s = "INSERT INTO likescom (like, id, username) values (?, ?, ?)"
@@ -1089,6 +1125,7 @@ func AddCommentLike(commentLikes CommentsAndLikesFields) error {
 func GetCommentLike(id, user string) CommentsAndLikesFields {
 	CommentLikeRow := CommentsAndLikesFields{}
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT * FROM likescom WHERE id = '%v' AND username = '%v'", id, user)
 	rows, _ := db.Query(s)
 	var commentId string
@@ -1109,6 +1146,7 @@ func GetCommentLike(id, user string) CommentsAndLikesFields {
 func GetCommentLikes(id, l string) []CommentsAndLikesFields {
 	sliceOfCommentLikesRow := []CommentsAndLikesFields{}
 	db := OpenDB()
+	defer db.Close()
 	var s string
 	if l == "all" {
 		s = fmt.Sprintf("SELECT * FROM likescom WHERE username = '%v' AND like = '%v'", id, "l")
@@ -1139,6 +1177,7 @@ func GetCommentLikes(id, l string) []CommentsAndLikesFields {
 
 func GetUserFromFollowMessage(email string) User {
 	db := OpenDB()
+	defer db.Close()
 	//get the users who have interacted
 	row, err := PreparedQuery("SELECT * FROM users WHERE email = ?", email, db, "GetUserFromFollowers")
 	return QueryUser(row, err)
@@ -1148,6 +1187,7 @@ func updateFollowerCount(followerEmail string, followeeEmail string, isFollowing
 	// Update the follower count in the database.
 
 	db := OpenDB()
+	defer db.Close()
 
 	// Create a map representing the follow object to update the db.
 	follow := make(map[string]string)
@@ -1179,6 +1219,7 @@ func updateFollowerCount(followerEmail string, followeeEmail string, isFollowing
 
 func GetFollowers(user User) []string {
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT * FROM followers WHERE follower = '%v' OR followee = '%v'", user.Email, user.Email)
 	rows, _ := db.Query(s)
 	var id int
@@ -1213,6 +1254,7 @@ func GetFollowers(user User) []string {
 
 func GetFollowing(user User) []string {
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT * FROM followers WHERE follower = '%v'", user.Email)
 	rows, err := db.Query(s)
 	if err != nil {
@@ -1241,6 +1283,7 @@ func GetFollowing(user User) []string {
 
 func GetTotalFollowers(email string) int {
 	db := OpenDB()
+	defer db.Close()
 	s := fmt.Sprintf("SELECT * FROM followers WHERE follower = '%v'", email)
 	rows, _ := db.Query(s)
 	var id int
@@ -1268,6 +1311,7 @@ func GetTotalFollowers(email string) int {
 
 func AddChatNotif(notifFields ChatNotifcationFields) error {
 	db := OpenDB()
+	defer db.Close()
 	stmt, err := db.Prepare(`
 	INSERT INTO "chatNotification" (chatId,sender,receiver,numOfMessages,date) values (?,?,?,?,?)
 	`)
@@ -1286,6 +1330,7 @@ func AddChatNotif(notifFields ChatNotifcationFields) error {
 
 func GetChatNotif(receiverName, senderName, chatRoomId string) ChatNotifcationFields {
 	db := OpenDB()
+	defer db.Close()
 	var chatNotif ChatNotifcationFields
 	n := fmt.Sprintf(`SELECT * FROM chatNotification WHERE receiver = '%v' AND sender ='%v' AND chatId ='%v'`, receiverName, senderName, chatRoomId)
 	rows, err := db.Query(n)
@@ -1314,6 +1359,7 @@ func GetChatNotif(receiverName, senderName, chatRoomId string) ChatNotifcationFi
 
 func GetChatNotifications(receiverName, chatRoomId string) []ChatNotifcationFields {
 	db := OpenDB()
+	defer db.Close()
 	var sliceOfNotification []ChatNotifcationFields
 	n := fmt.Sprintf(`SELECT * FROM chatNotification WHERE receiver = '%v' AND chatId ='%v'`, receiverName, chatRoomId)
 	rows, err := db.Query(n)
@@ -1343,6 +1389,7 @@ func GetChatNotifications(receiverName, chatRoomId string) []ChatNotifcationFiel
 
 func GetTotalChatNotifs(user string) int {
 	db := OpenDB()
+	defer db.Close()
 	sliceOfNotifFields := []ChatNotifcationFields{}
 	n := fmt.Sprintf(`SELECT * FROM chatNotification WHERE receiver = '%v'`, user)
 	rows, err := db.Query(n)
@@ -1374,6 +1421,7 @@ func GetTotalChatNotifs(user string) int {
 
 func GetAllChatNotifs(user string) []ChatNotifcationFields {
 	db := OpenDB()
+	defer db.Close()
 	sliceOfNotifFields := []ChatNotifcationFields{}
 	n := fmt.Sprintf(`SELECT * FROM chatNotification WHERE receiver = '%v'`, user)
 	rows, err := db.Query(n)
@@ -1402,6 +1450,7 @@ func GetAllChatNotifs(user string) []ChatNotifcationFields {
 
 func UpdateNotif(item ChatNotifcationFields) {
 	db := OpenDB()
+	defer db.Close()
 	stmt, _ := db.Prepare("UPDATE chatNotification SET numOfMessages = ?, date = ? WHERE sender = ? AND receiver = ? AND chatId = ?")
 	defer stmt.Close()
 	_, err := stmt.Exec(item.NumOfMessages, item.Date, item.Sender, item.Receiver, item.ChatId)
@@ -1416,6 +1465,7 @@ func UpdateNotif(item ChatNotifcationFields) {
 
 func DeleteRequestNotif(item RequestNotifcationFields) {
 	db := OpenDB()
+	defer db.Close()
 	if item.GroupId == "" {
 		stmt, error2 := db.Prepare("DELETE FROM requestNotification WHERE sender = ? AND receiver = ? AND typeOfRequest = ?")
 		if error2 != nil {
@@ -1448,6 +1498,7 @@ func DeleteRequestNotif(item RequestNotifcationFields) {
 
 func AddRequestNotif(senderName, receiverName, requestType, id string) error {
 	db := OpenDB()
+	defer db.Close()
 	if id == "" {
 		stmt, err := db.Prepare(`
 		INSERT INTO requestNotification (sender,receiver,typeOfRequest) values (?,?,?)
@@ -1481,6 +1532,7 @@ func AddRequestNotif(senderName, receiverName, requestType, id string) error {
 
 func GetAllRequestNotifs(user string) []RequestNotifcationFields {
 	db := OpenDB()
+	defer db.Close()
 	sliceOfRequestFields := []RequestNotifcationFields{}
 	n := fmt.Sprintf(`SELECT * FROM requestNotification WHERE receiver = '%v'`, user)
 	rows, err := db.Query(n)
@@ -1504,6 +1556,7 @@ func GetAllRequestNotifs(user string) []RequestNotifcationFields {
 
 func GetRequestNotifByType(receiverName, senderName, requestType string) []RequestNotifcationFields {
 	db := OpenDB()
+	defer db.Close()
 	sliceOfrequestNotif := []RequestNotifcationFields{}
 	n := fmt.Sprintf(`SELECT * FROM requestNotification WHERE receiver = '%v' AND sender ='%v' AND typeOfRequest ='%v'`, receiverName, senderName, requestType)
 	rows, err := db.Query(n)
@@ -1543,8 +1596,8 @@ func CreateSqlTables() {
 	db := OpenDB()
 
 	// if you need to delete a table rather than delete a whole database
-	_, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS "followers"`)
-	CheckErr(deleteTblErr, "-------Error deleting table")
+	// _, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS "followers"`)
+	// CheckErr(deleteTblErr, "-------Error deleting table")
 
 	// Create user table if it doen't exist.
 	var _, usrTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `users` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `email` VARCHAR(64) NOT NULL UNIQUE, `password` VARCHAR(255) NOT NULL, `firstname` VARCHAR(64) NOT NULL, `lastname` VARCHAR(64) NOT NULL, `dob` VARCHAR(255) NOT NULL, `avatar` VARCHAR(255), `nickname` VARCHAR(64), `aboutme` VARCHAR(255), `followers` INTEGER DEFAULT 0, `following` INTEGER DEFAULT 0, 'status' TEXT DEFAULT NULL)")

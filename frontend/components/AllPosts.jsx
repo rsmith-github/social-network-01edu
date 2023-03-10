@@ -5,27 +5,54 @@ export const AllPosts = (props) => {
   const [posts, setPosts] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
+  //   Fetch public posts
   useEffect(() => {
     if (!loaded) {
       fetch("http://localhost:8080/view-public-posts")
         .then((response) => response.json())
         .then((data) => {
-          console.log(data);
-          setPosts(data);
+          if (props.user) {
+            const filteredPosts = data.filter(
+              (post) => post.author === props.user.nickname
+            );
+            setPosts(filteredPosts);
+          } else {
+            setPosts(data);
+          }
           setLoaded(true);
         });
     }
   }, [loaded]);
 
+  // Fetch private posts and append to posts list if visiting a profile page.
+  useEffect(() => {
+    (async () => {
+      if (props.user) {
+        let privatePostsPromise = await fetch(
+          "http://localhost:8080/view-private-posts"
+        );
+        let result = await privatePostsPromise.json();
+        let filteredResult = result.filter(
+          (post) => post.author === props.user.nickname
+        );
+        setPosts([...posts, ...filteredResult]);
+      }
+    })();
+  }, [loaded]);
+
+  //   Handle private posts button on homepage.
   useEffect(() => {
     setPosts(props["posts"]);
   }, [props["posts"]]);
 
-  useEffect(() => {
-    // props["posts"].forEach((post) => {
-    //   console.log(post);
-    // });
-  }, [props["posts"]]);
+  //   useEffect(() => {
+  //     if (props.user && posts) {
+  //       const filteredPosts = posts.filter(
+  //         (post) => post.author === props.user.nickname
+  //       );
+  //       setPosts(filteredPosts);
+  //     }
+  //   }, [loaded]);
 
   var ranges = [
     { divider: 1e18, suffix: "E" },
