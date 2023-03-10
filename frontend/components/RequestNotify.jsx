@@ -10,7 +10,7 @@ export const RequestNotify = ({ type, accepted, rejected }) => {
     }
     useEffect(() => {
         if (type.hasOwnProperty("group-id")) {
-            let str = `${type["admin"]}` + " Would Like You To Join " + `${type["group-name"]}`
+            let str = "👀 Would You Like To Join " + `${type["group-name"]}`
             setMessage(str)
         } else if (type.hasOwnProperty("followRequest")) {
             let str = `${type["followRequest-username"]}` + " Would Like To Follow You"
@@ -81,24 +81,31 @@ export const RemoveGroupNotify = ({ type }) => {
     )
 }
 
-export const AddedGroupNotify = ({ type }) => {
+export const AddedGroupNotify = ({ type, accepted }) => {
     const [message, setMessage] = useState("")
     useEffect(() => {
         let str
-        if (type["action"]) {
+        if (type["action"] == "accepted-group-request") {
             str = "😃" + `${type["user"]}` + " Has Now Joined " + `${type["group-name"]}`
             // setMessage(str)
-        } else {
+        } else if (type["action"] == "remove-group-request") {
             str = "🙃 You Have Been Removed From " + `${type["group-name"]}`
+        } else {
+            str = "🤔 " + `${type["user"]}` + " Would Like To Join " + `${type["group-name"]}`
         }
         setMessage(str)
     }, [type])
+
     const handleBrokenAuthImage = (source) => {
         if (source != "") {
             return source
         } else {
             return "https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png"
         }
+    }
+
+    const handleAccepted = () => {
+        accepted();
     }
 
     return (
@@ -108,6 +115,9 @@ export const AddedGroupNotify = ({ type }) => {
                 <img src={handleBrokenAuthImage(type["group-avatar"])} />
                 <p className="group-post-button-name">{type["group-name"]}</p>
             </button>
+            {type["action"] == "send-group-request" &&
+                <button className="button-85" onClick={handleAccepted}>Accept</button>
+            }
         </div>
     )
 }

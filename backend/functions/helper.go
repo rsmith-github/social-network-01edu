@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -173,6 +174,37 @@ func RemoveUserFromGroup(groupId, user string) error {
 
 func removeFromGroup(slice []string, s int) []string {
 	return append(slice[:s], slice[s+1:]...)
+}
+
+func SearchGroups(username string) []GroupFields {
+	db := OpenDB()
+	row, err := db.Query("SELECT * FROM groups")
+	involvedGroups := GetUserGroups(username)
+	var involveGroupIds []string
+	for _, group := range involvedGroups {
+		involveGroupIds = append(involveGroupIds, group.Id)
+	}
+	var otherGroups []GroupFields
+	if err != nil {
+		log.Fatal(err)
+	}
+	var id, name, description, users, admin, avatar string
+	for row.Next() { // Iterate and fetch the records from result cursor
+		row.Scan(&id, &name, &description, &users, &admin, &avatar)
+		group := GroupFields{
+			Id:          id,
+			Name:        name,
+			Description: description,
+			Users:       users,
+			Admin:       admin,
+			Avatar:      avatar,
+		}
+		if !Contains(involveGroupIds, group.Id) {
+			otherGroups = append(otherGroups, group)
+		}
+	}
+	row.Close()
+	return otherGroups
 }
 
 func GetUserGroups(username string) []GroupFields {
@@ -351,13 +383,14 @@ func GetGroupPosts(user, groupId string) []GroupPostFields {
 	for rows.Next() {
 		rows.Scan(&id, &postId, &author, &image, &text, &thread, &time)
 		postTableRows := GroupPostFields{
-			Id:     id,
-			PostId: postId,
-			Author: author,
-			Image:  image,
-			Text:   text,
-			Thread: thread,
-			Time:   time,
+			Id:           id,
+			PostId:       postId,
+			Author:       author,
+			Image:        image,
+			Text:         text,
+			Thread:       thread,
+			Time:         time,
+			PostComments: len(GetGroupPostComments(postId, user)),
 		}
 
 		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", postTableRows.Author, db, "GetUserFromPosts")
@@ -365,6 +398,7 @@ func GetGroupPosts(user, groupId string) []GroupPostFields {
 		if postTableRows.Author == user {
 			postTableRows.PostAuthor = true
 		}
+		postTableRows.PostComments = len(GetGroupPostComments(postTableRows.PostId, user))
 		postTableRows.Likes = len(GetGroupPostLikes(postTableRows.PostId, "l"))
 		postTableRows.Dislikes = len(GetGroupPostLikes(postTableRows.PostId, "d"))
 		postLike := GetGroupLike(postTableRows.PostId, user)
@@ -405,19 +439,21 @@ func GetGroupPost(postId string, user string) GroupPostFields {
 			Thread:     thread,
 			Time:       time,
 			PostAuthor: false,
-			Likes:      len(GetGroupPostLikes(postId, "l")),
-			Dislikes:   len(GetGroupPostLikes(postId, "d")),
-		}
-		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", post.Author, db, "GetUserFromPosts")
-		post.AuthorImg = QueryUser(row, err).Avatar
-		if post.Author == user {
-			post.PostAuthor = true
 		}
 		postLike := GetGroupLike(post.PostId, user)
 		if postLike.Like == "l" {
 			post.PostLiked = true
 		} else if postLike.Like == "d" {
 			post.PostDisliked = true
+		}
+		fmt.Println()
+		post.Likes = len(GetGroupPostLikes(post.PostId, "l"))
+		post.Dislikes = len(GetGroupPostLikes(post.PostId, "d"))
+		post.PostComments = len(GetGroupPostComments(post.PostId, user))
+		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", post.Author, db, "GetUserFromPosts")
+		post.AuthorImg = QueryUser(row, err).Avatar
+		if post.Author == user {
+			post.PostAuthor = true
 		}
 	}
 	rows.Close()
@@ -487,7 +523,10 @@ func GetGroupPostLikes(id, l string) []GroupsAndLikesFields {
 	var author string
 	var like string
 	if rows.Next() {
-		rows.Scan(&postId, &author, &like)
+		err := rows.Scan(&postId, &author, &like)
+		if err != nil {
+			fmt.Println("error getting group post likes", err)
+		}
 		likedRows := GroupsAndLikesFields{
 			PostId:   postId,
 			Username: author,
@@ -497,6 +536,100 @@ func GetGroupPostLikes(id, l string) []GroupsAndLikesFields {
 	}
 	rows.Close()
 	return sliceOfGroupLikesRow
+}
+
+//
+// Group Post Comments
+//
+
+func AddGroupPostComment(commentFields CommentFields) error {
+	db := OpenDB()
+	stmt, err := db.Prepare(`INSERT INTO "groupComments" (id, postid, author, image, text, thread, time) values(?, ?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		log.Fatal("error preparing to comment table:= ", err)
+		return err
+	}
+	_, err = stmt.Exec(commentFields.CommentId, commentFields.PostId, commentFields.Author, commentFields.Image, commentFields.Text, commentFields.Thread, commentFields.Time)
+	if err != nil {
+		log.Fatal("Error adding comment to groupComment table", err)
+		return err
+	}
+	fmt.Println("added comment to groupComment table")
+	return err
+}
+
+func GetGroupPostComments(postId, user string) []CommentFields {
+	// fmt.Println(user, "postId", postId)
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT * FROM groupComments WHERE postid = '%v'", postId)
+
+	sliceOfCommentRows := []CommentFields{}
+	rows, _ := db.Query(s)
+	var commentid, postid, author, image, thread, text string
+	var time int
+
+	for rows.Next() {
+		rows.Scan(&commentid, &postid, &author, &image, &text, &thread, &time)
+		commentRows := CommentFields{
+			CommentId:     commentid,
+			PostId:        postid,
+			Author:        author,
+			Image:         image,
+			Text:          text,
+			Thread:        thread,
+			Time:          time,
+			CommentAuthor: false,
+		}
+
+		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", commentRows.Author, db, "GetUserFromPosts")
+		commentRows.AuthorImg = QueryUser(row, err).Avatar
+
+		if commentRows.Author == user {
+			commentRows.CommentAuthor = true
+		}
+		sliceOfCommentRows = append(sliceOfCommentRows, commentRows)
+	}
+	rows.Close()
+	return sliceOfCommentRows
+}
+
+func RemoveGroupPostComment(id string) error {
+	db := OpenDB()
+	stmt, err := db.Prepare(`DELETE FROM "groupComments" WHERE "id" = ?`)
+	if err != nil {
+		fmt.Println("error removing comment from groupComment table", err)
+	}
+	stmt.Exec(id)
+	return err
+}
+
+func GetGroupPostComment(commentId, user string) CommentFields {
+	db := OpenDB()
+	s := fmt.Sprintf("SELECT * FROM groupComments WHERE id = '%v'", commentId)
+	rows, _ := db.Query(s)
+	var commentid, postid, author, image, thread, text string
+	var time int
+	var commentPost CommentFields
+
+	for rows.Next() {
+		rows.Scan(&commentid, &postid, &author, &image, &text, &thread, &time)
+		commentPost = CommentFields{
+			CommentId: commentid,
+			PostId:    postid,
+			Author:    author,
+			Image:     image,
+			Text:      text,
+			Thread:    thread,
+			Time:      time,
+		}
+		row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", commentPost.Author, db, "GetUserFromPosts")
+		commentPost.AuthorImg = QueryUser(row, err).Avatar
+		if commentPost.Author == user {
+			commentPost.CommentAuthor = true
+		}
+	}
+	rows.Close()
+	return commentPost
 }
 
 //
@@ -1416,6 +1549,7 @@ func UpdateNotif(item ChatNotifcationFields) {
 
 func DeleteRequestNotif(item RequestNotifcationFields) {
 	db := OpenDB()
+	defer db.Close()
 	if item.GroupId == "" {
 		stmt, error2 := db.Prepare("DELETE FROM requestNotification WHERE sender = ? AND receiver = ? AND typeOfRequest = ?")
 		if error2 != nil {
@@ -1525,6 +1659,240 @@ func GetRequestNotifByType(receiverName, senderName, requestType string) []Reque
 	return sliceOfrequestNotif
 }
 
+func GetRequestNotif(receiverName, senderName, requestType, id string) bool {
+	fmt.Println(receiverName,senderName , requestType, id)
+	db := OpenDB()
+	var requestNotif RequestNotifcationFields
+	n := fmt.Sprintf(`SELECT * FROM requestNotification WHERE sender = '%v' AND receiver ='%v' AND typeOfRequest ='%v' AND groupId='%v'`, senderName, receiverName, requestType, id)
+	rows, err := db.Query(n)
+	var sender, receiver, typeOfRequest, groupId string
+	if err != nil {
+		fmt.Println(err, "error getting follow request")
+	}
+	if rows.Next() {
+		err := rows.Scan(&sender, &receiver, &typeOfRequest, &groupId)
+		if err != nil {
+			fmt.Println("Error confirming request", err)
+		}
+		requestNotif = RequestNotifcationFields{
+			Sender:       sender,
+			Receiver:     receiver,
+			TypeOfAction: typeOfRequest,
+			GroupId:      groupId,
+		}
+
+	}
+	rows.Close()
+	db.Close()
+	fmt.Println(requestNotif)
+	if requestNotif.Sender == "" {
+		return false
+	}
+	return true
+}
+
+//
+// Event
+//
+
+func AddGroupEvent(eventData GroupEventFields) error {
+	db := OpenDB()
+	defer db.Close()
+	stmt, err := db.Prepare(`INSERT INTO "events" (groupId, eventId, organiser, title, description, time) values(?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		log.Fatal("error preparing to events table:= ", err)
+		return err
+	}
+	_, err = stmt.Exec(eventData.GroupId, eventData.EventId, eventData.Organiser, eventData.Title, eventData.Description, eventData.Time)
+	if err != nil {
+		log.Fatal("Error adding event to events table", err)
+		return err
+	}
+	fmt.Println("added event to events table")
+	return err
+}
+
+func DeleteGroupEvent(id string) error {
+	db := OpenDB()
+	defer db.Close()
+	stmt, err := db.Prepare(`DELETE FROM "events" WHERE "eventId" = ?`)
+	if err != nil {
+		fmt.Println("error removing event from events table", err)
+	}
+	stmt.Exec(id)
+	return err
+}
+
+func GetEvents(id, user string) []GroupEventFields {
+	db := OpenDB()
+	defer db.Close()
+	sliceOfEvents := []GroupEventFields{}
+	n := fmt.Sprintf(`SELECT * FROM events WHERE groupId = '%v'`, id)
+	rows, err := db.Query(n)
+	var groupId, eventId, organiser, title, description string
+	var date int
+	if err != nil {
+		fmt.Println(err, "error getting all events")
+	}
+	for rows.Next() {
+		err := rows.Scan(&groupId, &eventId, &organiser, &title, &description, &date)
+		if err != nil {
+			fmt.Println("error with getting events", err)
+		}
+		event := GroupEventFields{
+			GroupId:     groupId,
+			EventId:     eventId,
+			Organiser:   organiser,
+			Title:       title,
+			Description: description,
+			Time:        date,
+			Attendees:   len(GetEventAttendees(eventId)),
+		}
+		if user == event.Organiser {
+			event.EventOrganiser = true
+		}
+		now := time.Now()
+		timestamp := int64(event.Time)
+		t := time.Unix(timestamp, 0)
+
+		if t.Before(now) && t.After(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())) {
+			fmt.Println("The time has passed today.")
+			event.ActiveEvent = false
+		} else {
+			fmt.Println("The time has not passed today.")
+			event.ActiveEvent = true
+		}
+		attendee := GetEventAttendee(event.EventId, user)
+		if attendee.Status == "y" {
+			event.Attending = true
+		}
+
+		sliceOfEvents = append(sliceOfEvents, event)
+	}
+	rows.Close()
+	return sliceOfEvents
+}
+
+func GetEvent(id, user string) GroupEventFields {
+	db := OpenDB()
+	defer db.Close()
+	var event GroupEventFields
+	n := fmt.Sprintf(`SELECT * FROM events WHERE eventId = '%v'`, id)
+	rows, err := db.Query(n)
+	var groupId, eventId, organiser, title, description string
+	var date int
+	if err != nil {
+		fmt.Println(err, "error getting all events")
+	}
+	if rows.Next() {
+		err := rows.Scan(&groupId, &eventId, &organiser, &title, &description, &date)
+		if err != nil {
+			fmt.Println("error with getting events", err)
+		}
+		event = GroupEventFields{
+			GroupId:     groupId,
+			EventId:     eventId,
+			Organiser:   organiser,
+			Title:       title,
+			Description: description,
+			Time:        date,
+			Attendees:   len(GetEventAttendees(eventId)),
+		}
+
+		if user == event.Organiser {
+			event.EventOrganiser = true
+		}
+
+		now := time.Now()
+		timestamp := int64(event.Time)
+		t := time.Unix(timestamp, 0)
+
+		if t.Before(now) && t.After(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())) {
+			fmt.Println("The time has passed today.")
+			event.ActiveEvent = false
+		} else {
+			fmt.Println("The time has not passed today.")
+			event.ActiveEvent = true
+		}
+		attendee := GetEventAttendee(event.EventId, user)
+		if attendee.Status == "y" {
+			event.Attending = true
+		}
+	}
+	rows.Close()
+	return event
+}
+
+func AddEventAttendee(eventAttendee EventAttendanceFields) error {
+	attending := GetEventAttendee(eventAttendee.EventId, eventAttendee.User)
+	db := OpenDB()
+	defer db.Close()
+	var s string
+	if attending.Status == "" {
+		s = "INSERT INTO eventAttendance (status, eventId, user) values (?, ?, ?)"
+	} else if eventAttendee.Status != attending.Status {
+		s = "UPDATE eventAttendance SET status = ? WHERE eventId = ? AND user = ?"
+	} else {
+		s = "DELETE FROM eventAttendance WHERE status = ? AND eventId = ? AND user = ?"
+	}
+	stmt, _ := db.Prepare(s)
+	_, err := stmt.Exec(eventAttendee.Status, eventAttendee.EventId, eventAttendee.User)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
+func GetEventAttendee(id, user string) EventAttendanceFields {
+	var attendingRow EventAttendanceFields
+	db := OpenDB()
+	defer db.Close()
+	s := fmt.Sprintf("SELECT * FROM eventAttendance WHERE eventId = '%v' AND user = '%v'", id, user)
+	rows, _ := db.Query(s)
+	var eventId, attendee, status string
+	if rows.Next() {
+		err := rows.Scan(&eventId, &attendee, &status)
+		if err != nil {
+			fmt.Println("error getting group attendee", err)
+		}
+		attendingRow = EventAttendanceFields{
+			EventId: eventId,
+			User:    attendee,
+			Status:  status,
+		}
+	}
+	rows.Close()
+	return attendingRow
+}
+
+func GetEventAttendees(id string) []EventAttendanceFields {
+	db := OpenDB()
+	defer db.Close()
+	var eventAttending []EventAttendanceFields
+	n := fmt.Sprintf(`SELECT * FROM eventAttendance WHERE eventId = '%v'`, id)
+	rows, err := db.Query(n)
+	var eventId, user, status string
+	if err != nil {
+		fmt.Println(err, "error getting all events")
+	}
+	for rows.Next() {
+		err := rows.Scan(&eventId, &user, &status)
+		if err != nil {
+			fmt.Println("error with getting events", err)
+		}
+		attending := EventAttendanceFields{
+			EventId: eventId,
+			User:    user,
+			Status:  status,
+		}
+		if attending.Status == "y" {
+			eventAttending = append(eventAttending, attending)
+		}
+	}
+	rows.Close()
+	return eventAttending
+}
+
 //
 // DB
 //
@@ -1543,7 +1911,7 @@ func CreateSqlTables() {
 	db := OpenDB()
 
 	// if you need to delete a table rather than delete a whole database
-	_, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS "followers"`)
+	_, deleteTblErr := db.Exec(`DROP TABLE IF EXISTS "likesgroup"`)
 	CheckErr(deleteTblErr, "-------Error deleting table")
 
 	// Create user table if it doen't exist.
@@ -1603,6 +1971,16 @@ func CreateSqlTables() {
 	var _, GroupPostLikesTblErr = db.Exec("CREATE TABLE IF NOT EXISTS `likesgroup` (`id` TEXT NOT NULL, `username` TEXT NOT NULL, `like` TEXT)")
 	CheckErr(GroupPostLikesTblErr, "-------Error creating table")
 
+	// Create group post comments table if not exists
+	var _, groupCommentError = db.Exec("CREATE TABLE IF NOT EXISTS `groupComments` (`id` TEXT NOT NULL UNIQUE, `postid` TEXT NOT NULL, `author` TEXT NOT NULL, `image` TEXT, `text` TEXT, `thread` TEXT, `time` NUMBER)")
+	CheckErr(groupCommentError, "-------Error creating table")
+
+	// Create group events  table if not exists
+	var _, groupEventsError = db.Exec("CREATE TABLE IF NOT EXISTS `events` (`groupId` TEXT, `eventId` TEXT NOT NULL, `organiser` TEXT NOT NULL, `title` TEXT, `description` TEXT, `time` NUMBER)")
+	CheckErr(groupEventsError, "-------Error creating table")
+
+	var _, eventAttendanceError = db.Exec("CREATE TABLE IF NOT EXISTS `eventAttendance` (`eventId` TEXT, `user` TEXT NOT NULL, `status` TEXT)")
+	CheckErr(eventAttendanceError, "-------Error creating table")
 	db.Close()
 
 }

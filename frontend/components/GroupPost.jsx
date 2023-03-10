@@ -3,6 +3,7 @@ import { LikeGroupPostButton } from "./LikeGroupPostButton"
 import { DisLikeGroupPostButton } from "./DislikeGroupPostButton"
 import { EditGroupPostButton } from "./EditGroupPostButton"
 import { DeleteGroupPostButton } from "./DeleteGroupPostButton"
+import { GroupCommentButton } from "./GroupPostCommentButton"
 
 export const GroupPost = (post) => {
 
@@ -87,8 +88,7 @@ export const GroupPost = (post) => {
             }
             <div className="post-interactions">
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></link>
-                <LikeGroupPostButton id={post["post"]["post-id"]} num={formatNumber(post["post"]["post-likes"])} func={post["onEdit"]} liked={post["post"]["post-liked"]} />
-                <DisLikeGroupPostButton id={post["post"]["post-id"]} num={formatNumber(post["post"]["post-dislikes"])} func={post["onEdit"]} disliked={post["post"]["post-disliked"]} />
+                <GroupCommentButton id={post["post"]["post-id"]} post={post["post"]} func={post["onEdit"]} num={formatNumber(post["post"]["post-comments"])} />
                 {post["post"]["post-author"] &&
                     <>
                         <EditGroupPostButton post={post["post"]} func={post["onEdit"]} />

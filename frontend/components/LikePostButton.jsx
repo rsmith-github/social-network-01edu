@@ -31,7 +31,7 @@ export const LikeButton = (likeInfo) => {
         <>
             {errorMes &&
                 <>
-                    <p className="like-dislike-error-message">{errorMes}</p>
+                    <p className="error-message">{errorMes}</p>
                     {setTimeout(() => setErrorMes(""), 1000)}
                 </>
             }
