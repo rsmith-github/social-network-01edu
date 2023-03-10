@@ -57,6 +57,17 @@ export const CreatePost = (newPost) => {
         }
 
     }
+
+    const handleFriendClick = (id) => {
+        const updatedFriends = friends.map(friend => {
+            if (friend.name === id) {
+                return { ...friend, selected: !friend.selected };
+            }
+            return friend
+        });
+        setFriends(updatedFriends);
+    }
+
     const handleAlmostPrivate = (privacy) => {
         console.log({ privacy })
         if (privacy) {
@@ -81,7 +92,21 @@ export const CreatePost = (newPost) => {
             values["post-threads"] = threadArr.join(",")
         }
         values['post-time'] = new Date().getTime()
-
+        let users = []
+        friends.map(friend => {
+            if (friend.selected) {
+                users.push(friend.name)
+                return
+            }
+        })
+        if (almostPrivate) {
+            if (users.length === 0) {
+                setErrorMes("Please Select Users")
+                return
+            } else {
+                values["viewers"] = users.join(',')
+            }
+        }
 
         fetch("http://localhost:8080/create-post", {
             method: "POST",
@@ -99,9 +124,26 @@ export const CreatePost = (newPost) => {
                         setErrorMes("")
                     }, 5000)
                 } else {
+                    if (newPost["private"]) {
+                        // fetch private posts
+                        console.log(newPost["private"])
+                        fetch("http://localhost:8080/view-private-posts")
+                            .then(response => response.json())
+                            .then(response => {
+                                newPost["onSubmit"](response)
+                                closePostForm()
+                            })
+                    } else {
+                        // fetch public posts
+                        console.log(newPost["private"])
+                        fetch("http://localhost:8080/view-public-posts")
+                            .then(response => response.json())
+                            .then(response => {
+                                newPost["onSubmit"](response)
+                                closePostForm()
+                            })
+                    }
 
-                    newPost["onSubmit"](response)
-                    closePostForm()
                 }
             })
 
