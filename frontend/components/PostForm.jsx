@@ -5,7 +5,7 @@ import { PrivatePostButton } from "./PrivatePostButton";
 
 import { AllPosts } from "./AllPosts";
 
-// Post form in the center
+// Post form in the center, filtering private and public posts.
 export default function PostForm(props) {
   const [posts, setPosts] = useState([])
   const [loaded, setLoaded]=useState(false)
