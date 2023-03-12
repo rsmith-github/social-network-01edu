@@ -22,7 +22,6 @@ export const DisLikeGroupPostButton = (likeInfo) => {
                     setErrorMes(response["error"])
                 } else {
                     likeInfo["func"](response)
-                    closeDeletePostForm()
                 }
             })
     }
@@ -31,7 +30,7 @@ export const DisLikeGroupPostButton = (likeInfo) => {
         <>
             {errorMes &&
                 <>
-                    <p className="like-dislike-error-message">{errorMes}</p>
+                    <p className="error-message">{errorMes}</p>
                     {setTimeout(() => setErrorMes(""), 1000)}
                 </>
             }
@@ -43,8 +42,6 @@ export const DisLikeGroupPostButton = (likeInfo) => {
                     ) : (
                         <i className="fa fa-thumbs-down"></i>
                     )}
-                    {/* <img src="../../public/assets/img/dislike.png" /> */}
-
                 </button>
             </div >
         </>

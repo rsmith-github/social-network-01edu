@@ -80,7 +80,7 @@ type RequestNotifcationFields struct {
 type GroupAcceptNotification struct {
 	User        string `json:"user"`
 	Admin       string `json:"admin"`
-	Action      bool   `json:"action"`
+	Action      string `json:"action"`
 	GroupName   string `json:"group-name"`
 	GroupAvatar string `json:"group-avatar"`
 	GroupId     string `json:"groupId"`
@@ -92,7 +92,6 @@ type ChatNotifcationFields struct {
 	Receiver      string `json:"notification-receiver"`
 	NumOfMessages int    `json:"notification-numOfMessages"`
 	Date          int    `json:"notification-date"`
-	TotalNumber   int    `json:"notification-totalNotifs"`
 }
 
 type OpenChatInfo struct {
@@ -178,6 +177,7 @@ type GroupPostFields struct {
 	Thread       string      `json:"post-threads"`
 	Likes        int         `json:"post-likes"`
 	PostLiked    bool        `json:"post-liked"`
+	PostComments int         `json:"post-comments"`
 	Dislikes     int         `json:"post-dislikes"`
 	PostDisliked bool        `json:"post-disliked"`
 	PostAuthor   bool        `json:"post-author"`
@@ -190,4 +190,35 @@ type GroupsAndLikesFields struct {
 	Username string `json:"username"`
 	Like     string `json:"like"`
 	Type     string `json:"type"`
+}
+
+type ReturnGroupComments struct {
+	TotalComments []CommentFields `json:"total-comments"`
+	Post          GroupPostFields `json:"post-comment"`
+}
+
+type GroupEventFields struct {
+	GroupId        string `json:"group-id"`
+	EventId        string `json:"event-id"`
+	Organiser      string `json:"event-organiser"`
+	EventOrganiser bool   `json:"event-organiser-user"`
+	Title          string `json:"event-title"`
+	Description    string `json:"event-description"`
+	Time           int    `json:"event-time"`
+	ActiveEvent    bool   `json:"active"`
+	Attendees      int    `json:"attendees"`
+	Attending      bool   `json:"event-attending"`
+	Error          string `json:"error"`
+}
+
+type EventAttendanceFields struct {
+	EventId string `json:"event-id"`
+	User    string `json:"attending-user"`
+	Status  string `json:"attending-status"`
+	Error   string `json:"error"`
+}
+
+type UpdateStatus struct {
+	User string `json:"user"`
+	SetStatus string `json:"setStatus"`
 }
