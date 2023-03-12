@@ -46,16 +46,28 @@ export default function NavBar(props) {
               <>
                 <li className="nav-item">
                   <Link className="nav-link" to="/">
+                    <i
+                      class="fa-solid fa-house"
+                      style={{ marginRight: "5px" }}
+                    ></i>
                     Home
                   </Link>
                 </li>
                 <li className="nav-item">
                   <Link className="nav-link" to="/public-profiles">
+                    <i
+                      class="fa-solid fa-user-group"
+                      style={{ marginRight: "5px" }}
+                    ></i>
                     Public Profiles
                   </Link>
                 </li>
                 <li className="nav-item">
                   <Link className="nav-link" onClick={logout} to="/login">
+                    <i
+                      class="fa-solid fa-arrow-right-from-bracket"
+                      style={{ marginRight: "5px" }}
+                    ></i>
                     Logout
                   </Link>
                 </li>
@@ -64,11 +76,19 @@ export default function NavBar(props) {
               <>
                 <li className="nav-item">
                   <Link className="nav-link" to="/login">
+                    <i
+                      class="fa-solid fa-arrow-right-to-bracket"
+                      style={{ marginRight: "5px" }}
+                    ></i>
                     Login
                   </Link>
                 </li>
                 <li className="nav-item">
                   <Link className="nav-link" to="/register">
+                    <i
+                      class="fa-solid fa-user-plus"
+                      style={{ marginRight: "5px" }}
+                    ></i>
                     Register
                   </Link>
                 </li>
