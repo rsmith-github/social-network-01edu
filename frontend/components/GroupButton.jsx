@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react"
 import { AddUserToGroupButton } from "./AddUserToGroup"
 import { AddGroupPost } from "./CreateGroupPostForm"
+import { EventGroupButton } from "./GroupEventButton"
 import { GroupPost } from "./GroupPost"
 import { RemoveUserToGroupButton } from "./RemoveUserToGroup"
 
@@ -18,6 +19,9 @@ export const GroupButton = (groupInfo) => {
     const groupId = groupInfo["group"]["group-id"]
     const admin = groupInfo["group"]["admin"]
     const [postAdded, setPostAdded] = useState(false)
+    const [events, setEvents] = useState(false)
+    const [eventsArr, setEventsArr] = useState([])
+
 
     useEffect(() => {
         fetch("http://localhost:8080/api/user")
@@ -133,18 +137,48 @@ export const GroupButton = (groupInfo) => {
         setDescriptionBox((prev) => !prev)
         setRemoveMembers(false)
         setAddMembers(false)
+        setEvents(false)
     }
 
     const AddMembersForm = () => {
         setAddMembers((prev) => !prev)
         setRemoveMembers(false)
         setDescriptionBox(false)
+        setEvents(false)
     }
 
     const RemoveMembersForm = () => {
         setRemoveMembers((prev) => !prev)
         setAddMembers(false)
         setDescriptionBox(false)
+        setEvents(false)
+    }
+
+    const showEvents = () => {
+        setEvents((prev) => {
+            console.log({ prev })
+            if (prev == false) {
+
+                const getGroupEvents = async () => {
+                    // Fetch users from "all users" api
+                    const getGroupEventsPromise = await fetch("http://localhost:8080/get-group-events", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: groupId
+                    });
+                    const newData = await getGroupEventsPromise.json();
+                    if (newData !== null && newData.length != 0)
+                        console.log({ newData })
+                    newData.sort((a, b) => a["event-time"] - (b["event-time"]))
+                    setEventsArr(newData)
+                };
+                getGroupEvents()
+            }
+            return !prev
+        })
+        setAddMembers(false)
+        setDescriptionBox(false)
+        setRemoveMembers(false)
     }
     return (
         <>
@@ -160,9 +194,14 @@ export const GroupButton = (groupInfo) => {
                                 <h1>{groupInfo["group"]["group-name"]}</h1>
                             </div>
                             <div className="edit-members-button-container" style={{ marginTop: '10px' }}>
-                                <button type="button" className="add-comment-button" onClick={RemoveMembersForm}>-</button>
+                                {admin === user &&
+                                    <>
+                                        <button type="button" className="add-comment-button" onClick={RemoveMembersForm}>-</button>
+                                    </>
+                                }
                                 <button type="button" className="add-comment-button" onClick={AddMembersForm}>+</button>
                                 <button type="button" className="add-comment-button" onClick={showDescriptionBox}>Description</button>
+                                <button type="button" className="add-comment-button" onClick={showEvents}>Events</button>
                                 <AddGroupPost id={groupId} socket={conn.current} added={setPostAdded} />
                             </div>
                         </div>
@@ -207,6 +246,12 @@ export const GroupButton = (groupInfo) => {
                         <>
                             <RemoveUserToGroupButton group={groupInfo} user={user} socket={groupInfo.socket} onClose={RemoveMembersForm} />
                         </>
+                    }
+                    {events &&
+                        <>
+                            <EventGroupButton id={groupId} events={eventsArr} />
+                        </>
+
                     }
                 </div>
             }

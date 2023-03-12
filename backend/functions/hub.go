@@ -228,24 +228,18 @@ func (d *sqlExecute) ExecuteStatements() {
 		case chat := <-SqlExec.chatData:
 			AddMessage(chat)
 		case chatNotif := <-SqlExec.chatNotifData:
-			wg.Add(1)
 			checkIfNotifExists := GetChatNotif(chatNotif.Receiver, chatNotif.Sender, chatNotif.ChatId)
 			if chatNotif.Sender != "" && checkIfNotifExists == (ChatNotifcationFields{}) {
-				fmt.Println(chatNotif.Receiver, "this is the chatNotification added to table.")
 				AddChatNotif(chatNotif)
-				wg.Done()
-				fmt.Println("added new chatNotification to table")
 			} else {
 				UpdateNotif(chatNotif)
-				wg.Done()
-				fmt.Println("updated chatNotification")
 			}
 		case followNotif := <-SqlExec.followMessageData:
 			user := GetUserFromFollowMessage(followNotif.ToFollow)
 			sender := GetUserFromFollowMessage(followNotif.FollowRequest)
 			AddRequestNotif(sender.Nickname, user.Nickname, "followRequest", "")
-			fmt.Println("added request notification for follow")
 		case groupFieldsData := <-SqlExec.GroupFieldsData:
+
 			if groupFieldsData.Action == "remove" {
 				// get notification. If notification already exists, do nothing. Else add
 				AddRequestNotif(groupFieldsData.Admin, groupFieldsData.Users, "remove-group-request", groupFieldsData.Id)
@@ -257,7 +251,6 @@ func (d *sqlExecute) ExecuteStatements() {
 			}
 		case requestNotif := <-SqlExec.RequestNotificationData:
 			DeleteRequestNotif(requestNotif)
-			fmt.Println("deleted request notification")
 		}
 	}
 }

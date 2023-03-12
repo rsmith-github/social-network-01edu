@@ -1,14 +1,15 @@
 import React, { useState } from "react"
 
-export const LikeGroupPostButton = (likeInfo) => {
+export const RemoveEventButton = (eventInfo) => {
     const [errorMes, setErrorMes] = useState("")
-    const postId = likeInfo.id
+    const [active, setActive] = useState(eventInfo["active"])
+    const eventId = eventInfo.id
 
-    const handleLikeButton = (evt) => {
+    const handleGroupEventInvite = (evt) => {
         evt.preventDefault()
-        const values = { "post-id": postId, "type": "like/dislike", "like": "l" }
+        const values = { "event-id": eventId, "attending-status": "delete" }
         console.log(values)
-        fetch("http://localhost:8080/group-post-interactions", {
+        fetch("http://localhost:8080/event-interactions", {
             method: "POST",
             headers: {
                 'Content-Type': "multipart/form-data"
@@ -21,29 +22,22 @@ export const LikeGroupPostButton = (likeInfo) => {
                 if (response["error"] != "") {
                     setErrorMes(response["error"])
                 } else {
-                    likeInfo["func"](response)
+                    eventInfo["delete"](response)
                 }
             })
     }
 
     return (
         <>
+            <button type="button" className="delete-group-event-button" onClick={handleGroupEventInvite}>
+                <img src="../../public/assets/img/delete.png" />
+            </button>
             {errorMes &&
                 <>
-                    <p className="error-message">{errorMes}</p>
+                    <p className="event-error-message">{errorMes}</p>
                     {setTimeout(() => setErrorMes(""), 1000)}
                 </>
             }
-            <div className="like-post-container">
-                <p>{likeInfo.num}</p>
-                <button type="button" onClick={handleLikeButton}>
-                    {likeInfo.liked ? (
-                        <i className="fa fa-thumbs-up liked"></i>
-                    ) : (
-                        <i className="fa fa-thumbs-up"></i>
-                    )}
-                </button>
-            </div>
         </>
     )
 }
