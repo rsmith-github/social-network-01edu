@@ -3,31 +3,64 @@ import { Post } from "./Post";
 
 export const AllPosts = (props) => {
   const [posts, setPosts] = useState([]);
+  const [usr, setUsr] = useState({});
   const [loaded, setLoaded] = useState(false);
 
-  //   Fetch public posts
+  // Fetch public posts
   useEffect(() => {
     if (!loaded) {
       fetch("http://localhost:8080/view-public-posts")
         .then((response) => response.json())
         .then((data) => {
-          if (props.user) {
+          if (
+            (props.user && Object.keys(props.user).length !== 0) ||
+            Object.keys(usr).length !== 0
+          ) {
             const filteredPosts = data.filter(
-              (post) => post.author === props.user.nickname
+              (post) =>
+                post.author === props.user.nickname ||
+                post.author === usr.nickname
             );
             setPosts(filteredPosts);
+          } else if (props.user && Object.keys(props.user).length === 0) {
+            //getting current user.
+            (async () => {
+              const response = await fetch("http://localhost:8080/api/user", {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+              });
+              const user = await response.json();
+              setUsr(user);
+            })();
           } else {
             setPosts(data);
           }
           setLoaded(true);
         });
     }
-  }, [loaded]);
+  }, [loaded, usr]);
 
   // Fetch private posts and append to posts list if visiting a profile page.
   useEffect(() => {
+    let filtered;
     (async () => {
-      if (props.user) {
+      if (props.user && Object.keys(props.user).length !== 0) {
+        fetch("http://localhost:8080/view-public-posts")
+          .then((response) => response.json())
+          .then((data) => {
+            if (
+              (props.user && Object.keys(props.user).length !== 0) ||
+              Object.keys(usr).length !== 0
+            ) {
+              filtered = data.filter(
+                (post) =>
+                  post.author === props.user.nickname ||
+                  post.author === usr.nickname
+              );
+            }
+          });
+
         let privatePostsPromise = await fetch(
           "http://localhost:8080/view-private-posts"
         );
@@ -35,24 +68,16 @@ export const AllPosts = (props) => {
         let filteredResult = result.filter(
           (post) => post.author === props.user.nickname
         );
-        setPosts([...posts, ...filteredResult]);
+
+        setPosts([...(posts || filtered), ...filteredResult]);
       }
     })();
-  }, [loaded]);
+  }, [loaded, usr]);
 
   //   Handle private posts button on homepage.
   useEffect(() => {
     setPosts(props["posts"]);
   }, [props["posts"]]);
-
-  //   useEffect(() => {
-  //     if (props.user && posts) {
-  //       const filteredPosts = posts.filter(
-  //         (post) => post.author === props.user.nickname
-  //       );
-  //       setPosts(filteredPosts);
-  //     }
-  //   }, [loaded]);
 
   var ranges = [
     { divider: 1e18, suffix: "E" },
@@ -102,6 +127,7 @@ export const AllPosts = (props) => {
   return (
     <div className="post-container">
       {loaded &&
+        posts &&
         posts
           .slice()
           .reverse()

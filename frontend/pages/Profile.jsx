@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 
 import { AllPosts } from "../components/AllPosts";
 
@@ -8,8 +7,25 @@ import RightSide from "../components/RightSide";
 
 export default function Profile(props) {
   const [status, setStatus] = useState("");
+  const [privatePosts, setPrivatePosts] = useState([]);
 
-  // Wait till finished rendering and update on props.user.status
+  // useEffect(() => {
+  //   (async () => {
+  //     if (props.user) {
+  //       let privatePostsPromise = await fetch(
+  //         "http://localhost:8080/view-private-posts"
+  //       );
+  //       let result = await privatePostsPromise.json();
+  //       let privPosts = result.filter(
+  //         (post) => post.author === props.user.nickname
+  //       );
+
+  //       setPrivatePosts(privPosts);
+  //     }
+  //   })();
+  // }, []);
+
+  // Update status to props.user.status.
   useEffect(() => {
     setStatus(props.user.status);
   }, [props.user.status]);
@@ -114,7 +130,7 @@ export default function Profile(props) {
         ></div>
       )}
 
-      <AllPosts user={props.user} />
+      <AllPosts user={props.user} privatePosts={privatePosts} />
       <RightSide />
     </div>
   );
