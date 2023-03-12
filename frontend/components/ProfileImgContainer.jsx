@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 
 import Swal from "sweetalert2";
+import FollowerWindow from "./FollowerWIndow";
 
 // Component that contains image, followers etc.
 export default function ProfileImgContainer(props) {
@@ -10,35 +11,35 @@ export default function ProfileImgContainer(props) {
   const otherUser = window.location.href.split("/").at(-1);
   // Variable to check following status. Set to true if user presses follow or on refreshing the page.
   const [isFollowing, setIsFollowing] = useState(false);
-  useEffect(()=>{
+  useEffect(() => {
     if (props.update)
-     if (props.user.status === "private"){
+      if (props.user.status === "private") {
+        (async () => {
+          const response = await fetch("http://localhost:8080/api/followers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              follower: props.currentUser ? props.currentUser.email : null,
+              followee: props.user.email,
+            }),
+          });
 
-    (async () => {
-      const response = await fetch("http://localhost:8080/api/followers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          follower: props.currentUser ? props.currentUser.email : null,
-          followee: props.user.email,
-        }),
-      });
+          /* is this redundant ???? */
+          let result = await response.json();
 
-      let result = await response.json();
+          // if (result === null) {
+          // } else {
+          //   setIsFollowing(true);
+          // }
+          // The above is the same as:
+          setIsFollowing(result !== null);
+          props["setUpdate"](false);
+          return;
+        })();
+      }
+  }, [props.update]);
 
-      // if (result === null) {
-      // } else {
-      //   setIsFollowing(true);
-      // }
-      // The above is the same as:
-      setIsFollowing(result !== null);
-      props["setUpdate"](false)
-      return 
-    })();
-  }
-  },[props.update])
- 
   // Get all the followers of the user rendered on component.
   useEffect(() => {
     (async () => {
@@ -92,6 +93,37 @@ export default function ProfileImgContainer(props) {
     props.fetchUsersData();
   };
 
+  // Show and hide window.
+  const [followers, setFollowers] = useState([]);
+  const [following, setFollowing] = useState([]);
+
+  const showFollowers = async (event) => {
+    // Get all followers for onclick event.
+    const response = await fetch("http://localhost:8080/api/allFollowers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+
+      // Send user whose followers to fetch.
+      body: JSON.stringify(props.user),
+    });
+
+    let result = await response.json();
+
+    if (event.target.id === "followerText") {
+      setFollowers(result.followers);
+      setFollowing([]);
+    } else {
+      setFollowing(result.following);
+      setFollowers([]);
+    }
+  };
+
+  const closeFollowersWindow = () => {
+    setFollowers([]);
+    setFollowing([]);
+  };
+
   return (
     <div className="profileImgContainer">
       {props.name ? (
@@ -117,7 +149,13 @@ export default function ProfileImgContainer(props) {
 
           <div className="followerDiv">
             <div>
-              <span className="followerFollowing">Following</span>
+              <span
+                className="followerFollowing"
+                id="followingText"
+                onClick={showFollowers}
+              >
+                Following
+              </span>
             </div>
             <div>
               <span className="count" id="following">
@@ -129,7 +167,13 @@ export default function ProfileImgContainer(props) {
 
           <div className="followerDiv">
             <div>
-              <span className="followerFollowing">Followers</span>
+              <span
+                className="followerFollowing"
+                id="followerText"
+                onClick={showFollowers}
+              >
+                Followers
+              </span>
             </div>
             <div>
               <span className="count" id={`${props.user.email}-followers`}>
@@ -192,6 +236,13 @@ export default function ProfileImgContainer(props) {
       ) : (
         <div> loading... </div>
       )}
+
+      {/* Handle display follower and following */}
+      <FollowerWindow
+        followers={followers}
+        following={following}
+        closeFollowersWindow={closeFollowersWindow}
+      />
     </div>
   );
 }

@@ -7,6 +7,10 @@ import { GetChat } from "../components/Chatrooms";
 import { GroupContainer } from "../components/GroupContainer";
 
 export default function Home(props) {
+  useEffect(() => {
+    console.log(props);
+    props["fetchRequestData"](props.socket);
+  }, []);
   return (
     <main>
       <div className="contentContainer">
@@ -17,7 +21,7 @@ export default function Home(props) {
               user={props.user}
               avatar={props.avatar}
             />
-            <GroupContainer groups={props.groups} socket={props.socket}/>
+            <GroupContainer groups={props.groups} socket={props.socket} />
             <PostForm avatar={props.avatar} />
             <RightSide />
             <GetChat />

@@ -217,3 +217,8 @@ type EventAttendanceFields struct {
 	Status  string `json:"attending-status"`
 	Error   string `json:"error"`
 }
+
+type UpdateStatus struct {
+	User      string `json:"user"`
+	SetStatus string `json:"setStatus"`
+}
