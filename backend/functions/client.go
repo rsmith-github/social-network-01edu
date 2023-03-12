@@ -129,7 +129,7 @@ func (s *subscription) readPump() {
 				}
 				//range through logged in users and check if they're in chat
 				for loggedInUsername := range H.user {
-					if !loggedInUsersInChat[loggedInUsername] {
+					if !loggedInUsersInChat[loggedInUsername] && Contains(usersInChat, loggedInUsername) {
 						for userSub := range H.user[loggedInUsername] {
 							checkIfNotifExists := GetChatNotif(userSub.name, chatData.Sender, s.room)
 							if checkIfNotifExists != (ChatNotifcationFields{}) {
@@ -297,8 +297,6 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 	var id string
 	var user string
 	var groupId string
-	var chatNotifExist []ChatNotifcationFields
-	var requestNotifExist []RequestNotifcationFields
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err.Error())
@@ -319,8 +317,6 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 		id = ""
 		user = LoggedInUser(r).Nickname
 		groupId = ""
-		chatNotifExist = GetAllChatNotifs(user)
-		requestNotifExist = GetAllRequestNotifs(user)
 	}
 	c := &connection{send: make(chan message), ws: ws}
 	s := subscription{c, id, groupId, user, cookie.Value}
@@ -328,48 +324,49 @@ func ServeWs(w http.ResponseWriter, r *http.Request) {
 	H.register <- &s
 	go s.writePump()
 	go s.readPump()
-	if len(chatNotifExist) > 0 {
-		message := message{incomingData: chatNotifExist}
-		c.send <- message
-	}
-	if len(requestNotifExist) > 0 {
-		for _, requestNotif := range requestNotifExist {
-			if requestNotif.GroupId == "" {
-				//get the follower's email
-				db := OpenDB()
-				defer db.Close()
-				row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", requestNotif.Sender, db, "GetUserFromFollowers")
-				//...
-				sender := QueryUser(row, err)
-				user := LoggedInUser(r)
-				followMessage := followMessage{
-					ToFollow:      user.Email,
-					FollowRequest: sender.Email,
-					IsFollowing:   false, Followers: GetTotalFollowers(user.Email),
-					FollowRequestUsername: sender.Nickname,
-					FolloweeUsername:      user.Nickname,
-				}
-				message := message{incomingData: RequestNotifcationFields{FollowRequest: followMessage}}
-				c.send <- message
-			} else {
-				if requestNotif.TypeOfAction == "groupRequest" {
-					groupFields := GetGroup(requestNotif.GroupId)
-					message := message{incomingData: RequestNotifcationFields{GroupRequest: groupFields}}
-					c.send <- message
-				} else {
-					groupFields := GetGroup(requestNotif.GroupId)
-					message := message{incomingData: RequestNotifcationFields{GroupAction: GroupAcceptNotification{
-						User:        requestNotif.Sender,
-						Admin:       groupFields.Admin,
-						Action:      requestNotif.TypeOfAction,
-						GroupName:   groupFields.Name,
-						GroupAvatar: groupFields.Avatar,
-						GroupId:     requestNotif.GroupId,
-					}}}
-					c.send <- message
-				}
 
-			}
-		}
-	}
+	// if len(chatNotifExist) > 0 {
+	// 	message := message{incomingData: chatNotifExist}
+	// 	c.send <- message
+	// }
+	// if len(requestNotifExist) > 0 {
+	// 	for _, requestNotif := range requestNotifExist {
+	// 		if requestNotif.GroupId == "" {
+	// 			//get the follower's email
+	// 			db := OpenDB()
+	// 			defer db.Close()
+	// 			row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", requestNotif.Sender, db, "GetUserFromFollowers")
+	// 			//...
+	// 			sender := QueryUser(row, err)
+	// 			user := LoggedInUser(r)
+	// 			followMessage := followMessage{
+	// 				ToFollow:      user.Email,
+	// 				FollowRequest: sender.Email,
+	// 				IsFollowing:   false, Followers: GetTotalFollowers(user.Email),
+	// 				FollowRequestUsername: sender.Nickname,
+	// 				FolloweeUsername:      user.Nickname,
+	// 			}
+	// 			message := message{incomingData: RequestNotifcationFields{FollowRequest: followMessage}}
+	// 			c.send <- message
+	// 		} else {
+	// 			if requestNotif.TypeOfAction == "groupRequest" {
+	// 				groupFields := GetGroup(requestNotif.GroupId)
+	// 				message := message{incomingData: RequestNotifcationFields{GroupRequest: groupFields}}
+	// 				c.send <- message
+	// 			} else {
+	// 				groupFields := GetGroup(requestNotif.GroupId)
+	// 				message := message{incomingData: RequestNotifcationFields{GroupAction: GroupAcceptNotification{
+	// 					User:        requestNotif.Sender,
+	// 					Admin:       groupFields.Admin,
+	// 					Action:      requestNotif.TypeOfAction,
+	// 					GroupName:   groupFields.Name,
+	// 					GroupAvatar: groupFields.Avatar,
+	// 					GroupId:     requestNotif.GroupId,
+	// 				}}}
+	// 				c.send <- message
+	// 			}
+
+	// 		}
+	// 	}
+	// }
 }

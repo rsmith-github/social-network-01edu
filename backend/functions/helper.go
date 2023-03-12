@@ -1604,6 +1604,8 @@ func DeleteRequestNotif(item RequestNotifcationFields) {
 			fmt.Println(error2)
 			return
 		}
+
+		fmt.Println("ITEM:", item.Sender, item.Receiver)
 		_, err := stmt.Exec(item.Sender, item.Receiver, "followRequest")
 		if err != nil {
 			fmt.Println(err, "error executing delete followRequestNotif.")
@@ -1735,7 +1737,7 @@ func GetRequestNotif(receiverName, senderName, requestType, id string) bool {
 	}
 	rows.Close()
 	db.Close()
-	fmt.Println(requestNotif)
+	// fmt.Println(requestNotif)
 	if requestNotif.Sender == "" {
 		return false
 	}
@@ -2105,6 +2107,15 @@ func PreparedExec(query string, m map[string]string, db *sql.DB, functionName st
 
 	if functionName == "updateFollowerCount" {
 		stmt.Exec(m["follower"], m["followee"])
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	}
+
+	fmt.Println(m)
+
+	if functionName == "UpdateUserStatus" {
+		stmt.Exec(m["status"], m["user"])
 		if err != nil {
 			fmt.Println(err.Error())
 		}

@@ -103,6 +103,31 @@ func createApi(table string, w http.ResponseWriter, r *http.Request) {
 
 }
 
+func UpdateUserStatus(w http.ResponseWriter, r *http.Request) {
+
+	// Create variable to store json body
+	var request UpdateStatus
+
+	// Decode json
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&request)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	db := OpenDB()
+
+	// Create data obj to store status and email of user to update in db.
+	data := make(map[string]string)
+	data["user"] = request.User
+	data["status"] = request.SetStatus
+
+	// Update user status.
+	PreparedExec("UPDATE users SET status=? WHERE email=?", data, db, "UpdateUserStatus")
+
+	db.Close()
+}
+
 // Function that queryies database and returns list of bytes to unmarshal.
 // https://stackoverflow.com/questions/43367505/function-in-go-to-execute-select-query-on-database-and-return-json-output
 func ExecuteSQL(queryStr string) []byte {

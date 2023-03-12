@@ -174,8 +174,8 @@ main {
     justify-content: space-between;
     width: 100%;
     background-color: white;
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
     border-top: 5px solid rgb(148, 28, 47);
     box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px;
 }
@@ -267,6 +267,11 @@ main {
     background-color: white;
     border-bottom: 3px solid rgb(148, 28, 47);
     z-index: 1;
+}
+
+.chatbox-container {
+    height: 400px;
+    padding-bottom: 33px;
 }
 
 .chat-form {
@@ -1616,7 +1621,7 @@ main {
     height: 40px;
     border-radius: 50%;
     width: 40px;
-    border: 2px solid rgb(148, 28, 47);
+    border: 2px solid rgba(129, 25, 41, 0.55);
 }
 
 .group-post-button>p,
@@ -2095,7 +2100,18 @@ PROFILE PAGE
     font-weight: 700;
 }
 
+.profile-page-title {
+    font-size:larger;
+    font-weight: bold;
+}
 
-i {
+#set-public-private {
+    grid-area: group;
+}
+
+#close-follower-window {
+    position: relative;
+    z-index: 10;
     cursor: pointer;
 }
+

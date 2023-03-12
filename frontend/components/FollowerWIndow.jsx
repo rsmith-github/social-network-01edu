@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 export default function FollowerWindow(props) {
   return (
@@ -19,8 +19,12 @@ export default function FollowerWindow(props) {
                 justifyContent: "flex-end",
               }}
             >
-              <i
-                style={{ fontWeight: "bold", fontSize: "20px" }}
+              
+              <i id="close-follower-window"
+                style={{
+                  fontWeight: "bold",
+                  fontSize: "20px",
+                }}
                 onClick={props.closeFollowersWindow}
               >
                 x
@@ -28,12 +32,12 @@ export default function FollowerWindow(props) {
             </div>
             {props.followers
               ? props.followers.map((usr) => {
-                  return <div>{usr}</div>;
+                  return <div key={usr}>{usr}</div>;
                 })
               : null}
             {props.following
               ? props.following.map((usr) => {
-                  return <div>{usr}</div>;
+                  return <div key={usr}>{usr}</div>;
                 })
               : null}
           </div>

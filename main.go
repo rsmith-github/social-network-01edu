@@ -33,6 +33,8 @@ func main() {
 	http.HandleFunc("/api/followers", functions.FollowersApi)
 	http.HandleFunc("/api/allFollowers", functions.AllFollowersApi)
 	http.HandleFunc("/profile", functions.Profile)
+	http.HandleFunc("/update-user-status", functions.UpdateUserStatus)
+
 	// http.HandleFunc("/public-profiles", functions.DynamicPath)
 	http.HandleFunc("/get-friends", functions.GetFriends)
 	http.HandleFunc("/create-chat", functions.CreateChat)
@@ -62,7 +64,9 @@ func main() {
 	http.HandleFunc("/group-post-comment-interaction", functions.GroupPostCommentInteractions)
 	http.HandleFunc("/create-group-event", functions.CreateGroupEvent)
 	http.HandleFunc("/get-group-events", functions.GetGroupEvents)
+	http.HandleFunc("/get-requests", functions.GetRequests)
 	http.HandleFunc("/event-interactions", functions.EventInteractions)
+	http.HandleFunc("/get-chat-notifications", functions.FetchChatNotifications)
 
 	go functions.H.Run()
 	go functions.SqlExec.ExecuteStatements()
