@@ -2,6 +2,8 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import Profile from "./Profile";
 
+import RightSide from "../components/RightSide";
+
 export default function PublicProfiles(props) {
   const location = useLocation();
   // Get user from url
@@ -32,7 +34,7 @@ export default function PublicProfiles(props) {
           aboutme: usr.aboutme,
           following: usr.following,
           followers: usr.followers,
-          status:usr.status
+          status: usr.status,
         }}
         socket={props.socket} // socket passed down from App.jsx
         currentUser={props.user} // user that's interacting with the dom.
@@ -46,6 +48,8 @@ export default function PublicProfiles(props) {
   //   Otherwise show all users.
   return (
     <div id="public-profiles">
+      <RightSide page={"profiles"} />
+
       {props.users ? (
         props.users.map((user) => {
           // Skip current user.
