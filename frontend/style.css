@@ -815,7 +815,7 @@ main {
 
 #public-profiles {
     display: grid;
-    grid-template-columns: auto auto auto;
+    grid-template-columns: repeat(4, 1fr);
     padding: 10px;
     overflow: auto;
     height: 90vh;
