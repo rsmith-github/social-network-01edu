@@ -164,6 +164,9 @@ function App() {
           " message(s) from: " +
           `${obj["notification-sender"]}`,
         {
+          data: {
+            title: "messages",
+          },
           autoClose: false,
           hideProgressBar: false,
           closeOnClick: true,
@@ -203,18 +206,16 @@ function App() {
               "remove-sender": `${obj["notification-followRequest"]["followRequest-username"]}`,
               "remove-receiver": `${obj["notification-followRequest"]["toFollow-username"]}`,
             };
-            if (ws) {
-              ws.send(JSON.stringify(removeRequest));
-              //send to backend "followRequest:accepted" so it can broadcast and go to the else condition in client's "followMessage" switch case.
-              const follow = {
-                followRequest: `${obj["notification-followRequest"]["followRequest"]}`,
-                toFollow: `${obj["notification-followRequest"]["toFollow"]}`,
-                isFollowing: true,
-                followers: obj["notification-followRequest"]["followers"],
-                "followRequest-accepted": true,
-              };
-              ws.send(JSON.stringify(follow));
-            }
+            //send to backend "followRequest:accepted" so it can broadcast and go to the else condition in client's "followMessage" switch case.
+            const follow = {
+              followRequest: `${obj["notification-followRequest"]["followRequest"]}`,
+              toFollow: `${obj["notification-followRequest"]["toFollow"]}`,
+              isFollowing: true,
+              followers: obj["notification-followRequest"]["followers"],
+              "followRequest-accepted": true,
+            };
+            ws.send(JSON.stringify(follow));
+            ws.send(JSON.stringify(removeRequest));
           }}
         />,
         {
@@ -225,8 +226,23 @@ function App() {
           draggable: true,
           progress: undefined,
           theme: "dark",
-          closeButton: customToastClose,
-          type: obj,
+          closeButton: ({ closeToast }) => {
+            return (
+              <i
+                onClick={() => {
+                  let removeRequest = {
+                    "remove-sender": `${obj["notification-followRequest"]["followRequest-username"]}`,
+                    "remove-receiver": `${obj["notification-followRequest"]["toFollow-username"]}`,
+                  };
+                  ws.send(JSON.stringify(removeRequest));
+                  closeToast;
+                }}
+                style={{}}
+              >
+                x
+              </i>
+            );
+          },
         }
       );
       return;
@@ -244,8 +260,25 @@ function App() {
           draggable: true,
           progress: undefined,
           theme: "dark",
-          closeButton: customToastClose,
-          type: obj,
+          closeButton: ({ closeToast }) => {
+            return (
+              <i
+                onClick={() => {
+                  let removeRequest = {
+                    "remove-sender": `${obj["notification-groupRequest"]["admin"]}`,
+                    "remove-receiver": `${obj["notification-groupRequest"]["users"]}`,
+                    "remove-typeOfAction": "remove-group-request",
+                    "remove-groupId": `${obj["notification-groupRequest"]["group-id"]}`,
+                  };
+                  ws.send(JSON.stringify(removeRequest));
+                  closeToast;
+                }}
+                style={{}}
+              >
+                x
+              </i>
+            );
+          },
         });
         return;
       } else {
@@ -264,11 +297,7 @@ function App() {
               let response = await (await responseFromAddingMember).text();
               if (response === "accepted") {
                 setGroupArr((groupRooms) => {
-                  if (
-                    Array.isArray(groupRooms) &&
-                    groupRooms !== null &&
-                    groupRooms.length !== 0
-                  ) {
+                  if (groupRooms !== null && groupRooms.length > 0) {
                     return [...groupRooms, obj["notification-groupRequest"]];
                   } else {
                     return [obj["notification-groupRequest"]];
@@ -277,7 +306,7 @@ function App() {
               }
               let removeRequest = {
                 "remove-sender": `${obj["notification-groupRequest"]["admin"]}`,
-                "remove-receiver": user.nickname,
+                "remove-receiver": `${obj["notification-groupRequest"]["users"]}`,
                 "remove-typeOfAction": "groupRequest",
                 "remove-groupId": `${obj["notification-groupRequest"]["group-id"]}`,
               };
@@ -292,15 +321,31 @@ function App() {
             draggable: true,
             progress: undefined,
             theme: "dark",
-            closeButton: customToastClose,
-            type: obj,
+            closeButton: ({ closeToast }) => {
+              return (
+                <i
+                  onClick={() => {
+                    //sends in a requestNotificationJson to remove the request from the sql table, this will go to the client's "RequestNotification" switch case.
+                    let removeRequest = {
+                      "remove-sender": `${obj["notification-groupRequest"]["admin"]}`,
+                      "remove-receiver": `${obj["notification-groupRequest"]["users"]}`,
+                      "remove-typeOfAction": "groupRequest",
+                      "remove-groupId": `${obj["notification-groupRequest"]["group-id"]}`,
+                    };
+                    ws.send(JSON.stringify(removeRequest));
+                    closeToast;
+                  }}
+                  style={{}}
+                >
+                  x
+                </i>
+              );
+            },
           }
         );
         return;
       }
     } else if (obj["notification-group-action"] !== undefined) {
-      // then remove from sql table
-      console.log("new new ", obj);
       if (
         obj["notification-group-action"]["action"] == "accepted-group-request"
       ) {
@@ -312,8 +357,25 @@ function App() {
           draggable: true,
           progress: undefined,
           theme: "dark",
-          closeButton: customToastClose,
-          type: obj["notification-group-action"],
+          closeButton: ({ closeToast }) => {
+            return (
+              <i
+                onClick={() => {
+                  let removeRequest = {
+                    "remove-sender": `${obj["notification-group-action"]["user"]}`,
+                    "remove-receiver": `${obj["notification-groupRequest"]["admin"]}`,
+                    "remove-typeOfAction": "accepted-group-request",
+                    "remove-groupId": `${obj["notification-group-action"]["groupId"]}`,
+                  };
+                  ws.send(JSON.stringify(removeRequest));
+                  closeToast;
+                }}
+                style={{}}
+              >
+                x
+              </i>
+            );
+          },
         });
         return;
       } else if (
@@ -334,18 +396,17 @@ function App() {
                   let values = selectedGroup;
                   values["users"] = obj["notification-group-action"]["user"];
                   values["action"] = "add user";
-                  if (ws) ws.send(JSON.stringify(values));
-                  console.log("sent to requester", values);
+                  ws.send(JSON.stringify(values));
+                  let removeRequest = {
+                    "remove-sender": `${obj["notification-group-action"]["user"]}`,
+                    "remove-receiver": `${obj["notification-group-action"]["admin"]}`,
+                    "remove-typeOfAction": "send-group-request",
+                    "remove-groupId": `${obj["notification-group-action"]["groupId"]}`,
+                  };
+                  ws.send(JSON.stringify(removeRequest));
                   return [...groups];
                 }
               });
-              let removeRequest = {
-                "remove-sender": `${obj["notification-group-action"]["user"]}`,
-                "remove-receiver": user.nickname,
-                "remove-typeOfAction": "send-group-request",
-                "remove-groupId": `${obj["notification-group-action"]["groupId"]}`,
-              };
-              if (ws) ws.send(JSON.stringify(removeRequest));
             }}
           />,
           {
@@ -356,8 +417,25 @@ function App() {
             draggable: true,
             progress: undefined,
             theme: "dark",
-            closeButton: customToastClose,
-            type: obj,
+            closeButton: ({ closeToast }) => {
+              return (
+                <i
+                  onClick={() => {
+                    let removeRequest = {
+                      "remove-sender": `${obj["notification-group-action"]["user"]}`,
+                      "remove-receiver": `${obj["notification-group-action"]["admin"]}`,
+                      "remove-typeOfAction": "send-group-request",
+                      "remove-groupId": `${obj["notification-group-action"]["groupId"]}`,
+                    };
+                    ws.send(JSON.stringify(removeRequest));
+                    closeToast;
+                  }}
+                  style={{}}
+                >
+                  x
+                </i>
+              );
+            },
           }
         );
       } else {
@@ -369,98 +447,118 @@ function App() {
           draggable: true,
           progress: undefined,
           theme: "dark",
-          closeButton: customToastClose,
-          type: obj,
+          closeButton: ({ closeToast }) => {
+            return (
+              <i
+                onClick={() => {
+                  let removeRequest = {
+                    "remove-sender": `${obj["notification-group-action"]["admin"]}`,
+                    "remove-receiver": user.nickname,
+                    "remove-typeOfAction": "remove-group-request",
+                    "remove-groupId": `${obj["notification-group-action"]["groupId"]}`,
+                  };
+                  ws.send(JSON.stringify(removeRequest));
+                  closeToast;
+                  console.log("sent", removeRequest);
+                }}
+                style={{}}
+              >
+                x
+              </i>
+            );
+          },
         });
         return;
       }
     }
   };
 
+  // Open websocket connection
   const openConnection = (name, usr) => {
-    if (websocket.current === null && name !== undefined && name !== "") {
-      websocket.current = new WebSocket(
-        "ws://" + document.location.host + "/ws/user"
-      );
-      websocket.current.onopen = () => {
-        console.log("user connection open");
-      };
-      websocket.current.onmessage = (event) => {
-        let msg = JSON.parse(event.data);
-        console.log(msg, "this is msg.");
-        if (Array.isArray(msg)) {
-          msg.map((notif) => {
-            notify(notif, websocket.current);
-          });
-        } else {
-          notify(msg, websocket.current);
-        }
-        if (
-          msg.hasOwnProperty("notification-groupRequest") &&
-          msg["notification-groupRequest"]["action"] == "remove"
-        ) {
-          console.log(msg);
-          setGroupArr((groups) => {
-            const selectedGroupIndex = groups.findIndex(
-              (group) =>
-                group["group-id"] ===
-                msg["notification-groupRequest"]["group-id"]
-            );
-            if (selectedGroupIndex != -1) {
-              groups.splice(selectedGroupIndex, 1);
-              return [...groups];
-            }
-          });
-        }
-        if (
-          msg.hasOwnProperty("group-post-id") &&
-          msg.hasOwnProperty("post-id")
-        ) {
-          if (document.getElementById(msg["group-post-id"]) == undefined) {
+    return new Promise((resolve) => {
+      if (websocket.current === null && name !== undefined && name !== "") {
+        websocket.current = new WebSocket(
+          "ws://" + document.location.host + "/ws/user"
+        );
+        websocket.current.onmessage = (event) => {
+          let msg = JSON.parse(event.data);
+
+          console.log(msg, "this is the message boy......");
+          if (Array.isArray(msg)) {
+            msg.map((notif) => {
+              notify(notif, websocket.current);
+            });
+          } else {
+            notify(msg, websocket.current);
+          }
+          if (
+            msg.hasOwnProperty("notification-groupRequest") &&
+            msg["notification-groupRequest"]["action"] == "remove"
+          ) {
             setGroupArr((groups) => {
               const selectedGroupIndex = groups.findIndex(
-                (group) => group["group-id"] === msg["group-post-id"]
+                (group) =>
+                  group["group-id"] ===
+                  msg["notification-groupRequest"]["group-id"]
               );
-              const firstItem = groups[selectedGroupIndex];
               if (selectedGroupIndex != -1) {
                 groups.splice(selectedGroupIndex, 1);
-                return [firstItem, ...groups];
+                return [...groups];
               }
             });
           }
-        }
-        if (msg.hasOwnProperty("followRequest")) {
-          console.log("accepted follower", usr);
-          if (msg["followRequest-username"] == usr.nickname) {
-            console.log("matchy matchy");
-            setFollowUpdate(true);
+          if (
+            msg.hasOwnProperty("group-post-id") &&
+            msg.hasOwnProperty("post-id")
+          ) {
+            if (document.getElementById(msg["group-post-id"]) == undefined) {
+              setGroupArr((groups) => {
+                const selectedGroupIndex = groups.findIndex(
+                  (group) => group["group-id"] === msg["group-post-id"]
+                );
+                const firstItem = groups[selectedGroupIndex];
+                if (selectedGroupIndex != -1) {
+                  groups.splice(selectedGroupIndex, 1);
+                  return [firstItem, ...groups];
+                }
+              });
+            }
           }
-        }
-        if (msg.toFollow === usr.email) {
-          // Send message to relevant user according to isFollowing true or false.
-          if (msg.isFollowing) {
-            // Sweet Alert notification
-            Swal.fire({
-              title: "New follower:",
-              text: msg.followRequest + " just followed you",
-              icon: "info",
-              confirmButtonText: "OK",
-            });
-            fetchUsersData();
-          } else {
-            // Sweet Alert notification
-            Swal.fire({
-              title: "Update:",
-              text: msg.followRequest + " unfollowed you",
-              icon: "info",
-              confirmButtonText: "OK",
-            });
+          if (msg.hasOwnProperty("followRequest")) {
+            if (msg["followRequest-username"] == usr.nickname) {
+              setFollowUpdate(true);
+            }
           }
+          if (msg.toFollow === usr.email) {
+            // Send message to relevant user according to isFollowing true or false.
+            if (msg.isFollowing) {
+              // Sweet Alert notification
+              Swal.fire({
+                title: "New follower:",
+                text: msg.followRequest + " just followed you",
+                icon: "info",
+                confirmButtonText: "OK",
+              });
+              fetchUsersData();
+            } else {
+              // Sweet Alert notification
+              Swal.fire({
+                title: "Update:",
+                text: msg.followRequest + " unfollowed you",
+                icon: "info",
+                confirmButtonText: "OK",
+              });
+            }
+          }
+          // fetch user data
+          fetchUsersData();
+        };
+      } else {
+        if (websocket.current !== null) {
+          resolve("connection open");
         }
-        // fetch user data
-        fetchUsersData();
-      };
-    }
+      }
+    });
   };
 
   const closeConnection = () => {

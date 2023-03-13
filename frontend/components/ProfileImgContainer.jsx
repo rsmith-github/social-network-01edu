@@ -124,6 +124,39 @@ export default function ProfileImgContainer(props) {
     setFollowing([]);
   };
 
+  function showUserInfo(props) {
+    // Show user details if following and private or if user is public. Else, display error.
+    if (
+      (props.user.status === "private" && isFollowing) ||
+      props.user.status === "public" ||
+      props.user.status === ""
+    ) {
+      // Sweet Alert notification
+      // e.g. [1998, 03, 13]
+      const birthday = props.user.dob.split("-");
+      Swal.fire({
+        title: props.name,
+        html:
+          "<div id='name-email-dob'>" +
+          `<p> <span class="bold">Email:&nbsp</span> ${props.user.email} </p>` +
+          `<p> <span class="bold">Nickname:&nbsp</span> ${props.user.nickname} </p>` +
+          `<p> <span class="bold">Birthday:&nbsp</span> ${
+            birthday[1] + " / " + birthday[2]
+          } </p>` +
+          "</div>",
+        icon: "info",
+        confirmButtonText: "Close",
+      });
+    } else if (props.user.status === "private" && !isFollowing) {
+      Swal.fire({
+        title: props.name,
+        icon: "error",
+        text: "Private information. Send a follow request to view!",
+        confirmButtonText: "Ok",
+      });
+    }
+  }
+
   return (
     <div className="profileImgContainer">
       {props.name ? (
@@ -245,24 +278,4 @@ export default function ProfileImgContainer(props) {
       />
     </div>
   );
-}
-
-function showUserInfo(props) {
-  // Sweet Alert notification
-
-  // e.g. [1998, 03, 13]
-  const birthday = props.user.dob.split("-");
-  Swal.fire({
-    title: props.name,
-    html:
-      "<div id='name-email-dob'>" +
-      `<p> <span class="bold">Email:&nbsp</span> ${props.user.email} </p>` +
-      `<p> <span class="bold">Nickname:&nbsp</span> ${props.user.nickname} </p>` +
-      `<p> <span class="bold">Birthday:&nbsp</span> ${
-        birthday[1] + " / " + birthday[2]
-      } </p>` +
-      "</div>",
-    icon: "info",
-    confirmButtonText: "Close",
-  });
 }

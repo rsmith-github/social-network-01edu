@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 	"social-network/backend/functions"
-	"social-network/backend/websocket"
+	// "social-network/backend/websocket"
 )
 
 func main() {
@@ -16,12 +16,12 @@ func main() {
 	http.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir("public"))))
 
 	// Handle websocket connections.
-	hub := websocket.NewHub()
-	go hub.Run()
+	// hub := websocket.NewHub()
+	// go hub.Run()
 
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		websocket.ServeWs(hub, w, r)
-	})
+	// http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+	// 	websocket.ServeWs(hub, w, r)
+	// })
 
 	// Endpoint handlers
 	http.HandleFunc("/", functions.Homepage)
@@ -64,9 +64,10 @@ func main() {
 	http.HandleFunc("/group-post-comment-interaction", functions.GroupPostCommentInteractions)
 	http.HandleFunc("/create-group-event", functions.CreateGroupEvent)
 	http.HandleFunc("/get-group-events", functions.GetGroupEvents)
-	http.HandleFunc("/get-requests", functions.GetRequests)
+	// http.HandleFunc("/get-requests", functions.GetRequests)
 	http.HandleFunc("/event-interactions", functions.EventInteractions)
 	http.HandleFunc("/get-chat-notifications", functions.FetchChatNotifications)
+	http.HandleFunc("/get-requests", functions.FetchAllNotifications)
 
 	go functions.H.Run()
 	go functions.SqlExec.ExecuteStatements()

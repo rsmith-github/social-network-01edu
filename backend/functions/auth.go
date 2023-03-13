@@ -1256,3 +1256,60 @@ func EventInteractions(w http.ResponseWriter, r *http.Request) {
 		w.Write(content)
 	}
 }
+
+func FetchAllNotifications(w http.ResponseWriter, r *http.Request) {
+	var requestNotifExist []RequestNotifcationFields
+	var chatNotifExist []ChatNotifcationFields
+	var username = LoggedInUser(r).Nickname
+	requestNotifExist = GetAllRequestNotifs(username)
+	chatNotifExist = GetAllChatNotifs(username)
+	userSubscription := H.user[username]
+	
+	for s, online := range userSubscription {
+		if online {
+			if len(chatNotifExist) > 0 {
+				message := message{incomingData: chatNotifExist}
+				s.conn.send <- message
+			}
+			if len(requestNotifExist) > 0 {
+				for _, requestNotif := range requestNotifExist {
+					if requestNotif.GroupId == "" {
+						//get the follower's email
+						db := OpenDB()
+						row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", requestNotif.Sender, db, "GetUserFromFollowers")
+						//...
+						sender := QueryUser(row, err)
+						user := LoggedInUser(r)
+						followMessage := followMessage{
+							ToFollow:      user.Email,
+							FollowRequest: sender.Email,
+							IsFollowing:   false, Followers: GetTotalFollowers(user.Email),
+							FollowRequestUsername: sender.Nickname,
+							FolloweeUsername:      user.Nickname,
+						}
+						message := message{incomingData: RequestNotifcationFields{FollowRequest: followMessage}}
+						s.conn.send <- message
+					} else {
+						if requestNotif.TypeOfAction == "groupRequest" {
+							groupFields := GetGroup(requestNotif.GroupId)
+							message := message{incomingData: RequestNotifcationFields{GroupRequest: groupFields}}
+							s.conn.send <- message
+						} else {
+							groupFields := GetGroup(requestNotif.GroupId)
+							message := message{incomingData: RequestNotifcationFields{GroupAction: GroupAcceptNotification{
+								User:        requestNotif.Sender,
+								Admin:       groupFields.Admin,
+								Action:      requestNotif.TypeOfAction,
+								GroupName:   groupFields.Name,
+								GroupAvatar: groupFields.Avatar,
+								GroupId:     requestNotif.GroupId,
+							}}}
+							s.conn.send <- message
+						}
+
+					}
+				}
+			}
+		}
+	}
+}
