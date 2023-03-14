@@ -472,7 +472,6 @@ function App() {
       }
     }
   };
-
   // Open websocket connection
   const openConnection = (name, usr) => {
     return new Promise((resolve) => {
@@ -560,7 +559,6 @@ function App() {
       }
     });
   };
-
   const closeConnection = () => {
     if (websocket.current !== null) {
       websocket.current.close(1000, "user refreshed or logged out.");
@@ -628,35 +626,11 @@ function App() {
       });
   }, [name]);
 
-  const fetchRequestData = async (ws) => {
-    const response = await fetch("http://localhost:8080/get-requests", {
+  const fetchRequestData = async () => {
+    fetch("http://localhost:8080/get-requests", {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });
-    const response2 = await fetch(
-      "http://localhost:8080/get-chat-notifications",
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    const chatNotifArray = await response2.json();
-    const requestsArray = await response.json();
-
-    if (Array.isArray(chatNotifArray)) {
-      chatNotifArray.map((obj) => {
-        notify(obj, websocket.current);
-      });
-    } else {
-      console.log(chatNotifArray);
-    }
-    if (Array.isArray(requestsArray)) {
-      requestsArray.map((obj) => {
-        notify(obj, ws);
-      });
-    } else {
-      console.log(requestsArray);
-    }
   };
 
   return (
@@ -676,6 +650,7 @@ function App() {
               groups={groupArr}
               socket={websocket.current}
               fetchRequestData={fetchRequestData}
+              openConnection={openConnection}
             />
           }
         />
@@ -690,6 +665,9 @@ function App() {
               user={user}
               fetchUsersData={fetchUsersData}
               setUser={setUser}
+              openConnection={openConnection}
+              fetchRequestData={fetchRequestData}
+
             />
           }
         />
@@ -704,6 +682,8 @@ function App() {
               fetchUsersData={fetchUsersData}
               update={followUpdate}
               setUpdate={setFollowUpdate}
+              openConnection={openConnection}
+              fetchRequestData={fetchRequestData}
             />
           }
         />
