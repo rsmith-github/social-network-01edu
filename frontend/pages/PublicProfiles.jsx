@@ -48,7 +48,7 @@ export default function PublicProfiles(props) {
   //   Otherwise show all users.
   return (
     <div id="public-profiles">
-      <RightSide page={"profiles"} />
+      <RightSide page={"profiles"} openConnection={props.openConnection} fetchRequestData={props.fetchRequestData} />
 
       {props.users ? (
         props.users.map((user) => {

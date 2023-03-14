@@ -23,7 +23,7 @@ export default function Home(props) {
             />
             <GroupContainer groups={props.groups} socket={props.socket} />
             <PostForm avatar={props.avatar} />
-            <RightSide />
+            <RightSide openConnection={props.openConnection} fetchRequestData={props.fetchRequestData} />
             <GetChat />
           </>
         ) : (

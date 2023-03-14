@@ -177,57 +177,6 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func GetRequests(w http.ResponseWriter, r *http.Request) {
-	requestNotifExist := GetAllRequestNotifs(LoggedInUser(r).Nickname)
-	if len(requestNotifExist) > 0 {
-		sliceOfRequests := []RequestNotifcationFields{}
-		for _, requestNotif := range requestNotifExist {
-			if requestNotif.GroupId == "" {
-				//get the follower's email
-				db := OpenDB()
-				defer db.Close()
-				row, err := PreparedQuery("SELECT * FROM users WHERE nickname = ?", requestNotif.Sender, db, "GetUserFromFollowers")
-				//...
-				sender := QueryUser(row, err)
-				user := LoggedInUser(r)
-				followMessage := followMessage{
-					ToFollow:      user.Email,
-					FollowRequest: sender.Email,
-					IsFollowing:   false, Followers: GetTotalFollowers(user.Email),
-					FollowRequestUsername: sender.Nickname,
-					FolloweeUsername:      user.Nickname,
-				}
-				message := RequestNotifcationFields{FollowRequest: followMessage}
-				sliceOfRequests = append(sliceOfRequests, message)
-			} else {
-				if requestNotif.TypeOfAction == "groupRequest" {
-					groupFields := GetGroup(requestNotif.GroupId)
-					message := RequestNotifcationFields{GroupRequest: groupFields}
-					sliceOfRequests = append(sliceOfRequests, message)
-				} else {
-					groupFields := GetGroup(requestNotif.GroupId)
-					message := RequestNotifcationFields{GroupAction: GroupAcceptNotification{
-						User:        requestNotif.Sender,
-						Admin:       groupFields.Admin,
-						Action:      requestNotif.TypeOfAction,
-						GroupName:   groupFields.Name,
-						GroupAvatar: groupFields.Avatar,
-						GroupId:     requestNotif.GroupId,
-					}}
-					sliceOfRequests = append(sliceOfRequests, message)
-				}
-			}
-		}
-		fmt.Println(sliceOfRequests)
-		content, _ := json.Marshal(sliceOfRequests)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(content)
-	} else {
-		content, _ := json.Marshal("No requests")
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(content)
-	}
-}
 
 func FetchChatNotifications(w http.ResponseWriter, r *http.Request) {
 	var chatNotifExist []ChatNotifcationFields

@@ -131,7 +131,7 @@ export default function Profile(props) {
       )}
 
       <AllPosts user={props.user} privatePosts={privatePosts} />
-      <RightSide />
+      <RightSide openConnection={props.openConnection} fetchRequestData={props.fetchRequestData}  />
     </div>
   );
 }

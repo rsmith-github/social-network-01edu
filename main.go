@@ -64,7 +64,6 @@ func main() {
 	http.HandleFunc("/group-post-comment-interaction", functions.GroupPostCommentInteractions)
 	http.HandleFunc("/create-group-event", functions.CreateGroupEvent)
 	http.HandleFunc("/get-group-events", functions.GetGroupEvents)
-	// http.HandleFunc("/get-requests", functions.GetRequests)
 	http.HandleFunc("/event-interactions", functions.EventInteractions)
 	http.HandleFunc("/get-chat-notifications", functions.FetchChatNotifications)
 	http.HandleFunc("/get-requests", functions.FetchAllNotifications)
