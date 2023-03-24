@@ -59,100 +59,6 @@ function App() {
       });
   }, [name]);
 
-  const customToastClose = ({ closeToast, type }) => {
-    return (
-      <i
-        onClick={() => {
-          let removeRequest = {};
-          if (
-            type.hasOwnProperty("notification-followRequest") &&
-            type["notification-followRequest"] != null
-          ) {
-            removeRequest = {
-              "remove-sender": `${type["notification-followRequest"]["followRequest-username"]}`,
-              "remove-receiver": `${type["notification-followRequest"]["toFollow-username"]}`,
-            };
-
-            // console.log(
-            //   "REMOVE REQUEST ************************",
-            //   removeRequest
-            // );
-            // return;
-          }
-          if (
-            type.hasOwnProperty("notification-groupRequest") &&
-            type["notification-groupRequest"] != null
-          ) {
-            if (type["notification-groupRequest"]["action"] === "remove") {
-              removeRequest = {
-                "remove-sender": `${type["notification-groupRequest"]["admin"]}`,
-                "remove-receiver": user.nickname,
-                "remove-typeOfAction": "remove-group-request",
-                "remove-groupId": `${type["notification-groupRequest"]["group-id"]}`,
-              };
-            } else {
-              removeRequest = {
-                "remove-sender": `${type["notification-groupRequest"]["admin"]}`,
-                "remove-receiver": user.nickname,
-                "remove-typeOfAction": "groupRequest",
-                "remove-groupId": `${type["notification-groupRequest"]["group-id"]}`,
-              };
-            }
-            // return;
-          }
-          if (
-            type.hasOwnProperty("notification-group-action") &&
-            type["notification-group-action"] != null
-          ) {
-            console.log(type);
-            if (
-              type["notification-group-action"]["action"] ===
-              "accepted-group-request"
-            ) {
-              removeRequest = {
-                "remove-sender": `${type["notification-group-action"]["user"]}`,
-                "remove-receiver": user.nickname,
-                "remove-typeOfAction": "accepted-group-request",
-                "remove-groupId": `${type["notification-group-action"]["groupId"]}`,
-              };
-            } else if (
-              type["notification-group-action"]["action"] ===
-              "send-group-request"
-            ) {
-              removeRequest = {
-                "remove-sender": `${type["notification-group-action"]["user"]}`,
-                "remove-receiver": user.nickname,
-                "remove-typeOfAction": "send-group-request",
-                "remove-groupId": `${type["notification-group-action"]["groupId"]}`,
-              };
-            } else {
-              removeRequest = {
-                "remove-sender": `${type["notification-group-action"]["admin"]}`,
-                "remove-receiver": user.nickname,
-                "remove-typeOfAction": "remove-group-request",
-                "remove-groupId": `${type["notification-group-action"]["groupId"]}`,
-              };
-            }
-            // return;
-          }
-
-          if (user) {
-            removeRequest["remove-receiver"] = `${user.nickname}`;
-          }
-
-          websocket.current.send(JSON.stringify(removeRequest));
-          closeToast;
-          console.log("sent", removeRequest);
-        }}
-        style={{
-          marginRight: "5px",
-        }}
-      >
-        x
-      </i>
-    );
-  };
-
   const notify = (obj, ws) => {
     if (
       obj["notification-sender"] != "" &&
@@ -160,9 +66,9 @@ function App() {
     ) {
       toast(
         "🦄 " +
-          `${obj["notification-numOfMessages"]}` +
-          " message(s) from: " +
-          `${obj["notification-sender"]}`,
+        `${obj["notification-numOfMessages"]}` +
+        " message(s) from: " +
+        `${obj["notification-sender"]}`,
         {
           data: {
             title: "messages",
@@ -363,7 +269,7 @@ function App() {
                 onClick={() => {
                   let removeRequest = {
                     "remove-sender": `${obj["notification-group-action"]["user"]}`,
-                    "remove-receiver": `${obj["notification-groupRequest"]["admin"]}`,
+                    "remove-receiver": `${obj["notification-group-action"]["admin"]}`,
                     "remove-typeOfAction": "accepted-group-request",
                     "remove-groupId": `${obj["notification-group-action"]["groupId"]}`,
                   };
@@ -438,6 +344,37 @@ function App() {
             },
           }
         );
+      } else if (obj["notification-group-action"]["action"] == "event-notif") {
+        toast(<AddedGroupNotify type={obj["notification-group-action"]} />, {
+          autoClose: false,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+          closeButton: ({ closeToast }) => {
+            return (
+              <i
+                onClick={() => {
+                  let removeRequest = {
+                    "remove-sender": `${obj["notification-group-action"]["admin"]}`,
+                    "remove-receiver": user.nickname,
+                    "remove-typeOfAction": "event-notif",
+                    "remove-groupId": `${obj["notification-group-action"]["groupId"]}`,
+                  };
+                  ws.send(JSON.stringify(removeRequest));
+                  closeToast;
+                  console.log("sent", removeRequest);
+                }}
+                style={{}}
+              >
+                x
+              </i>
+            );
+          },
+        });
+        return;
       } else {
         toast(<AddedGroupNotify type={obj["notification-group-action"]} />, {
           autoClose: false,
@@ -482,7 +419,6 @@ function App() {
         websocket.current.onmessage = (event) => {
           let msg = JSON.parse(event.data);
 
-          console.log(msg, "this is the message boy......");
           if (Array.isArray(msg)) {
             msg.map((notif) => {
               notify(notif, websocket.current);

@@ -7,10 +7,6 @@ import { GetChat } from "../components/Chatrooms";
 import { GroupContainer } from "../components/GroupContainer";
 
 export default function Home(props) {
-  useEffect(() => {
-    console.log(props);
-    props["fetchRequestData"](props.socket);
-  }, []);
   return (
     <main>
       <div className="contentContainer">
