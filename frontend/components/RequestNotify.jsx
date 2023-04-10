@@ -90,7 +90,9 @@ export const AddedGroupNotify = ({ type, accepted }) => {
             // setMessage(str)
         } else if (type["action"] == "remove-group-request") {
             str = "🙃 You Have Been Removed From " + `${type["group-name"]}`
-        } else {
+        } else if (type["action"] == "event-notif") {
+            str = "🎉🎉"+`${type["admin"]}`+" Had Created An Event For " + `${type["group-name"]}`
+        }else {
             str = "🤔 " + `${type["user"]}` + " Would Like To Join " + `${type["group-name"]}`
         }
         setMessage(str)
